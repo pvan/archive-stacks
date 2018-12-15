@@ -161,6 +161,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     //     // MessageBoxW(0,buf2,0,0);
     // }
 
+    ReadTileResolutions(&tiles);
+
+    ArrangeTilesInOrder(&tiles); // requires resolutions to be set
 
 
 
@@ -207,11 +210,16 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         // render
         opengl_clear();
 
-        quad.set_pos(0,0);
-        quad.render(1);
+        for (int i = 0; i < tiles.count; i++) {
+            quad.set_verts(tiles[i].pos.x, tiles[i].pos.y, tiles[i].size.w, tiles[i].size.h);
+            quad.render(1);
+        }
 
-        quad.set_pos(600-quad.cached_w/2,10);
-        quad.render(0.5);
+        // quad.set_pos(0,0);
+        // quad.render(1);
+
+        // quad.set_pos(600-quad.cached_w/2,10);
+        // quad.render(0.5);
 
         opengl_swap();
 
