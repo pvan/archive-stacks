@@ -127,3 +127,102 @@ v2 ffmpeg_GetResolution(string path)
     return result;
 
 }
+
+
+
+
+
+// a file loaded by ffmpeg
+struct ffmpeg_media {
+
+
+    AVFormatContext *vfc;
+    AVCodecContext *vcc;
+
+    bool loaded = false;
+
+
+    void Unload() {
+        if (loaded) {
+            avcodec_free_context(&vcc);
+            avformat_close_input(&vfc);
+            avformat_free_context(vfc);
+            loaded = false;
+        }
+    }
+
+    void LoadFromFile(string path) {
+        if (loaded) {
+            PRINT("ffmpeg: object already loaded...\n");
+            return;
+        }
+
+        // convert wchar to utf-8 which is what ffmpeg wants...
+        int numChars = WideCharToMultiByte(CP_UTF8,0,  path.chars,-1,  0,0,  0,0);
+        char *utf8path = (char*)malloc(numChars*sizeof(char));
+        WideCharToMultiByte(CP_UTF8,0,  path.chars,-1,  utf8path,numChars*sizeof(char),  0,0);
+
+        AVFormatContext *vfc = avformat_alloc_context(); // needs avformat_free_context
+        int open_result1 = avformat_open_input(&vfc, utf8path, 0, 0); // needs avformat_close_input
+
+        free(utf8path);
+
+
+        if (open_result1 != 0) {
+            PRINT("Unable to load a format context...\n");
+            char averr[1024];
+            av_strerror(open_result1, averr, 1024);
+            char msg[2048];
+            sprintf(msg, "ffmpeg: Can't open file: %s\n", averr);
+            PRINT(msg);
+            return;
+        }
+
+
+        // populate fc->streams
+        if (avformat_find_stream_info(vfc, 0) < 0) {
+            PRINT("ffmpeg: Can't find stream info in file.");
+            return;
+        }
+
+        // this must be sending to stdout or something? (not showing up anywhere)
+        // av_dump_format(vfc, 0, videopath, 0);
+
+        // todo: use av_find_best_stream?
+        int video_index = -1;
+        for (int i = 0; i < vfc->nb_streams; i++) {
+            if (vfc->streams[i]->codec->codec_type==AVMEDIA_TYPE_VIDEO) {
+                if (video_index != -1)
+                    PRINT("ffmpeg: More than one video stream!");
+
+                if (video_index == -1)
+                    video_index = i;
+            }
+        }
+
+        if (video_index != -1) {
+            vcc = ffmpeg_open_codec(vfc, video_index);
+        }
+        //todo: handle less than one or more than one of each properly
+
+
+        // edit: this doesn't seem to trigger even on a text file?
+        // if neither, this probably isn't a video file
+        if (video_index == -1) {
+            PRINT("ffmpeg: No video streams in file.");
+            return;
+        }
+
+        loaded = true;
+    }
+
+
+    // bitmap GetFrame() {
+
+    // }
+
+
+};
+
+
+

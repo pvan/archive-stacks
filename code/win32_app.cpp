@@ -37,8 +37,11 @@ float time_now() {
     return dt * 1000.0f; // return ms
 }
 
+tile_pool tiles; // access from background thread as well
 
 bool running = true;
+
+#include "background.cpp"
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
@@ -148,11 +151,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     // }
 
 
-    tile_pool tiles = tile_pool::empty();
+    tiles = tile_pool::empty();
     for (int i = 0; i < files.count; i++) {
         tiles.add(tile::CreateFromFile(files[i]));
     }
-
     // AddRandomColorToTilePool
     {
         for (int i = 0; i < tiles.count; i++) {
@@ -163,22 +165,14 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             tiles[i].rand_color = col;//rand();
         }
     }
-
     SortTilePoolByDate(&tiles);
-
-    // wchar_t buf2[213];
-    // swprintf(buf2, L"files: %i\n", tiles.count);
-    // OutputDebugStringW(buf2);
-    // for (int i = 0; i < tiles.count; i++) {
-    //     swprintf(buf2, L"%ls\n", tiles[i].fullpath.chars);
-    //     OutputDebugStringW(buf2);
-    //     // MessageBoxW(0,buf2,0,0);
-    // }
-
     ReadTileResolutions(&tiles);
-
     ArrangeTilesInOrder(&tiles, {0,0,(float)cw,(float)ch}); // requires resolutions to be set
 
+
+    // constant-churning loop to load items on screen, and unlod those off the screen
+    LaunchBackgroundLoadingLoop();
+    LaunchBackgroundUnloadingLoop();
 
 
     while(running)
@@ -221,6 +215,17 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
         // arrange every frame, in case window size changed
         ArrangeTilesInOrder(&tiles, {0,0,(float)cw,(float)ch}); // requires resolutions to be set
+
+        for (int i = 0; i < tiles.count; i++) {
+            if (tiles[i].pos.y < ch) {
+                // tile is on screen
+                tiles[i].needs_loading = true;
+                tiles[i].needs_unloading = false;
+            } else {
+                tiles[i].needs_loading = false;
+                tiles[i].needs_unloading = true;
+            }
+        }
 
 
         // render

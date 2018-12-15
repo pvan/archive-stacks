@@ -4,24 +4,55 @@
 struct tile
 {
 
+    // position/shape in list
     v2 pos;
-
     v2 size;
 
-    v2 resolution;
 
-
+    // file data
     string fullpath;
-
     string name;
-
     u64 modifiedTimeSinceLastEpoc;
 
 
+    // media data
+    v2 resolution;
+    ffmpeg_media media;
+    bool needs_loading = false;
+    bool needs_unloading = false;
+    bool is_media_loaded = false;
+
+
+    // debug stuff
     u32 rand_color;
+    u32 red_color = 0xff0000ff;
+
+    void LoadMedia() {
+        if (is_media_loaded) { OutputDebugString("tile media already loaded!\n"); return; }
+        if (fullpath.length < 1) { OutputDebugString("tile media path not set yet!\n"); return; }
+        media.LoadFromFile(fullpath);
+        if (media.loaded) {
+            is_media_loaded = true;
+            needs_loading = false;
+        }
+    }
+
+    void UnloadMedia() {
+        if (!is_media_loaded) { needs_unloading = false; return; } // already unloaded
+        media.Unload();
+        if (media.loaded == false) {
+            is_media_loaded = false;
+            needs_unloading = false;
+        }
+    }
 
     bitmap GetImage() {
-        return { &rand_color, 1, 1 };
+        if (is_media_loaded) {
+            // return media.GetFrame();
+            return { &red_color, 1, 1 };
+        } else {
+            return { &rand_color, 1, 1 };
+        }
     }
 
 
