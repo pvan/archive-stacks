@@ -7,12 +7,14 @@
 #include "types.h"
 #include "v2.cpp"
 #include "string.cpp"
+#include "bitmap.cpp"
 #include "pools.cpp"
 
 #include "win32_icon/icon.h"
 #include "win32_opengl.cpp"
 #include "win32_file.cpp"
 
+#include "ffmpeg.cpp"
 #include "tile.cpp"
 
 #define STB_IMAGE_IMPLEMENTATION
@@ -150,6 +152,17 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         tiles.add(tile::CreateFromFile(files[i]));
     }
 
+    // AddRandomColorToTilePool
+    {
+        for (int i = 0; i < tiles.count; i++) {
+            u32 col = rand() & 0xff;
+            col |= (rand() & 0xff) << 8;
+            col |= (rand() & 0xff) << 16;
+            col |= (rand() & 0xff) << 24;
+            tiles[i].rand_color = col;//rand();
+        }
+    }
+
     SortTilePoolByDate(&tiles);
 
     // wchar_t buf2[213];
@@ -212,6 +225,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
         for (int i = 0; i < tiles.count; i++) {
             quad.set_verts(tiles[i].pos.x, tiles[i].pos.y, tiles[i].size.w, tiles[i].size.h);
+            bitmap img = tiles[i].GetImage(); // check if change before sending to gpu?
+            quad.set_texture(img.data, img.w, img.h);
             quad.render(1);
         }
 

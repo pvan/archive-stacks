@@ -28,6 +28,7 @@ char *vertex_shader = MULTILINE_STRING
         vertUV = aUV;
         vec4 ppp = vec4(aPos.x, aPos.y, 1, 1);
         ppp.xy = (ppp.xy / camera.zw)*2.0 - 1.0;
+        ppp.y *= -1;  // move origin to top
         gl_Position = ppp;
     }
 );

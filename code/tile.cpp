@@ -18,6 +18,13 @@ struct tile
     u64 modifiedTimeSinceLastEpoc;
 
 
+    u32 rand_color;
+
+    bitmap GetImage() {
+        return { &rand_color, 1, 1 };
+    }
+
+
     static tile CreateFromFile(string path) {
         tile newTile = {0};
         assert(win32_PathExists(path));
@@ -66,9 +73,13 @@ void SortTilePoolByDate(tile_pool *pool)
     }
 }
 
-void ReadTileResolutions(tile_pool *pool) {
 
-
+void ReadTileResolutions(tile_pool *pool)
+{
+    for (int i = 0; i < pool->count; i++) {
+        tile& t = pool->pool[i];
+        t.resolution = GetResolution(t.fullpath);
+    }
 
 }
 
