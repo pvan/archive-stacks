@@ -1,0 +1,5 @@
+#include "icon.h"
+
+ID_ICON ICON resources\icon.ico
+
+
