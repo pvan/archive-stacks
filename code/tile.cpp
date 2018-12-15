@@ -78,25 +78,30 @@ void ReadTileResolutions(tile_pool *pool)
 {
     for (int i = 0; i < pool->count; i++) {
         tile& t = pool->pool[i];
-        t.resolution = GetResolution(t.fullpath);
+        t.resolution = ffmpeg_GetResolution(t.fullpath);
     }
-
 }
 
-void ArrangeTilesInOrder(tile_pool *pool) {
 
-        // // COLS (W = 100)
-        // float tagPanelW = 0;
-        // float tagPanelH = 0;
-        // Rect destPanel = {tagPanelW, 0, (float)cw-tagPanelW, (float)ch-tagPanelH};
+void CalcWidthToFit(float desired_image_width, int container_width,
+                    float *real_width, int *number_of_columns) {
+    float img_width = desired_image_width;
+    if (img_width < 1) img_width = 1;
+    if (img_width > 2000) img_width = 2000;
 
-        // float gap = 0;
-        // float realColWidthWithGap;
-        // int cols;
-        // CalcWidthToFit(MASTER_IMG_WIDTH, destPanel.w, gap, &realColWidthWithGap, &cols);
-        // REAL_WIDTH = realColWidthWithGap-gap;
+    int cols = container_width / img_width;
+    if (cols < 1) cols = 1;
+    *real_width = (float)(container_width) / (float)cols;
+    *number_of_columns = cols;
+}
 
-        int cols = 3;
+void ArrangeTilesInOrder(tile_pool *pool, rect destination_rect) {
+
+        float MASTER_IMG_WIDTH = 100; // todo: pass as input, affected by zoom
+
+        float realWidth;
+        int cols;
+        CalcWidthToFit(MASTER_IMG_WIDTH, destination_rect.w, &realWidth, &cols);
 
         float *colbottoms = (float*)malloc(cols*sizeof(float));
         for (int c = 0; c < cols; c++)
@@ -108,20 +113,16 @@ void ArrangeTilesInOrder(tile_pool *pool) {
 
             float aspect_ratio = thisTile.resolution.w / thisTile.resolution.h;
 
-            thisTile.size.w = 100;
-            thisTile.size.h = 100 / aspect_ratio;
+            thisTile.size.w = realWidth;
+            thisTile.size.h = realWidth / aspect_ratio;
 
             int shortestCol = 0;
             for (int c = 1; c < cols; c++)
                 if (colbottoms[c] < colbottoms[shortestCol])
                     shortestCol = c;
 
-            float x = shortestCol * 100;
+            float x = shortestCol * realWidth;
             float y = colbottoms[shortestCol];
-
-            // float x = (shortestCol * realColWidthWithGap) + gap;
-            // float y = colbottoms[shortestCol] + gap;
-            // float calcH = realColWidthWithGap / aspect_ratio;
 
             thisTile.pos = {x, y};
 

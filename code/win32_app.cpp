@@ -6,6 +6,7 @@
 
 #include "types.h"
 #include "v2.cpp"
+#include "rect.cpp"
 #include "string.cpp"
 #include "bitmap.cpp"
 #include "pools.cpp"
@@ -176,7 +177,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     ReadTileResolutions(&tiles);
 
-    ArrangeTilesInOrder(&tiles); // requires resolutions to be set
+    ArrangeTilesInOrder(&tiles, {0,0,(float)cw,(float)ch}); // requires resolutions to be set
 
 
 
@@ -217,6 +218,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 
         // main_loop(actual_dt);
+
+        // arrange every frame, in case window size changed
+        ArrangeTilesInOrder(&tiles, {0,0,(float)cw,(float)ch}); // requires resolutions to be set
 
 
         // render

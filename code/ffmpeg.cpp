@@ -35,7 +35,7 @@ AVCodecContext *ffmpeg_open_codec(AVFormatContext *fc, int streamIndex)
 
 #define PRINT(msg) { OutputDebugString(msg); }
 
-v2 GetResolution(string path)
+v2 ffmpeg_GetResolution(string path)
 {
     // // special case to skip text files for now,
     // // ffmpeg likes to eat these up and then our code doesn't know what to do with them
