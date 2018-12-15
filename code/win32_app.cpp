@@ -219,7 +219,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         // main_loop(actual_dt);
 
 
-
         // render
         opengl_clear();
 
