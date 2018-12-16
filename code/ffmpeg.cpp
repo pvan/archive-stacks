@@ -18,6 +18,54 @@ extern "C"
 
 
 
+#define PRINT(msg) { OutputDebugString(msg); }
+
+
+
+// The flush packet is a non-NULL packet with size 0 and data NULL
+void ffmpeg_decode(AVCodecContext *avctx, AVFrame *frame, bool *got_frame, AVPacket *pkt)
+{
+    // *got_frame = false;
+
+    // int ret = avcodec_send_packet(avctx, pkt);
+    // if (ret < 0) {
+    //     PRINT("ffmpeg: Error sending a packet for decoding\n");
+    //     return;
+    // }
+
+    // while (ret >= 0) {
+    //     ret = avcodec_receive_frame(avctx, frame);
+    //     if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
+    //         return;
+    //     else if (ret < 0) {
+    //         PRINT("ffmpeg: Error during decoding\n");
+    //         return;
+    //     }
+
+    // }
+    // *got_frame = true;
+
+    // int ret;
+
+    // *got_frame = false;
+
+    // if (pkt) {
+    //     ret = avcodec_send_packet(avctx, pkt);
+    //     // In particular, we don't expect AVERROR(EAGAIN), because we read all
+    //     // decoded frames with avcodec_receive_frame() until done.
+    //     if (ret < 0)
+    //         return ret == AVERROR_EOF ? 0 : ret;
+    // }
+
+    // ret = avcodec_receive_frame(avctx, frame);
+    // if (ret < 0 && ret != AVERROR(EAGAIN) && ret != AVERROR_EOF)
+    //     return ret;
+    // if (ret >= 0)
+    //     *got_frame = true;
+
+    // return 0;
+}
+
 
 AVCodecContext *ffmpeg_open_codec(AVFormatContext *fc, int streamIndex)
 {
@@ -33,7 +81,6 @@ AVCodecContext *ffmpeg_open_codec(AVFormatContext *fc, int streamIndex)
     return result;
 }
 
-#define PRINT(msg) { OutputDebugString(msg); }
 
 v2 ffmpeg_GetResolution(string path)
 {
@@ -129,7 +176,9 @@ v2 ffmpeg_GetResolution(string path)
 }
 
 
-
+void ffmpeg_init() {
+    av_register_all();  // all formats and codecs
+}
 
 
 // a file loaded by ffmpeg
@@ -139,15 +188,101 @@ struct ffmpeg_media {
     AVFormatContext *vfc;
     AVCodecContext *vcc;
 
+    struct SwsContext *sws_context; // will be unique to the particular input/output size wanted
+    AVFrame *out_frame; // output buffer, basically
+    u8 *out_frame_mem; // memory to use with out_frame
+    int out_frame_wid;
+    int out_frame_hei;
+
     bool loaded = false;
+
+    bool getting_frame_lock = false; // wait until false before unloading item
+
+
+    // these set up the output chain, basically
+    // the sws_context needed for the sws_scale call that converts the (probablly planar YUV) default format to the RGB we want
+    // and the out_frame AVFrame we use just to write to with the sws_scale call
+    // todo: these two should only ever be called together, combine?
+    void SetupSwsContex(int w, int h)
+    {
+        if (sws_context) sws_freeContext(sws_context);
+
+        sws_context = {0};
+
+        if (vcc)
+        {
+            // add this workaround to bypass sws_scale's no-resize special case
+            // that seems to be causing extra band on right when width isn't multiple of 8
+            // can non-multiple of 8 height also cause this?
+            // more info here: https://lists.ffmpeg.org/pipermail/libav-user/2012-July/002451.html
+            // the other thing that seems to be unique to vids with the extra bar
+            // is a linesize[0] > width in the codecContext and the decoded frame linesize similarly larger
+            int non_multiple_of_8_workaround = 0;
+            if (w % 8 != 0)
+                non_multiple_of_8_workaround = SWS_ACCURATE_RND;
+
+            sws_context = sws_getCachedContext(
+                sws_context,
+                vcc->width,
+                vcc->height,
+                vcc->pix_fmt,
+                w,
+                h,
+                AV_PIX_FMT_RGB32,
+                non_multiple_of_8_workaround |
+                SWS_POINT,  // since src & dst should be the same size, just use linear
+                0, 0, 0);
+        }
+    }
+    void SetupFrameOutput(int w, int h)
+    {
+        if (out_frame) av_frame_free(&out_frame);
+        out_frame = av_frame_alloc();  // just metadata
+
+        if (!out_frame) {
+            PRINT("ffmpeg: Couldn't alloc output frame");
+            return;
+        }
+
+        // actual mem for frame
+        // int numBytes = avpicture_get_size(AV_PIX_FMT_RGB32, w,h); //deprecated
+        int numBytes = av_image_get_buffer_size(AV_PIX_FMT_RGB32, w,h,1);
+        if (out_frame_mem) av_free(out_frame_mem);
+        out_frame_mem = (u8*)av_malloc(numBytes);
+
+        out_frame->width = w;
+        out_frame->height = h;
+
+        // set up frame to use buffer memory...
+        av_image_fill_arrays(
+            out_frame->data,
+            out_frame->linesize,
+            out_frame_mem,
+            AV_PIX_FMT_RGB32,
+            w, h, 1);
+
+        out_frame_wid = w;
+        out_frame_hei = h;
+    }
+
 
 
     void Unload() {
         if (loaded) {
+            if (getting_frame_lock) return; // try again next frame
             avcodec_free_context(&vcc);
             avformat_close_input(&vfc);
             avformat_free_context(vfc);
+            if (sws_context) sws_freeContext(sws_context);
+            if (out_frame) av_frame_free(&out_frame);
+            if (out_frame_mem) av_free(out_frame_mem);
+            vcc = 0;
+            vfc = 0;
+            sws_context = 0;
+            out_frame = 0;
+            out_frame_mem = 0;
             loaded = false;
+            // PRINT("unloaded media successfully\n");
         }
     }
 
@@ -162,7 +297,7 @@ struct ffmpeg_media {
         char *utf8path = (char*)malloc(numChars*sizeof(char));
         WideCharToMultiByte(CP_UTF8,0,  path.chars,-1,  utf8path,numChars*sizeof(char),  0,0);
 
-        AVFormatContext *vfc = avformat_alloc_context(); // needs avformat_free_context
+        vfc = avformat_alloc_context(); // needs avformat_free_context
         int open_result1 = avformat_open_input(&vfc, utf8path, 0, 0); // needs avformat_close_input
 
         free(utf8path);
@@ -213,13 +348,129 @@ struct ffmpeg_media {
             return;
         }
 
+        float width = vcc->width;
+        float height = vcc->height;
+
+        SetupSwsContex(width, height);   // width/height here depend on metadata being populated first
+        SetupFrameOutput(width, height);
+
         loaded = true;
     }
 
 
-    // bitmap GetFrame() {
 
-    // }
+    bitmap cached_frame;
+    bool alreadygotone = false;
+
+    bitmap GetFrame() {
+        if (!vfc)  {
+            bitmap result = {0};
+            return result;
+        }
+        if (alreadygotone)
+            return cached_frame;
+
+        getting_frame_lock = true;
+
+        // bitmap result = {0};
+        AVFrame *frame = av_frame_alloc();  // just metadata
+        AVPacket packet;
+        av_init_packet(&packet);
+
+        send_another_packet:
+        int ret = av_read_frame(vfc, &packet);  // for video, i think always 1packet=1frame
+
+        // if (ret == AVERROR_EOF) {
+        //     avcodec_send_packet(vcc, 0); // flush packet
+        //     avcodec_receive_frame(vcc, frame);
+        //     avcodec_flush_buffers(vcc);
+        // }
+
+        if (ret < 0 && ret != AVERROR(EAGAIN)) {
+            PRINT("ffmpeg: error reading packet\n");
+        }
+        // if (ret < 0 && ret != AVERROR_EOF) {
+        //     PRINT("ffmpeg: error getting packet\n");
+        // } else {
+        //     if (ret == AVERROR_EOF) { packet->size = 0; packet->data = 0; } // flush packet
+
+            ret = avcodec_send_packet(vcc, &packet);
+        //     if (ret != AVERROR(EAGAIN)) goto: send_another_packet;
+        // }
+        if (ret < 0 && ret != AVERROR(EAGAIN)) {
+            PRINT("ffmpeg: error sending packet\n");
+        }
+
+
+        ret = avcodec_receive_frame(vcc, frame);
+        if (ret < 0 && ret != AVERROR(EAGAIN)) {
+            PRINT("ffmpeg: error receiving frame\n");
+        }
+        // if (ret < 0 && ret != AVERROR(EAGAIN) && ret != AVERROR_EOF)
+        //     //error decoding
+        if (ret == 0)
+        {
+            sws_scale(
+                sws_context,
+                (u8**)frame->data,
+                frame->linesize,
+                0,
+                frame->height,
+                out_frame->data,
+                out_frame->linesize);
+        }
+
+
+        // send_another_packet:
+        // int ret = av_read_frame(vfc, packet);  // for video, i think always 1packet=1frame
+        // if (ret >= 0)// || ret == AVERROR_EOF)
+        // {
+        //     // if (ret == AVERROR_EOF) { packet->size = 0; packet->data = 0; } // flush packet
+
+        //     bool got_frame = false;
+        //     ffmpeg_decode(vcc, frame, &got_frame, packet);
+        //     if (got_frame) {
+
+        //         sws_scale(
+        //             sws_context,
+        //             (u8**)frame->data,
+        //             frame->linesize,
+        //             0,
+        //             frame->height,
+        //             out_frame->data,
+        //             out_frame->linesize);
+
+        //     }
+        //     else {
+        //         OutputDebugString("ffmpeg: couldn't get frame!\n");
+        //         // goto send_another_packet;  //need this?
+        //     }
+        // }
+
+        av_packet_unref(&packet);
+        av_frame_free(&frame);
+
+        bitmap bitmap_in_ffmpeg_memory = {0};
+        // bitmap_in_ffmpeg_memory.data = (u32*)out_frame->data; // doesn't work when we try to copy
+        // bitmap_in_ffmpeg_memory.w = out_frame->width;
+        // bitmap_in_ffmpeg_memory.h = out_frame->height;
+        bitmap_in_ffmpeg_memory.data = (u32*)out_frame_mem;
+        bitmap_in_ffmpeg_memory.w = out_frame_wid;
+        bitmap_in_ffmpeg_memory.h = out_frame_hei;
+
+
+        // i feel like copying this is not ideal
+        // esp since we already remixed it to get it into rgb
+        // maybe we could somehow pass the remixed directly to gpu
+        // before it gets freed or overwritten.. hmm
+        cached_frame = bitmap_in_ffmpeg_memory.NewCopy();
+
+        alreadygotone = true;
+
+        getting_frame_lock = false;
+
+        return cached_frame;
+    }
 
 
 };

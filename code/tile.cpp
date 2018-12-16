@@ -48,8 +48,8 @@ struct tile
 
     bitmap GetImage() {
         if (is_media_loaded) {
-            // return media.GetFrame();
-            return { &red_color, 1, 1 };
+            return media.GetFrame();
+            // return { &red_color, 1, 1 };
         } else {
             return { &rand_color, 1, 1 };
         }

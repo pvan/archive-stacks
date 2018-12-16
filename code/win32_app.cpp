@@ -90,6 +90,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     opengl_resize_if_change(cw, ch);
 
 
+    ffmpeg_init();
+
+
     float target_fps = 30;
     float target_ms_per_frame = (1.0f / target_fps) * 1000.0f;
     time_init();
@@ -219,7 +222,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         for (int i = 0; i < tiles.count; i++) {
             if (tiles[i].pos.y < ch) {
                 // tile is on screen
-                tiles[i].needs_loading = true;
+                tiles[i].needs_loading = true;    // could use one flag "is_on_screen" just as easily probably
                 tiles[i].needs_unloading = false;
             } else {
                 tiles[i].needs_loading = false;
@@ -232,11 +235,14 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         opengl_clear();
 
         for (int i = 0; i < tiles.count; i++) {
-            quad.set_verts(tiles[i].pos.x, tiles[i].pos.y, tiles[i].size.w, tiles[i].size.h);
-            bitmap img = tiles[i].GetImage(); // check if change before sending to gpu?
-            quad.set_texture(img.data, img.w, img.h);
-            quad.render(1);
+            if (tiles[i].pos.y < ch) { // only render if on screen
+                quad.set_verts(tiles[i].pos.x, tiles[i].pos.y, tiles[i].size.w, tiles[i].size.h);
+                bitmap img = tiles[i].GetImage(); // check if change before sending to gpu?
+                quad.set_texture(img.data, img.w, img.h);
+                quad.render(1);
+            }
         }
+
 
         // quad.set_pos(0,0);
         // quad.render(1);
