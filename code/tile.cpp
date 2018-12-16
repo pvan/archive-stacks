@@ -49,6 +49,8 @@ struct tile
     bitmap GetImage() {
         if (is_media_loaded) {
             return media.GetFrame();
+
+            // bitmap test = media.GetFrame();
             // return { &red_color, 1, 1 };
         } else {
             return { &rand_color, 1, 1 };
@@ -128,7 +130,7 @@ void CalcWidthToFit(float desired_image_width, int container_width,
 
 void ArrangeTilesInOrder(tile_pool *pool, rect destination_rect) {
 
-        float MASTER_IMG_WIDTH = 100; // todo: pass as input, affected by zoom
+        float MASTER_IMG_WIDTH = 200; // todo: pass as input, affected by zoom
 
         float realWidth;
         int cols;

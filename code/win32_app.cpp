@@ -238,7 +238,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             if (tiles[i].pos.y < ch) { // only render if on screen
                 quad.set_verts(tiles[i].pos.x, tiles[i].pos.y, tiles[i].size.w, tiles[i].size.h);
                 bitmap img = tiles[i].GetImage(); // check if change before sending to gpu?
-                quad.set_texture(img.data, img.w, img.h);
+                quad.set_texture(img.data, img.w, img.h); // looks like passing this every frame isn't going to cut it
+                // quad.set_texture(img.data, 1, 1);
                 quad.render(1);
             }
         }

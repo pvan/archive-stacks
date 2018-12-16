@@ -51,6 +51,7 @@ char *fragment_shader = MULTILINE_STRING
         // fragColor = texture(tex, vertUV);
         // fragColor = texture(tex, vertUV) * color;
         fragColor = texture(tex, vertUV) * vertColor;
+        fragColor.rb = fragColor.br; // swap rb
         fragColor.a = alpha;
         // fragColor = texture(tex, vertUV) * vertColor * color;
         // fragColor = mix(texture(tex, vertUV), vertColor, 0.2);
@@ -219,7 +220,7 @@ struct opengl_quad {
         // create texture
         glGenTextures(1, &texture);
         glBindTexture(GL_TEXTURE_2D, texture);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR); // what to use?
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST); //GL_LINEAR
         // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
         // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
