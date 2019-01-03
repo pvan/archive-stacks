@@ -22,6 +22,7 @@ struct tile
     bool needs_unloading = false;
     bool is_media_loaded = false;
 
+    bool texture_updated_since_last_read = false; // set true when changing texture, false when reading texture
 
     // debug stuff
     u32 rand_color;
@@ -34,6 +35,7 @@ struct tile
         if (media.loaded) {
             is_media_loaded = true;
             needs_loading = false;
+            texture_updated_since_last_read = true;
         }
     }
 
@@ -47,6 +49,7 @@ struct tile
     }
 
     bitmap GetImage() {
+        texture_updated_since_last_read = false;
         if (is_media_loaded) {
             return media.GetFrame();
 

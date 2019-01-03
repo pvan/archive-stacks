@@ -78,7 +78,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     // init timing vars
     // {
-    float target_fps = 30;
+    const float target_fps = 30;
     float target_ms_per_frame = (1.0f / target_fps) * 1000.0f;
     time_init();
     float last_time = time_now();
@@ -90,6 +90,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     // other time metrics
     float metric_max_dt = 0;
+    int metric_dt_history_index = 0;
+    const int METRIC_DT_HISTORY_COUNT = target_fps * 2/*seconds of history*/;
+    float metric_dt_history[METRIC_DT_HISTORY_COUNT] = {0};
     // }
 
     WNDCLASS wc = {0};
@@ -197,6 +200,15 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     ArrangeTilesInOrder(&tiles, {0,0,(float)cw,(float)ch}); // requires resolutions to be set
 
 
+    int display_quad_count = 0;
+    const int MAX_DISPLAY_QUADS = 100;
+    opengl_quad display_quads[MAX_DISPLAY_QUADS];
+    int display_quad_tile_index[MAX_DISPLAY_QUADS]; // tile[display_quad_tile_index[i]] goes with display_quads[i]
+    for (int i = 0; i < MAX_DISPLAY_QUADS; i++) {
+        display_quads[i].create(0,0,1,1);
+    }
+
+
     // constant-churning loop to load items on screen, and unlod those off the screen
     LaunchBackgroundLoadingLoop();
     LaunchBackgroundUnloadingLoop();
@@ -225,8 +237,21 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         float actual_dt = time_now() - last_time;
         last_time = time_now();
 
-        if (measured_first_frame_time) // don't count first frame
-            if (actual_dt > metric_max_dt) metric_max_dt = actual_dt;
+        // if (measured_first_frame_time) { // don't count first frame
+        //     metric_dt_history[metric_dt_history_index++] = actual_dt;
+        // }
+        // if (metric_dt_history_index > METRIC_DT_HISTORY_COUNT) metric_dt_history_index = 0;
+        // for (int i = 0; i < METRIC_DT_HISTORY_COUNT; i++) {
+        //     if (metric_dt_history[i] > metric_max_dt) {
+        //         metric_max_dt = metric_dt_history[i];
+        //     }
+        // }
+        // if (measured_first_frame_time) { // don't count first frame
+        //     if (actual_dt > metric_max_dt) {
+        //         metric_max_dt = actual_dt;
+        //         metric_max_dt_time = time_now();
+        //     }
+        // }
 
         // static float t = 0; t+=0.016;
         // static float r = 0; r = (cos(t *2*3.1415)+1)/2;
@@ -260,18 +285,76 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         // render
         opengl_clear();
 
-        for (int i = 0; i < tiles.count; i++) {
-            if (tiles[i].pos.y < ch) { // only render if on screen
-                quad.set_verts(tiles[i].pos.x, tiles[i].pos.y, tiles[i].size.w, tiles[i].size.h);
-                bitmap img = tiles[i].GetImage(); // check if change before sending to gpu?
-                quad.set_texture(img.data, img.w, img.h); // looks like passing this every frame isn't going to cut it
-                // quad.set_texture(img.data, 1, 1);
-                quad.render(1);
+
+        for (int tileI = 0; tileI < tiles.count; tileI++) {
+            if (tiles[tileI].pos.y < ch) { // only render if on screen
+
+                // trying to use quad list here so we can reuse textures each frame
+
+                int existing_quad_index = -1;
+                for (int displayI = 0; displayI < display_quad_count; displayI++) {
+                    if (display_quad_tile_index[displayI] == tileI) { // tile already has a quad
+                        existing_quad_index = displayI;
+                        break;
+                    }
+                }
+                if (existing_quad_index != -1) { // tile already has a quad
+                    display_quads[existing_quad_index].set_verts(tiles[tileI].pos.x, tiles[tileI].pos.y, tiles[tileI].size.w, tiles[tileI].size.h);
+                    if (tiles[tileI].texture_updated_since_last_read) {
+                        bitmap img = tiles[tileI].GetImage(); // check if change before sending to gpu?
+                        display_quads[existing_quad_index].set_texture(img.data, img.w, img.h);
+                    }
+                    display_quads[existing_quad_index].render(1);
+                }
+                else { // new quad needed, create here
+                    int new_quad_index = display_quad_count;
+                    display_quad_count++;
+                    display_quad_tile_index[new_quad_index] = tileI;
+
+                    display_quads[new_quad_index].set_verts(tiles[tileI].pos.x, tiles[tileI].pos.y, tiles[tileI].size.w, tiles[tileI].size.h);
+                    bitmap img = tiles[tileI].GetImage(); // check if change before sending to gpu?
+                    display_quads[new_quad_index].set_texture(img.data, img.w, img.h);
+                    display_quads[new_quad_index].render(1);
+                }
+
+
+                // quad.set_verts(tiles[i].pos.x, tiles[i].pos.y, tiles[i].size.w, tiles[i].size.h);
+                // bitmap img = tiles[i].GetImage(); // check if change before sending to gpu?
+                // quad.set_texture(img.data, img.w, img.h); // looks like passing this every frame isn't going to cut it
+                // // quad.set_texture(img.data, 1, 1);
+                // quad.render(1);
+
             }
         }
 
+        // look through display quads to see if any are offscreen
+        // we loop through this list rather than (1) checking the tiles or
+        // (2) embedding this check in the existing tile loop
+        // because typically there will be less display quads than tiles
+        int display_quad_indices_to_remove[100];
+        int display_quad_remove_count = 0;
+        for (int displayI = 0; displayI < display_quad_count; displayI++) {
+            if (tiles[display_quad_tile_index[displayI]].pos.y >= ch) { // check if this display quad tile is offscreen
+                display_quad_indices_to_remove[display_quad_remove_count++] = displayI;
+            }
+        }
+        for (int i = display_quad_remove_count-1; i >= 0; i--) {
+            // replace deleted with last item (note this still works if we are removing the last item
+            display_quads[display_quad_indices_to_remove[i]] = display_quads[display_quad_count-1];
+            display_quad_count--;
+        }
+
+
         // debug display metrics
         {
+
+            static int debug_pip_count = 0;
+            debug_pip_count = (debug_pip_count+1) % 32;
+            char debug_pip_string[32 +1/*null terminator*/] = {0};
+            for (int i = 0; i < 32; i++) { debug_pip_string[i] = '.'; }
+            debug_pip_string[debug_pip_count] = ':';
+            HUDPRINT(debug_pip_string);
+
             HUDPRINT("dt: %f", actual_dt);
 
             HUDPRINT("max dt: %f", metric_max_dt);
@@ -283,6 +366,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                 if (tiles[i].media.loaded) metric_media_loaded++;
             }
             HUDPRINT("media loaded: %i", metric_media_loaded);
+
+            HUDPRINT("used display quads: %i", display_quad_count);
 
             HUDPRINTRESET();
 

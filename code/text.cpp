@@ -138,7 +138,32 @@ bitmap ttf_create_bitmap(char *text, int fsize, float alpha, bool centerH, bool 
     }
 
 
+    // trim blank pixel columns
+    bool found_first_non_blank = false;
+    int first_non_blank_column = 0;
+    int last_non_blank_column = 0;
+    for (int px = 0; px < bitmapW; px++) {
+        for (int py = 0; py < bitmapH; py++) {
+            if (gray_bitmap[py*bitmapW + px] != 0) {
+                if (!found_first_non_blank) { first_non_blank_column = px; found_first_non_blank = true; }
+                last_non_blank_column = px;
+                break; // next column
+            }
+        }
+    }
+
+    // for now leave a 2px border on each side
+    first_non_blank_column -= 2; if (first_non_blank_column<0) first_non_blank_column = 0;
+    last_non_blank_column += 2; if (last_non_blank_column>bitmapW) last_non_blank_column = bitmapW;
+
+    int sourceW = bitmapW;
+    bitmapW = (last_non_blank_column - first_non_blank_column) +1; // +1 to get correct width (width that includes both indices)
+
+    // first_non_blank_column = 0;
+    // bitmapW += 4; // 2 front 2 back
+
     u8 *color_temp_bitmap = (u8*)malloc(bitmapW * bitmapH * 4);
+    // for (int px = 0; px < bitmapW; px++)
     for (int px = 0; px < bitmapW; px++)
     {
         for (int py = 0; py < bitmapH; py++)
@@ -147,10 +172,12 @@ bitmap ttf_create_bitmap(char *text, int fsize, float alpha, bool centerH, bool 
             u8 *g = color_temp_bitmap + ((py*bitmapW)+px)*4 + 1;
             u8 *b = color_temp_bitmap + ((py*bitmapW)+px)*4 + 2;
             u8 *a = color_temp_bitmap + ((py*bitmapW)+px)*4 + 3;
-            *r = *(gray_bitmap + ((py*bitmapW)+px));
-            *g = *(gray_bitmap + ((py*bitmapW)+px));
-            *b = *(gray_bitmap + ((py*bitmapW)+px));
-            *a = *(gray_bitmap + ((py*bitmapW)+px));
+
+            int sx = px + first_non_blank_column;
+            *r = *(gray_bitmap + ((py*sourceW)+sx));
+            *g = *(gray_bitmap + ((py*sourceW)+sx));
+            *b = *(gray_bitmap + ((py*sourceW)+sx));
+            *a = *(gray_bitmap + ((py*sourceW)+sx));
             if (bgA != 0) *a = bgA;
             // *a = 255;
         }
