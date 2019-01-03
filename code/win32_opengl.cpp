@@ -202,6 +202,20 @@ struct opengl_quad {
     bool texture_created = false;
     bool created = false;
 
+    // void set_verts_raw(float x1,float y1, float x2,float y2, float x3,float y3,float x4,float y4) {
+    //     cached_w = 1;
+    //     cached_h = 1;
+    //     float verts[] = {
+    //         // pos   // col   // uv
+    //         x1,y1,   1,1,1,   0.0f, 0.0f,
+    //         x2,y2,   1,1,1,   0.0f, 1.0f,
+    //         x4,y4,   1,1,1,   1.0f, 0.0f,
+    //         x3,y3,   1,1,1,   1.0f, 1.0f,
+    //     };
+    //     glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    //     glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STATIC_DRAW);
+    // }
+
     void set_verts(float x, float y, float w, float h) {
         cached_w = w;
         cached_h = h;
@@ -238,7 +252,7 @@ struct opengl_quad {
     }
 
     void create(float x, float y, float w, float h) {
-
+        if (created) return;
         // float verts[] = {
         //     // pos   // col
         //     x,y,     1,0,0,
@@ -273,7 +287,8 @@ struct opengl_quad {
 
     void render(float a = 1) {
 
-        glGenVertexArrays(1, &vao); // call in case we've switched vaos in the mean time
+        // glGenVertexArrays(1, &vao); // call in case we've switched vaos in the mean time
+        glBindVertexArray(vao); // has all our attribute info (et al?) tied to it
 
         // GLuint loc_color = glGetUniformLocation(shader_program, "color");
         // glUniform4f(loc_color, r,g,b,a);
@@ -286,6 +301,41 @@ struct opengl_quad {
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
     }
 };
+
+// #include "../lib/stb_easy_font.h"
+
+// // opengl_quad text_quad;
+// u32 text_colorW = 0xffffffff;
+// u32 text_colorB = 0xff000000;
+// struct easy_font_vert { float x, y, z; u8 col[4]; };
+
+// void opengl_print_string(float x, float y, char *text, float r, float g, float b, opengl_quad q)
+// {
+//     static char buffer[99999]; // ~500 chars
+//     int num_quads = stb_easy_font_print(x, y, text, NULL, buffer, sizeof(buffer));
+
+//     // only need to call once..
+//     // text_quad.create(0,0,1,1);
+//     stb_easy_font_spacing(-0.5);
+
+//     float s = 3;
+
+//     easy_font_vert *verts = (easy_font_vert*)buffer;
+//     for (int i = 0; i < num_quads*4; i+=4) {
+//         easy_font_vert v1 = verts[i];
+//         easy_font_vert v2 = verts[i+1];
+//         easy_font_vert v3 = verts[i+2];
+//         easy_font_vert v4 = verts[i+3];
+
+//         q.set_verts_raw(v1.x*s,v1.y*s, v2.x*s,v2.y*s, v3.x*s,v3.y*s, v4.x*s,v4.y*s);
+//         q.set_texture(&text_colorB, 1, 1);
+//         q.render(1);
+
+//         // q.set_verts_raw(v1.x*s+1,v1.y*s-1, v2.x*s-1,v2.y*s-1, v3.x*s-1,v3.y*s+1, v4.x*s+1,v4.y*s+1);
+//         // q.set_texture(&text_colorW, 1, 1);
+//         // q.render(1);
+//     }
+// }
 
 void opengl_clear() {
     glClearColor(0, 0.5, 0.7, 1);

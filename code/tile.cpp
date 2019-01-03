@@ -85,7 +85,7 @@ struct tile
 DEFINE_TYPE_POOL(tile);  // missing "tile_pile" opportunity here
 
 
-// although pools don't really have any guaranteed static order, we put one in order here anyway
+// although our pools aren't intended to have any guaranteed static order, we put one in order here anyway
 void SortTilePoolByDate(tile_pool *pool)
 {
     for (int d = 0; d < pool->count-1; d++) {

@@ -4,7 +4,18 @@
 #include <assert.h>
 #include <math.h>
 
+
 #include "types.h"
+
+char debugprintbuffer[256];
+void DEBUGPRINT(int i) { sprintf(debugprintbuffer, "%i\n", i); OutputDebugString(debugprintbuffer); }
+void DEBUGPRINT(u64 ui) { sprintf(debugprintbuffer, "%lli\n", ui); OutputDebugString(debugprintbuffer); }
+void DEBUGPRINT(float f) { sprintf(debugprintbuffer, "%f\n", f); OutputDebugString(debugprintbuffer); }
+void DEBUGPRINT(char *s) { sprintf(debugprintbuffer, "%s\n", s); OutputDebugString(debugprintbuffer); }
+void DEBUGPRINT(char *s, int i) { sprintf(debugprintbuffer, s, i); OutputDebugString(debugprintbuffer); }
+void DEBUGPRINT(char *s, char *s2) { sprintf(debugprintbuffer, s, s2); OutputDebugString(debugprintbuffer); }
+void DEBUGPRINT(char *s, float f) { sprintf(debugprintbuffer, s, f); OutputDebugString(debugprintbuffer); }
+
 #include "v2.cpp"
 #include "rect.cpp"
 #include "string.cpp"
@@ -17,9 +28,11 @@
 
 #include "ffmpeg.cpp"
 #include "tile.cpp"
+#include "text.cpp"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "../lib/stb_image.h"
+
 
 
 LARGE_INTEGER time_freq;
@@ -63,6 +76,22 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     timeBeginPeriod(1); // set resolution of sleep
 
+    // init timing vars
+    // {
+    float target_fps = 30;
+    float target_ms_per_frame = (1.0f / target_fps) * 1000.0f;
+    time_init();
+    float last_time = time_now();
+
+    // startup timing metrics
+    float metric_time_to_first_frame = 0;
+    float time_at_startup = time_now();
+    bool measured_first_frame_time = false;
+
+    // other time metrics
+    float metric_max_dt = 0;
+    // }
+
     WNDCLASS wc = {0};
     wc.style = CS_HREDRAW | CS_VREDRAW;
     wc.lpfnWndProc = WndProc;
@@ -92,12 +121,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     ffmpeg_init();
 
-
-    float target_fps = 30;
-    float target_ms_per_frame = (1.0f / target_fps) * 1000.0f;
-    time_init();
-    float last_time = time_now();
-
+    ttf_init();
 
     opengl_quad quad;
     quad.create(0,0,300,200);
@@ -177,7 +201,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     LaunchBackgroundLoadingLoop();
     LaunchBackgroundUnloadingLoop();
 
-
     while(running)
     {
         MSG msg;
@@ -201,6 +224,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         }
         float actual_dt = time_now() - last_time;
         last_time = time_now();
+
+        if (measured_first_frame_time) // don't count first frame
+            if (actual_dt > metric_max_dt) metric_max_dt = actual_dt;
 
         // static float t = 0; t+=0.016;
         // static float r = 0; r = (cos(t *2*3.1415)+1)/2;
@@ -244,6 +270,26 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             }
         }
 
+        // debug display metrics
+        {
+            HUDPRINT("dt: %f", actual_dt);
+
+            HUDPRINT("max dt: %f", metric_max_dt);
+
+            HUDPRINT("ms to first frame: %f", metric_time_to_first_frame);
+
+            int metric_media_loaded = 0;
+            for (int i = 0; i < tiles.count; i++) {
+                if (tiles[i].media.loaded) metric_media_loaded++;
+            }
+            HUDPRINT("media loaded: %i", metric_media_loaded);
+
+            HUDPRINTRESET();
+
+            // char buf[235];
+            // sprintf(buf, "dt: %f\n", actual_dt);
+            // OutputDebugString(buf);
+        }
 
         // quad.set_pos(0,0);
         // quad.render(1);
@@ -253,6 +299,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
         opengl_swap();
 
+        if (!measured_first_frame_time) { metric_time_to_first_frame = time_now() - time_at_startup; measured_first_frame_time = true; }
 
         // Sleep(16); // we set frame rate above right? or should we here?
     }
