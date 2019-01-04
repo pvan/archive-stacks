@@ -26,6 +26,14 @@ struct string
     }
 
 
+    // win32
+    char *ToUTF8() {
+        int numChars = WideCharToMultiByte(CP_UTF8,0,  chars,-1,  0,0,  0,0);
+        char *utf8 = (char*)malloc(numChars*sizeof(char));
+        WideCharToMultiByte(CP_UTF8,0,  chars,-1,  utf8,numChars*sizeof(char),  0,0);
+        return utf8;
+    }
+
 
     static bool Equals(wchar_t *s1, wchar_t *s2) {
         return wcscmp(s1, s2) == 0;

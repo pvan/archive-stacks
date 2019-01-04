@@ -22,6 +22,7 @@ void DEBUGPRINT(char *s, float f) { sprintf(debugprintbuffer, s, f); OutputDebug
 #include "bitmap.cpp"
 #include "pools.cpp"
 
+#include "win32_input.cpp"
 #include "win32_icon/icon.h"
 #include "win32_opengl.cpp"
 #include "win32_file.cpp"
@@ -56,13 +57,36 @@ bool running = true;
 
 #include "background.cpp"
 
+
+int master_scroll_delta = 0;
+
+
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     switch (message)
     {
-        case WM_CLOSE:
+        case WM_CLOSE: {
             running = false;
-            break;
+        } break;
+
+        case WM_MOUSEWHEEL: {
+            float delta = GET_WHEEL_DELTA_WPARAM(wParam);
+            if (GET_KEYSTATE_WPARAM(wParam) & MK_CONTROL) {
+
+            } else {
+                // if (loadItem == -1) {
+                    master_scroll_delta -= delta * 1;
+                // }
+                // else {
+                //     float scaleFactor = 1.2f;
+                //     if (delta < 0) scaleFactor = 0.8f;
+                //     main_media_rect.w *= scaleFactor;
+                //     main_media_rect.h *= scaleFactor;
+                //     main_media_rect.x -= (input.mouseX - main_media_rect.x) * (scaleFactor - 1);
+                //     main_media_rect.y -= (input.mouseY - main_media_rect.y) * (scaleFactor - 1);
+                // }
+            }
+        } break;
     }
     return DefWindowProc(hWnd, message, wParam, lParam);
 }
@@ -92,7 +116,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     float metric_max_dt = 0;
     int metric_dt_history_index = 0;
     const int METRIC_DT_HISTORY_COUNT = target_fps * 2/*seconds of history*/;
-    float metric_dt_history[METRIC_DT_HISTORY_COUNT] = {0};
+    float metric_dt_history[METRIC_DT_HISTORY_COUNT];
+    ZeroMemory(metric_dt_history, METRIC_DT_HISTORY_COUNT*sizeof(float));
     // }
 
     WNDCLASS wc = {0};
@@ -238,18 +263,19 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         last_time = time_now();
 
         // if (measured_first_frame_time) { // don't count first frame
-        //     metric_dt_history[metric_dt_history_index++] = actual_dt;
+            metric_dt_history[metric_dt_history_index++] = actual_dt;
         // }
-        // if (metric_dt_history_index > METRIC_DT_HISTORY_COUNT) metric_dt_history_index = 0;
-        // for (int i = 0; i < METRIC_DT_HISTORY_COUNT; i++) {
-        //     if (metric_dt_history[i] > metric_max_dt) {
-        //         metric_max_dt = metric_dt_history[i];
-        //     }
-        // }
+        if (metric_dt_history_index >= METRIC_DT_HISTORY_COUNT) metric_dt_history_index = 0;
+        metric_max_dt = 0;
+        for (int i = 0; i < METRIC_DT_HISTORY_COUNT; i++) {
+            if (metric_dt_history[i] > metric_max_dt) {
+                metric_max_dt = metric_dt_history[i];
+            }
+        }
+
         // if (measured_first_frame_time) { // don't count first frame
         //     if (actual_dt > metric_max_dt) {
         //         metric_max_dt = actual_dt;
-        //         metric_max_dt_time = time_now();
         //     }
         // }
 
@@ -267,12 +293,26 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
         // main_loop(actual_dt);
 
-        // arrange every frame, in case window size changed
-        ArrangeTilesInOrder(&tiles, {0,0,(float)cw,(float)ch}); // requires resolutions to be set
+
+        // calc input edge triggers
+        static Input last_input = {0};
+        Input input = ReadInput(hwnd);
+        Input keysDown = input_keys_changed(input, last_input);
+        Input keysUp = input_keys_changed(last_input, input);
+        last_input = input;
+
+
+        // position the tiles
+        {
+            // arrange every frame, in case window size changed
+            int tile_height = ArrangeTilesInOrder(&tiles, {0,0,(float)cw,(float)ch}); // requires resolutions to be set
+
+            ShiftTilesBasedOnScrollPosition(&tiles, &master_scroll_delta, keysDown, ch, tile_height);
+        }
+
 
         for (int i = 0; i < tiles.count; i++) {
-            if (tiles[i].pos.y < ch) {
-                // tile is on screen
+            if (tiles[i].IsOnScreen(ch)) {   // tile is on screen
                 tiles[i].needs_loading = true;    // could use one flag "is_on_screen" just as easily probably
                 tiles[i].needs_unloading = false;
             } else {
@@ -287,7 +327,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 
         for (int tileI = 0; tileI < tiles.count; tileI++) {
-            if (tiles[tileI].pos.y < ch) { // only render if on screen
+            if (tiles[tileI].IsOnScreen(ch)) { // only render if on screen
 
                 // trying to use quad list here so we can reuse textures each frame
 
@@ -318,8 +358,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                 }
 
 
-                // quad.set_verts(tiles[i].pos.x, tiles[i].pos.y, tiles[i].size.w, tiles[i].size.h);
-                // bitmap img = tiles[i].GetImage(); // check if change before sending to gpu?
+                // quad.set_verts(tiles[tileI].pos.x, tiles[tileI].pos.y, tiles[tileI].size.w, tiles[tileI].size.h);
+                // bitmap img = tiles[tileI].GetImage(); // check if change before sending to gpu?
                 // quad.set_texture(img.data, img.w, img.h); // looks like passing this every frame isn't going to cut it
                 // // quad.set_texture(img.data, 1, 1);
                 // quad.render(1);
@@ -334,7 +374,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         int display_quad_indices_to_remove[100];
         int display_quad_remove_count = 0;
         for (int displayI = 0; displayI < display_quad_count; displayI++) {
-            if (tiles[display_quad_tile_index[displayI]].pos.y >= ch) { // check if this display quad tile is offscreen
+            if (!tiles[display_quad_tile_index[displayI]].IsOnScreen(ch)) { // check if this display quad tile is offscreen
                 display_quad_indices_to_remove[display_quad_remove_count++] = displayI;
             }
         }
@@ -347,6 +387,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
         // debug display metrics
         {
+            HUDPRINTRESET();
 
             static int debug_pip_count = 0;
             debug_pip_count = (debug_pip_count+1) % 32;
@@ -369,7 +410,28 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
             HUDPRINT("used display quads: %i", display_quad_count);
 
-            HUDPRINTRESET();
+            HUDPRINT("amt off: %i", state_amt_off_anchor);
+
+
+            for (int i = 0; i < tiles.count; i++) {
+                rect tile_rect = {tiles[i].pos.x, tiles[i].pos.y, tiles[i].size.w, tiles[i].size.h};
+                if (tile_rect.ContainsPoint(input.mouseX, input.mouseY)) {
+                    HUDPRINT(tiles[i].name.ToUTF8());
+
+                    for (int displayI = 0; displayI < display_quad_count; displayI++) {
+                        if (
+                            tiles[display_quad_tile_index[displayI]].pos.x == tiles[i].pos.x &&
+                            tiles[display_quad_tile_index[displayI]].pos.y == tiles[i].pos.y &&
+                            tiles[display_quad_tile_index[displayI]].size.w == tiles[i].size.w &&
+                            tiles[display_quad_tile_index[displayI]].size.h == tiles[i].size.h
+                        ) {
+                            HUDPRINT(displayI);
+                        }
+                    }
+
+                }
+            }
+
 
             // char buf[235];
             // sprintf(buf, "dt: %f\n", actual_dt);

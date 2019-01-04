@@ -33,7 +33,7 @@
     } \
     void empty_out() { count = 0; } /*note we keep the allocated memory*/ /*should call it .drain()*/ \
     bool is_empty() { return count==0; } \
-    thetype& operator[] (int i) { assert(i>=0); assert(i<count); return pool[i]; }  /* todo: bounds check */ \
+    thetype& operator[] (int i) { assert(i>=0); assert(i<count); return pool[i]; } \
     static thetype##_pool empty() { thetype##_pool new_blank = {0}; return new_blank;  } \
 };
 
