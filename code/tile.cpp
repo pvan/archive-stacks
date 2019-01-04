@@ -49,10 +49,10 @@ struct tile
         }
     }
 
-    bitmap GetImage() {
+    bitmap GetImage(double dt) {
         texture_updated_since_last_read = false;
         if (is_media_loaded) {
-            return media.GetFrame();
+            return media.GetFrame(dt);
 
             // bitmap test = media.GetFrame();
             // return { &red_color, 1, 1 };

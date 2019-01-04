@@ -359,7 +359,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 
                 quad.set_verts(tiles[tileI].pos.x, tiles[tileI].pos.y, tiles[tileI].size.w, tiles[tileI].size.h);
-                bitmap img = tiles[tileI].GetImage(); // check if change before sending to gpu?
+                bitmap img = tiles[tileI].GetImage(actual_dt); // check if change before sending to gpu?
                 quad.set_texture(img.data, img.w, img.h); // looks like passing this every frame isn't going to cut it
                 // quad.set_texture(img.data, 1, 1);
                 quad.render(1);
@@ -428,6 +428,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                             HUDPRINT(displayI);
                         }
                     }
+
+                    HUDPRINT("fps: %f", (float)tiles[i].media.fps);
+                    HUDPRINT("duration: %f", (float)tiles[i].media.durationSeconds);
 
                 }
             }

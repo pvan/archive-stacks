@@ -187,12 +187,18 @@ struct ffmpeg_media {
 
     AVFormatContext *vfc;
     AVCodecContext *vcc;
+    int video_stream_index = 0;
 
     struct SwsContext *sws_context; // will be unique to the particular input/output size wanted
     AVFrame *out_frame; // output buffer, basically
     u8 *out_frame_mem; // memory to use with out_frame
     int out_frame_wid;
     int out_frame_hei;
+
+    // metadata
+    double fps = 0;
+    double durationSeconds = 0;
+    double totalFrameCount = 0;
 
     bool loaded = false;
 
@@ -325,32 +331,40 @@ struct ffmpeg_media {
         // av_dump_format(vfc, 0, videopath, 0);
 
         // todo: use av_find_best_stream?
-        int video_index = -1;
+        video_stream_index = -1;
         for (int i = 0; i < vfc->nb_streams; i++) {
             if (vfc->streams[i]->codec->codec_type==AVMEDIA_TYPE_VIDEO) {
-                if (video_index != -1)
+                if (video_stream_index != -1)
                     PRINT("ffmpeg: More than one video stream!");
 
-                if (video_index == -1)
-                    video_index = i;
+                if (video_stream_index == -1)
+                    video_stream_index = i;
             }
         }
 
-        if (video_index != -1) {
-            vcc = ffmpeg_open_codec(vfc, video_index);
+        if (video_stream_index != -1) {
+            vcc = ffmpeg_open_codec(vfc, video_stream_index);
         }
         //todo: handle less than one or more than one of each properly
 
 
         // edit: this doesn't seem to trigger even on a text file?
         // if neither, this probably isn't a video file
-        if (video_index == -1) {
+        if (video_stream_index == -1) {
             PRINT("ffmpeg: No video streams in file.");
             return;
         }
 
         float width = vcc->width;
         float height = vcc->height;
+
+        fps = ((double)vcc->time_base.den /
+               (double)vcc->time_base.num) /
+               (double)vcc->ticks_per_frame;
+
+        durationSeconds = vfc->duration / (double)AV_TIME_BASE;
+        totalFrameCount = durationSeconds * fps;
+
 
         SetupSwsContex(width, height);   // width/height here depend on metadata being populated first
         SetupFrameOutput(width, height);
@@ -360,16 +374,16 @@ struct ffmpeg_media {
 
 
 
-    bitmap cached_frame;
-    bool alreadygotone = false;
 
-    bitmap GetFrame() {
+    bitmap GetNextFrame(double *msToPlayThisFrame) {
         if (!vfc)  {
             bitmap result = {0};
             return result;
         }
         // if (alreadygotone)
         //     return cached_frame;
+
+        // double msOfDesiredFrame = msRuntimeSoFar + dt;
 
         getting_frame_lock = true;
 
@@ -378,6 +392,7 @@ struct ffmpeg_media {
         AVPacket packet;
         av_init_packet(&packet);
 
+        get_another_frame:
         send_another_packet:
         int ret = av_read_frame(vfc, &packet);  // for video, i think always 1packet=1frame
 
@@ -413,6 +428,7 @@ struct ffmpeg_media {
         if (ret == AVERROR_EOF) {
             avcodec_flush_buffers(vcc); // i think?
             av_seek_frame(vfc, -1, 0, AVSEEK_FLAG_BACKWARD); // seek to first frame
+            msRuntimeSoFar = 0;
         } else if (ret < 0 && ret != AVERROR(EAGAIN)) {
             char buf[256];
             av_strerror(ret, buf, 256);
@@ -422,6 +438,11 @@ struct ffmpeg_media {
         //     //error decoding
         if (ret == 0)
         {
+            *msToPlayThisFrame = 1000.0 *
+                frame->pts *  // frame->best_effort_timestamp *
+                vfc->streams[video_stream_index]->time_base.num /
+                vfc->streams[video_stream_index]->time_base.den;
+
             sws_scale(
                 sws_context,
                 (u8**)frame->data,
@@ -475,13 +496,43 @@ struct ffmpeg_media {
         // esp since we already remixed it to get it into rgb
         // maybe we could somehow pass the remixed directly to gpu
         // before it gets freed or overwritten.. hmm
-        cached_frame = bitmap_in_ffmpeg_memory.NewCopy();
+        // cached_frame = bitmap_in_ffmpeg_memory.NewCopy();
+        bitmap result_frame = bitmap_in_ffmpeg_memory.NewCopy();
 
-        alreadygotone = true;
+        // alreadygotone = true;
 
         getting_frame_lock = false;
 
-        return cached_frame;
+        // return cached_frame;
+        return result_frame;
+    }
+
+
+    bitmap cached_frame;
+    bool alreadygotone = false;
+
+    double msRuntimeSoFar = 0;
+    double msPerFrame = 0;
+    double msOfLastFrame = 0;
+
+    bitmap GetFrame(double dt) {
+
+        msPerFrame = 1000.0 / fps;
+
+        msRuntimeSoFar += dt;
+        if (msRuntimeSoFar > msOfLastFrame + msPerFrame) {
+            // time to get a new frame
+            double msToPlayThisFrame;
+            free(cached_frame.data);
+            cached_frame = GetNextFrame(&msToPlayThisFrame);
+            msOfLastFrame = msToPlayThisFrame;
+            return cached_frame;
+        } else
+        {
+            // repeat last frame
+            return cached_frame;
+        }
+
     }
 
 
