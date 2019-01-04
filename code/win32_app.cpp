@@ -220,7 +220,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             tiles[i].rand_color = col;//rand();
         }
     }
-    SortTilePoolByDate(&tiles);
+    // SortTilePoolByDate(&tiles);
     ReadTileResolutions(&tiles);
     ArrangeTilesInOrder(&tiles, {0,0,(float)cw,(float)ch}); // requires resolutions to be set
 

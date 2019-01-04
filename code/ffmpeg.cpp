@@ -200,8 +200,9 @@ struct ffmpeg_media {
 
 
     // these set up the output chain, basically
-    // the sws_context needed for the sws_scale call that converts the (probablly planar YUV) default format to the RGB we want
-    // and the out_frame AVFrame we use just to write to with the sws_scale call
+    // the sws_context needed for the sws_scale call
+    // that converts the (probablly planar YUV) default format to the RGB we want
+    // and the out_frame AVFrame we use (just to write to) with the sws_scale call
     // todo: these two should only ever be called together, combine?
     void SetupSwsContex(int w, int h)
     {
@@ -367,8 +368,8 @@ struct ffmpeg_media {
             bitmap result = {0};
             return result;
         }
-        if (alreadygotone)
-            return cached_frame;
+        // if (alreadygotone)
+        //     return cached_frame;
 
         getting_frame_lock = true;
 
@@ -380,14 +381,16 @@ struct ffmpeg_media {
         send_another_packet:
         int ret = av_read_frame(vfc, &packet);  // for video, i think always 1packet=1frame
 
-        // if (ret == AVERROR_EOF) {
-        //     avcodec_send_packet(vcc, 0); // flush packet
-        //     avcodec_receive_frame(vcc, frame);
-        //     avcodec_flush_buffers(vcc);
-        // }
-
-        if (ret < 0 && ret != AVERROR(EAGAIN)) {
-            PRINT("ffmpeg: error reading packet\n");
+        if (ret == AVERROR_EOF) {
+            packet.data = 0; // send null packet
+            packet.size = 0;
+            // avcodec_send_packet(vcc, 0); // flush packet
+            // avcodec_receive_frame(vcc, frame);
+            // avcodec_flush_buffers(vcc);
+        } else if (ret < 0 && ret != AVERROR(EAGAIN)) {
+            char buf[256];
+            av_strerror(ret, buf, 256);
+            DEBUGPRINT("ffmpeg: error reading packet: %s\n", buf);
         }
         // if (ret < 0 && ret != AVERROR_EOF) {
         //     PRINT("ffmpeg: error getting packet\n");
@@ -397,14 +400,23 @@ struct ffmpeg_media {
             ret = avcodec_send_packet(vcc, &packet);
         //     if (ret != AVERROR(EAGAIN)) goto: send_another_packet;
         // }
-        if (ret < 0 && ret != AVERROR(EAGAIN)) {
-            PRINT("ffmpeg: error sending packet\n");
+        if (ret == AVERROR_EOF) {
+
+        } else if (ret < 0 && ret != AVERROR(EAGAIN)) {
+            char buf[256];
+            av_strerror(ret, buf, 256);
+            DEBUGPRINT("ffmpeg: error sending packet: %s\n", buf);
         }
 
 
         ret = avcodec_receive_frame(vcc, frame);
-        if (ret < 0 && ret != AVERROR(EAGAIN)) {
-            PRINT("ffmpeg: error receiving frame\n");
+        if (ret == AVERROR_EOF) {
+            avcodec_flush_buffers(vcc); // i think?
+            av_seek_frame(vfc, -1, 0, AVSEEK_FLAG_BACKWARD); // seek to first frame
+        } else if (ret < 0 && ret != AVERROR(EAGAIN)) {
+            char buf[256];
+            av_strerror(ret, buf, 256);
+            DEBUGPRINT("ffmpeg: error receiving frame: %s\n", buf);
         }
         // if (ret < 0 && ret != AVERROR(EAGAIN) && ret != AVERROR_EOF)
         //     //error decoding
