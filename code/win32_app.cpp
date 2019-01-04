@@ -331,58 +331,58 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
                 // trying to use quad list here so we can reuse textures each frame
 
-                int existing_quad_index = -1;
-                for (int displayI = 0; displayI < display_quad_count; displayI++) {
-                    if (display_quad_tile_index[displayI] == tileI) { // tile already has a quad
-                        existing_quad_index = displayI;
-                        break;
-                    }
-                }
-                if (existing_quad_index != -1) { // tile already has a quad
-                    display_quads[existing_quad_index].set_verts(tiles[tileI].pos.x, tiles[tileI].pos.y, tiles[tileI].size.w, tiles[tileI].size.h);
-                    if (tiles[tileI].texture_updated_since_last_read) {
-                        bitmap img = tiles[tileI].GetImage(); // check if change before sending to gpu?
-                        display_quads[existing_quad_index].set_texture(img.data, img.w, img.h);
-                    }
-                    display_quads[existing_quad_index].render(1);
-                }
-                else { // new quad needed, create here
-                    int new_quad_index = display_quad_count;
-                    display_quad_count++;
-                    display_quad_tile_index[new_quad_index] = tileI;
+                // int existing_quad_index = -1;
+                // for (int displayI = 0; displayI < display_quad_count; displayI++) {
+                //     if (display_quad_tile_index[displayI] == tileI) { // tile already has a quad
+                //         existing_quad_index = displayI;
+                //         break;
+                //     }
+                // }
+                // if (existing_quad_index != -1) { // tile already has a quad
+                //     display_quads[existing_quad_index].set_verts(tiles[tileI].pos.x, tiles[tileI].pos.y, tiles[tileI].size.w, tiles[tileI].size.h);
+                //     if (tiles[tileI].texture_updated_since_last_read) {
+                //         bitmap img = tiles[tileI].GetImage(); // check if change before sending to gpu?
+                //         display_quads[existing_quad_index].set_texture(img.data, img.w, img.h);
+                //     }
+                //     display_quads[existing_quad_index].render(1);
+                // }
+                // else { // new quad needed, create here
+                //     int new_quad_index = display_quad_count;
+                //     display_quad_count++;
+                //     display_quad_tile_index[new_quad_index] = tileI;
 
-                    display_quads[new_quad_index].set_verts(tiles[tileI].pos.x, tiles[tileI].pos.y, tiles[tileI].size.w, tiles[tileI].size.h);
-                    bitmap img = tiles[tileI].GetImage(); // check if change before sending to gpu?
-                    display_quads[new_quad_index].set_texture(img.data, img.w, img.h);
-                    display_quads[new_quad_index].render(1);
-                }
+                //     display_quads[new_quad_index].set_verts(tiles[tileI].pos.x, tiles[tileI].pos.y, tiles[tileI].size.w, tiles[tileI].size.h);
+                //     bitmap img = tiles[tileI].GetImage(); // check if change before sending to gpu?
+                //     display_quads[new_quad_index].set_texture(img.data, img.w, img.h);
+                //     display_quads[new_quad_index].render(1);
+                // }
 
 
-                // quad.set_verts(tiles[tileI].pos.x, tiles[tileI].pos.y, tiles[tileI].size.w, tiles[tileI].size.h);
-                // bitmap img = tiles[tileI].GetImage(); // check if change before sending to gpu?
-                // quad.set_texture(img.data, img.w, img.h); // looks like passing this every frame isn't going to cut it
-                // // quad.set_texture(img.data, 1, 1);
-                // quad.render(1);
+                quad.set_verts(tiles[tileI].pos.x, tiles[tileI].pos.y, tiles[tileI].size.w, tiles[tileI].size.h);
+                bitmap img = tiles[tileI].GetImage(); // check if change before sending to gpu?
+                quad.set_texture(img.data, img.w, img.h); // looks like passing this every frame isn't going to cut it
+                // quad.set_texture(img.data, 1, 1);
+                quad.render(1);
 
             }
         }
 
-        // look through display quads to see if any are offscreen
-        // we loop through this list rather than (1) checking the tiles or
-        // (2) embedding this check in the existing tile loop
-        // because typically there will be less display quads than tiles
-        int display_quad_indices_to_remove[100];
-        int display_quad_remove_count = 0;
-        for (int displayI = 0; displayI < display_quad_count; displayI++) {
-            if (!tiles[display_quad_tile_index[displayI]].IsOnScreen(ch)) { // check if this display quad tile is offscreen
-                display_quad_indices_to_remove[display_quad_remove_count++] = displayI;
-            }
-        }
-        for (int i = display_quad_remove_count-1; i >= 0; i--) {
-            // replace deleted with last item (note this still works if we are removing the last item
-            display_quads[display_quad_indices_to_remove[i]] = display_quads[display_quad_count-1];
-            display_quad_count--;
-        }
+        // // look through display quads to see if any are offscreen
+        // // we loop through this list rather than (1) checking the tiles or
+        // // (2) embedding this check in the existing tile loop
+        // // because typically there will be less display quads than tiles
+        // int display_quad_indices_to_remove[100];
+        // int display_quad_remove_count = 0;
+        // for (int displayI = 0; displayI < display_quad_count; displayI++) {
+        //     if (!tiles[display_quad_tile_index[displayI]].IsOnScreen(ch)) { // check if this display quad tile is offscreen
+        //         display_quad_indices_to_remove[display_quad_remove_count++] = displayI;
+        //     }
+        // }
+        // for (int i = display_quad_remove_count-1; i >= 0; i--) {
+        //     // replace deleted with last item (note this still works if we are removing the last item
+        //     display_quads[display_quad_indices_to_remove[i]] = display_quads[display_quad_count-1];
+        //     display_quad_count--;
+        // }
 
 
         // debug display metrics
