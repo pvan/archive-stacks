@@ -430,7 +430,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                     }
 
                     HUDPRINT("fps: %f", (float)tiles[i].media.fps);
-                    HUDPRINT("duration: %f", (float)tiles[i].media.durationSeconds);
+                    // HUDPRINT("duration: %f", (float)tiles[i].media.durationSeconds);
+                    // HUDPRINT("frames: %f", (float)tiles[i].media.totalFrameCount);
 
                 }
             }

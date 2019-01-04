@@ -299,6 +299,7 @@ struct ffmpeg_media {
             return;
         }
 
+        // todo: call the string function for this now
         // convert wchar to utf-8 which is what ffmpeg wants...
         int numChars = WideCharToMultiByte(CP_UTF8,0,  path.chars,-1,  0,0,  0,0);
         char *utf8path = (char*)malloc(numChars*sizeof(char));
@@ -362,11 +363,14 @@ struct ffmpeg_media {
                (double)vcc->time_base.num) /
                (double)vcc->ticks_per_frame;
 
-        durationSeconds = vfc->duration / (double)AV_TIME_BASE;
-        totalFrameCount = durationSeconds * fps;
+        // not even going to set this for now, until we need it for something
+        // // looks like vfc->duration it not going to be set on most gifs/static images
+        // if (vfc->duration < 0) durationSeconds = 0; else
+        // durationSeconds = (double)vfc->duration / (double)AV_TIME_BASE;
+        // totalFrameCount = durationSeconds * fps;
 
 
-        SetupSwsContex(width, height);   // width/height here depend on metadata being populated first
+        SetupSwsContex(width, height);
         SetupFrameOutput(width, height);
 
         loaded = true;
