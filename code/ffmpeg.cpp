@@ -381,6 +381,7 @@ struct ffmpeg_media {
 
     bitmap GetNextFrame(double *msToPlayThisFrame) {
         if (!vfc)  {
+            assert(false); // we should only be trying to get a frame on a .loaded media file
             bitmap result = {0};
             return result;
         }
@@ -512,30 +513,35 @@ struct ffmpeg_media {
     }
 
 
-    bitmap cached_frame;
+    bitmap cached_frame = {0};
     bool alreadygotone = false;
 
     double msRuntimeSoFar = 0;
     double msPerFrame = 0;
     double msOfLastFrame = 0;
 
+    bool fetched_at_least_one_frame = false;
+
     bitmap GetFrame(double dt) {
 
         msPerFrame = 1000.0 / fps;
 
         msRuntimeSoFar += dt;
-        if (msRuntimeSoFar > msOfLastFrame + msPerFrame) {
+        if (msRuntimeSoFar > msOfLastFrame + msPerFrame || !fetched_at_least_one_frame) {
             // time to get a new frame
             double msToPlayThisFrame;
-            free(cached_frame.data);
+            if (cached_frame.data) free(cached_frame.data);
             cached_frame = GetNextFrame(&msToPlayThisFrame);
             msOfLastFrame = msToPlayThisFrame;
-            return cached_frame;
-        } else
-        {
-            // repeat last frame
-            return cached_frame;
         }
+        //     return cached_frame;
+        // } else
+        // {
+        //     // repeat last frame
+        //     return cached_frame;
+        // }
+        fetched_at_least_one_frame = true;
+        return cached_frame;
 
     }
 

@@ -51,7 +51,92 @@ float time_now() {
     return dt * 1000.0f; // return ms
 }
 
+
 tile_pool tiles; // access from background thread as well
+
+
+
+
+// display quads
+// todo: add bounds checking
+
+struct display_quad {
+    opengl_quad quad;
+    bool is_used = false;
+};
+
+const int MAX_DISPLAY_QUADS = 100;
+display_quad *display_quads;
+// int display_quad_count = 0;
+
+void display_quads_init() {
+    display_quads = (display_quad*)malloc(sizeof(display_quad) * MAX_DISPLAY_QUADS);
+    for (int i = 0; i < MAX_DISPLAY_QUADS; i++) {
+        display_quads[i].quad.create(0,0,1,1);
+        //     u32 col = rand() & 0xff;
+        //     col |= (rand() & 0xff) << 8;
+        //     col |= (rand() & 0xff) << 16;
+        //     col |= (rand() & 0xff) << 24;
+        // display_quads[i].quad.set_texture(&col, 1, 1);
+        display_quads[i].is_used = false;
+    }
+    // display_quad_count = 0;
+}
+
+int display_quad_get_unused_index() {
+    for (int i = 0; i < MAX_DISPLAY_QUADS; i++) {
+        if (!display_quads[i].is_used) {
+            display_quads[i].is_used = true;
+            return i;
+        }
+    }
+    OutputDebugString("ERROR: trying to use more display quads that we have, just allocate more here");
+    assert(false);
+    return 0;
+}
+
+void display_quad_set_index_unused(int i) {
+    if (display_quads[i].is_used) {
+        // display_quads[i].destroy(); // could remove texture from gpu here
+        display_quads[i].is_used = false;
+    }
+}
+
+// const int MAX_DISPLAY_QUADS = 100;
+// // opengl_quad display_quads[MAX_DISPLAY_QUADS];
+// opengl_quad *display_quads;
+// int display_quad_count = 0;
+
+// // int_queue display_quad_unused_indices;
+
+// void display_quads_init() {
+//     display_quads = (opengl_quad*)malloc(sizeof(opengl_quad) * MAX_DISPLAY_QUADS);
+//     for (int i = 0; i < MAX_DISPLAY_QUADS; i++) {
+//         display_quads[i].create(0,0,1,1);
+//     }
+//     display_quad_count = 0;
+
+//     display_quad_unused_indices = display_quad_unused_indices.new_empty();
+//     // display_quad_unused_indices = (int*)malloc(sizeof(int) * MAX_DISPLAY_QUADS);
+//     // display_quad_unused_indices_count = 0;
+// }
+
+// int display_quad_get_unused_index() {
+//     if (display_quad_unused_indices.count > 0) {
+//         return display_quad_unused_indices.pop();
+//     } else {
+//         return display_quad_count++;
+//     }
+// }
+
+// void display_quad_set_index_unused(int i) {
+//     if (!display_quad_unused_indices.has(i))
+//         display_quad_unused_indices.push(i);
+// }
+
+// end display quads
+
+
 
 bool running = true;
 
@@ -206,32 +291,29 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     // }
 
 
-    tiles = tile_pool::empty();
-    for (int i = 0; i < files.count; i++) {
-        tiles.add(tile::CreateFromFile(files[i]));
-    }
-    // AddRandomColorToTilePool
+    // init tiles
     {
-        for (int i = 0; i < tiles.count; i++) {
-            u32 col = rand() & 0xff;
-            col |= (rand() & 0xff) << 8;
-            col |= (rand() & 0xff) << 16;
-            col |= (rand() & 0xff) << 24;
-            tiles[i].rand_color = col;//rand();
+        tiles = tile_pool::empty();
+        for (int i = 0; i < files.count; i++) {
+            tiles.add(tile::CreateFromFile(files[i]));
         }
+        // AddRandomColorToTilePool
+        {
+            for (int i = 0; i < tiles.count; i++) {
+                u32 col = rand() & 0xff;
+                col |= (rand() & 0xff) << 8;
+                col |= (rand() & 0xff) << 16;
+                col |= (rand() & 0xff) << 24;
+                tiles[i].rand_color = col;//rand();
+            }
+        }
+        // SortTilePoolByDate(&tiles);
+        ReadTileResolutions(&tiles);
+        ArrangeTilesInOrder(&tiles, {0,0,(float)cw,(float)ch}); // requires resolutions to be set
     }
-    // SortTilePoolByDate(&tiles);
-    ReadTileResolutions(&tiles);
-    ArrangeTilesInOrder(&tiles, {0,0,(float)cw,(float)ch}); // requires resolutions to be set
 
 
-    int display_quad_count = 0;
-    const int MAX_DISPLAY_QUADS = 100;
-    opengl_quad display_quads[MAX_DISPLAY_QUADS];
-    int display_quad_tile_index[MAX_DISPLAY_QUADS]; // tile[display_quad_tile_index[i]] goes with display_quads[i]
-    for (int i = 0; i < MAX_DISPLAY_QUADS; i++) {
-        display_quads[i].create(0,0,1,1);
-    }
+    display_quads_init();
 
 
     // constant-churning loop to load items on screen, and unlod those off the screen
@@ -325,67 +407,62 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         // render
         opengl_clear();
 
+        // display_quad_count = 20;
+        // int x = 0;
+        // int y = 0;
+        // for (int i = 0; i < display_quad_count; i++) {
+        //     // u32 rand_col = rand();
+        //     // display_quads[i].set_texture(&rand_col, 1, 1);
+        //     bitmap img = tiles[i].GetImage(actual_dt);
+        //     display_quads[i].set_texture(img.data, img.w, img.h);
+
+        //     display_quads[i].set_verts(x, y, 30, 50);
+        //     display_quads[i].render(1);
+
+        //     x+=30;
+        //     if (x>cw) {y+=50; x=0;}
+        // }
+
+        // static int loop_count = 0;
+        // loop_count++;
+        // if (loop_count == 2) {
+        //     OutputDebugString("secodn loop\n");
+        // }
 
         for (int tileI = 0; tileI < tiles.count; tileI++) {
-            if (tiles[tileI].IsOnScreen(ch)) { // only render if on screen
+            tile *t = &tiles[tileI];
+            if (t->IsOnScreen(ch)) { // only render if on screen
 
                 // trying to use quad list here so we can reuse textures each frame
 
-                // int existing_quad_index = -1;
-                // for (int displayI = 0; displayI < display_quad_count; displayI++) {
-                //     if (display_quad_tile_index[displayI] == tileI) { // tile already has a quad
-                //         existing_quad_index = displayI;
-                //         break;
-                //     }
-                // }
-                // if (existing_quad_index != -1) { // tile already has a quad
-                //     display_quads[existing_quad_index].set_verts(tiles[tileI].pos.x, tiles[tileI].pos.y, tiles[tileI].size.w, tiles[tileI].size.h);
-                //     if (tiles[tileI].texture_updated_since_last_read) {
-                //         bitmap img = tiles[tileI].GetImage(); // check if change before sending to gpu?
-                //         display_quads[existing_quad_index].set_texture(img.data, img.w, img.h);
-                //     }
-                //     display_quads[existing_quad_index].render(1);
-                // }
-                // else { // new quad needed, create here
-                //     int new_quad_index = display_quad_count;
-                //     display_quad_count++;
-                //     display_quad_tile_index[new_quad_index] = tileI;
+                if (!t->has_display_quad) {
+                    int newindex = display_quad_get_unused_index();
+                    t->has_display_quad = true;
+                    t->display_quad_index = newindex;
+                    t->texture_updated_since_last_read = true; // force new texture sent to gpu
+                }
 
-                //     display_quads[new_quad_index].set_verts(tiles[tileI].pos.x, tiles[tileI].pos.y, tiles[tileI].size.w, tiles[tileI].size.h);
-                //     bitmap img = tiles[tileI].GetImage(); // check if change before sending to gpu?
-                //     display_quads[new_quad_index].set_texture(img.data, img.w, img.h);
-                //     display_quads[new_quad_index].render(1);
-                // }
-
-
-                quad.set_verts(tiles[tileI].pos.x, tiles[tileI].pos.y, tiles[tileI].size.w, tiles[tileI].size.h);
-                bitmap img = tiles[tileI].GetImage(actual_dt); // check if change before sending to gpu?
-                quad.set_texture(img.data, img.w, img.h); // looks like passing this every frame isn't going to cut it
-                // quad.set_texture(img.data, 1, 1);
-                quad.render(1);
-
+                opengl_quad *q = &display_quads[t->display_quad_index].quad;
+                if (t->texture_updated_since_last_read) {
+                    bitmap img = t->GetImage(actual_dt); // the bitmap memory should be freed when getimage is called again
+                    q->set_texture(img.data, img.w, img.h);
+                }
+                q->set_verts(t->pos.x, t->pos.y, t->size.w, t->size.h);
+                q->render(1);
+            }
+            else { // tile is offscreen
+                if (t->has_display_quad) {
+                    display_quad_set_index_unused(t->display_quad_index);
+                    t->has_display_quad = false;
+                    t->display_quad_index = 0;
+                }
             }
         }
 
-        // // look through display quads to see if any are offscreen
-        // // we loop through this list rather than (1) checking the tiles or
-        // // (2) embedding this check in the existing tile loop
-        // // because typically there will be less display quads than tiles
-        // int display_quad_indices_to_remove[100];
-        // int display_quad_remove_count = 0;
-        // for (int displayI = 0; displayI < display_quad_count; displayI++) {
-        //     if (!tiles[display_quad_tile_index[displayI]].IsOnScreen(ch)) { // check if this display quad tile is offscreen
-        //         display_quad_indices_to_remove[display_quad_remove_count++] = displayI;
-        //     }
-        // }
-        // for (int i = display_quad_remove_count-1; i >= 0; i--) {
-        //     // replace deleted with last item (note this still works if we are removing the last item
-        //     display_quads[display_quad_indices_to_remove[i]] = display_quads[display_quad_count-1];
-        //     display_quad_count--;
-        // }
-
-
         // debug display metrics
+        static bool show_debug_console = true;
+        if (keysDown.tilde) show_debug_console = !show_debug_console;
+        if (show_debug_console)
         {
             HUDPRINTRESET();
 
@@ -408,7 +485,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             }
             HUDPRINT("media loaded: %i", metric_media_loaded);
 
+            int display_quad_count = 0;
+            for (int i = 0; i < display_quad_count; i++) {
+                if (display_quads[i].is_used) display_quad_count++;
+            }
             HUDPRINT("used display quads: %i", display_quad_count);
+            // HUDPRINT("unused display indices: %i", display_quad_unused_indices.count);
 
             HUDPRINT("amt off: %i", state_amt_off_anchor);
 
@@ -416,18 +498,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             for (int i = 0; i < tiles.count; i++) {
                 rect tile_rect = {tiles[i].pos.x, tiles[i].pos.y, tiles[i].size.w, tiles[i].size.h};
                 if (tile_rect.ContainsPoint(input.mouseX, input.mouseY)) {
-                    HUDPRINT(tiles[i].name.ToUTF8());
+                    HUDPRINT("name: %s", tiles[i].name.ToUTF8());
 
-                    for (int displayI = 0; displayI < display_quad_count; displayI++) {
-                        if (
-                            tiles[display_quad_tile_index[displayI]].pos.x == tiles[i].pos.x &&
-                            tiles[display_quad_tile_index[displayI]].pos.y == tiles[i].pos.y &&
-                            tiles[display_quad_tile_index[displayI]].size.w == tiles[i].size.w &&
-                            tiles[display_quad_tile_index[displayI]].size.h == tiles[i].size.h
-                        ) {
-                            HUDPRINT(displayI);
-                        }
-                    }
+                    HUDPRINT("quad index: %i", tiles[i].display_quad_index);
+                    HUDPRINT("has disp quad: %i", (int)tiles[i].has_display_quad);
 
                     HUDPRINT("fps: %f", (float)tiles[i].media.fps);
                     // HUDPRINT("duration: %f", (float)tiles[i].media.durationSeconds);

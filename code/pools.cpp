@@ -40,3 +40,40 @@
 DEFINE_TYPE_POOL(v2);
 DEFINE_TYPE_POOL(string);
 
+
+// queue, can only push/pop items to end
+#define DEFINE_TYPE_QUEUE(thetype) struct thetype##_queue \
+{ \
+    thetype *items; \
+    int count; \
+    int alloc; \
+    bool has(thetype possiblyExistingItem) { \
+        for (int i = 0; i < count; i++) { \
+            if (items[i] == possiblyExistingItem) return true; \
+        } \
+        return false; \
+    } \
+    void push(thetype newItem) { \
+        if (count >= alloc) { \
+            if (!items) { alloc = 32; items = (thetype*)malloc(alloc * sizeof(thetype)); assert(items); } \
+            else { alloc *= 2; items = (thetype*)realloc(items, alloc * sizeof(thetype)); assert(items); } \
+        } \
+        items[count++] = newItem; \
+    } \
+    thetype pop() { \
+        if (count > 0) { return items[--count]; } \
+        else { \
+            OutputDebugString("WARNING: trying to pop from an empty queue\n"); \
+            return 0; \
+        } \
+    } \
+    void empty_out() { count = 0; } /*note we keep the allocated memory*/ /*should call it .drain()*/ \
+    bool is_empty() { return count==0; } \
+    thetype& operator[] (int i) { assert(i>=0); assert(i<count); return items[i]; } \
+    static thetype##_queue new_empty() { thetype##_queue new_blank = {0}; return new_blank;  } \
+};
+
+DEFINE_TYPE_QUEUE(int);
+
+
+

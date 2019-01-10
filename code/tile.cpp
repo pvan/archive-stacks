@@ -22,11 +22,14 @@ struct tile
     bool needs_unloading = false;
     bool is_media_loaded = false;
 
+    // state for rendering
     bool texture_updated_since_last_read = false; // set true when changing texture, false when reading texture
+    bool has_display_quad = false; // already assigned a display quad (set/unset based on on/offscreen at render time)
+    int display_quad_index = 0; // only used if has_display_quad true
 
     // debug stuff
     u32 rand_color;
-    u32 red_color = 0xff0000ff;
+    u32 red_color = 0xffff0000;
 
     void LoadMedia() {
         if (is_media_loaded) { OutputDebugString("tile media already loaded!\n"); return; }
@@ -45,7 +48,7 @@ struct tile
         if (media.loaded == false) {
             is_media_loaded = false;
             needs_unloading = false;
-            texture_updated_since_last_read = true;
+            texture_updated_since_last_read = true; // not sure we really need this here
         }
     }
 
@@ -57,7 +60,9 @@ struct tile
             // bitmap test = media.GetFrame();
             // return { &red_color, 1, 1 };
         } else {
+            // the color that will be used if tile is onscreen before media is done loading
             return { &rand_color, 1, 1 };
+            // return { &red_color, 1, 1 };
         }
     }
 

@@ -14,6 +14,11 @@ DWORD WINAPI RunBackgroundLoadingThread( LPVOID lpParam )
                 }
             }
         }
+        // static bool first_loop = true;
+        // if (first_loop) {
+        //     OutputDebugString("done loading\n");
+        // }
+        // first_loop = false;
 
         Sleep(16); // hmm
 
