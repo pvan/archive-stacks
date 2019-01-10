@@ -47,6 +47,18 @@ struct string
         return newString;
     }
 
+    static string Create(char *source) {
+        string newString = {0};
+        // newString.length = strlen(source);
+
+        newString.length = MultiByteToWideChar(CP_UTF8,0,  source,-1,  0,0);
+        newString.chars = (wchar_t*)malloc((newString.length+1)*sizeof(wchar_t));
+        MultiByteToWideChar(CP_UTF8,0,  source,-1,  newString.chars,newString.length*sizeof(char));
+
+        // memcpy(newString.chars, source, (newString.length+1)*sizeof(wchar_t));
+        return newString;
+    }
+
     // todo: make into win32_file function instead?
     static string CopyJustFilename(string source) {
         string result;

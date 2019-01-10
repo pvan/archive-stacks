@@ -407,27 +407,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         // render
         opengl_clear();
 
-        // display_quad_count = 20;
-        // int x = 0;
-        // int y = 0;
-        // for (int i = 0; i < display_quad_count; i++) {
-        //     // u32 rand_col = rand();
-        //     // display_quads[i].set_texture(&rand_col, 1, 1);
-        //     bitmap img = tiles[i].GetImage(actual_dt);
-        //     display_quads[i].set_texture(img.data, img.w, img.h);
-
-        //     display_quads[i].set_verts(x, y, 30, 50);
-        //     display_quads[i].render(1);
-
-        //     x+=30;
-        //     if (x>cw) {y+=50; x=0;}
-        // }
-
-        // static int loop_count = 0;
-        // loop_count++;
-        // if (loop_count == 2) {
-        //     OutputDebugString("secodn loop\n");
-        // }
 
         for (int tileI = 0; tileI < tiles.count; tileI++) {
             tile *t = &tiles[tileI];
@@ -447,6 +426,14 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                     bitmap img = t->GetImage(actual_dt); // the bitmap memory should be freed when getimage is called again
                     q->set_texture(img.data, img.w, img.h);
                 }
+                else if (t->is_media_loaded) {
+                    if (!t->media.IsStaticImageBestGuess()) {
+                        // if video, just force send new texture every frame
+                        bitmap img = t->GetImage(actual_dt); // the bitmap memory should be freed when getimage is called again
+                        q->set_texture(img.data, img.w, img.h);
+                    }
+                }
+
                 q->set_verts(t->pos.x, t->pos.y, t->size.w, t->size.h);
                 q->render(1);
             }
@@ -503,9 +490,16 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                     HUDPRINT("quad index: %i", tiles[i].display_quad_index);
                     HUDPRINT("has disp quad: %i", (int)tiles[i].has_display_quad);
 
+                    if (tiles[i].media.vfc)
+                        HUDPRINT("format name: %s", (char*)tiles[i].media.vfc->iformat->name);
+
                     HUDPRINT("fps: %f", (float)tiles[i].media.fps);
-                    // HUDPRINT("duration: %f", (float)tiles[i].media.durationSeconds);
+
+                    // HUDPRINT("frames: %f", (float)tiles[i].media.durationSeconds);
                     // HUDPRINT("frames: %f", (float)tiles[i].media.totalFrameCount);
+
+                    if (tiles[i].media.vfc)
+                        HUDPRINT("is image: %i", (int)tiles[i].media.IsStaticImageBestGuess());
 
                 }
             }

@@ -94,6 +94,7 @@ v2 ffmpeg_GetResolution(string path)
 
 
     // convert wchar to utf-8 which is what ffmpeg wants...
+    // TODO: just call the string function that does this
 
     int numChars = WideCharToMultiByte(CP_UTF8,0,  path.chars,-1,  0,0,  0,0);
     char *utf8path = (char*)malloc(numChars*sizeof(char));
@@ -544,6 +545,29 @@ struct ffmpeg_media {
         return cached_frame;
 
     }
+
+
+
+    bool IsStaticImageBestGuess() {
+        if (!vfc)  {
+            assert(false); // file not loaded yet, for now just don't do this
+        }
+
+        // TODO: add to this list all formats we don't want to send to gpu every frame
+        string definitely_static_image_formats[] = {
+            string::Create(L"image2"),
+            string::Create(L"png_pipe"),
+        };
+
+        for (int i = 0; i < 2; i++) {
+            if (string::Create((char*)vfc->iformat->name) == definitely_static_image_formats[i]) {
+                return true;
+            }
+        }
+        return false;
+
+    }
+
 
 
 };
