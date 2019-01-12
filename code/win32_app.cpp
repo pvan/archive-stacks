@@ -53,55 +53,65 @@ float time_now() {
 }
 
 
+//
+// global app data
+// for use by multiple threads, etc
+
 tile_pool tiles; // access from background thread as well
 
+string_pool files; // string collection of paths to all item files
+string_pool thumb_files; // string collection of paths to the thumbnail files
 
+string_pool items_without_matching_thumbs;
+string_pool thumbs_without_matching_item;
+
+////
 
 
 // display quads
 // todo: add bounds checking
 
-struct display_quad {
-    opengl_quad quad;
-    bool is_used = false;
-};
+// struct display_quad {
+//     opengl_quad quad;
+//     bool is_used = false;
+// };
 
-const int MAX_DISPLAY_QUADS = 100;
-display_quad *display_quads;
-// int display_quad_count = 0;
+// const int MAX_DISPLAY_QUADS = 100;
+// display_quad *display_quads;
+// // int display_quad_count = 0;
 
-void display_quads_init() {
-    display_quads = (display_quad*)malloc(sizeof(display_quad) * MAX_DISPLAY_QUADS);
-    for (int i = 0; i < MAX_DISPLAY_QUADS; i++) {
-        display_quads[i].quad.create(0,0,1,1);
-        //     u32 col = rand() & 0xff;
-        //     col |= (rand() & 0xff) << 8;
-        //     col |= (rand() & 0xff) << 16;
-        //     col |= (rand() & 0xff) << 24;
-        // display_quads[i].quad.set_texture(&col, 1, 1);
-        display_quads[i].is_used = false;
-    }
-    // display_quad_count = 0;
-}
+// void display_quads_init() {
+//     display_quads = (display_quad*)malloc(sizeof(display_quad) * MAX_DISPLAY_QUADS);
+//     for (int i = 0; i < MAX_DISPLAY_QUADS; i++) {
+//         display_quads[i].quad.create(0,0,1,1);
+//         //     u32 col = rand() & 0xff;
+//         //     col |= (rand() & 0xff) << 8;
+//         //     col |= (rand() & 0xff) << 16;
+//         //     col |= (rand() & 0xff) << 24;
+//         // display_quads[i].quad.set_texture(&col, 1, 1);
+//         display_quads[i].is_used = false;
+//     }
+//     // display_quad_count = 0;
+// }
 
-int display_quad_get_unused_index() {
-    for (int i = 0; i < MAX_DISPLAY_QUADS; i++) {
-        if (!display_quads[i].is_used) {
-            display_quads[i].is_used = true;
-            return i;
-        }
-    }
-    OutputDebugString("ERROR: trying to use more display quads that we have, just allocate more here");
-    assert(false);
-    return 0;
-}
+// int display_quad_get_unused_index() {
+//     for (int i = 0; i < MAX_DISPLAY_QUADS; i++) {
+//         if (!display_quads[i].is_used) {
+//             display_quads[i].is_used = true;
+//             return i;
+//         }
+//     }
+//     OutputDebugString("ERROR: trying to use more display quads that we have, just allocate more here");
+//     assert(false);
+//     return 0;
+// }
 
-void display_quad_set_index_unused(int i) {
-    if (display_quads[i].is_used) {
-        // display_quads[i].destroy(); // could remove texture from gpu here
-        display_quads[i].is_used = false;
-    }
-}
+// void display_quad_set_index_unused(int i) {
+//     if (display_quads[i].is_used) {
+//         // display_quads[i].destroy(); // could remove texture from gpu here
+//         display_quads[i].is_used = false;
+//     }
+// }
 
 // const int MAX_DISPLAY_QUADS = 100;
 // // opengl_quad display_quads[MAX_DISPLAY_QUADS];
@@ -141,6 +151,9 @@ void display_quad_set_index_unused(int i) {
 
 bool running = true;
 
+bool loading = true;
+bool need_init = true;
+
 #include "background.cpp"
 
 
@@ -171,7 +184,7 @@ void init_app(string_pool files, int cw, int ch) {
     }
 
 
-    display_quads_init();
+    // display_quads_init();
 
 
     // constant-churning loop to load items on screen, and unlod those off the screen
@@ -189,6 +202,8 @@ bool load_tick_and_return_false_if_done(string_pool files, string_pool thumb_fil
     ui_text("media files: %f", files.count, cw/2, ch/2);
     ui_text("thumb files: %f", thumb_files.count, cw/2, ch/2 + UI_TEXT_SIZE);
 
+    ui_text("items_without_matching_thumbs: %f", items_without_matching_thumbs.count, cw/2, ch/2 + UI_TEXT_SIZE*2);
+    ui_text("thumbs_without_matching_item: %f", thumbs_without_matching_item.count, cw/2, ch/2 + UI_TEXT_SIZE*3);
 
 
     opengl_swap();
@@ -308,7 +323,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     string master_path = string::Create(L"D:/Users/phil/Desktop/test archive");
     string_pool top_folders = win32_GetAllFilesAndFoldersInDir(master_path);
-    string_pool files = string_pool::empty();
+    files = string_pool::empty();
 
     string THUMB_DIR_NAME = string::Create("~thumbs");
     for (int folderI = 0; folderI < top_folders.count; folderI++) {
@@ -328,12 +343,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             }
         } else {
             // files in top folder, add?
+            // todo: see xgz
         }
     }
 
     string thumb_path = master_path.Append(L"/~thumbs");
     string_pool thumb_folders = win32_GetAllFilesAndFoldersInDir(thumb_path);
-    string_pool thumb_files = string_pool::empty();
+    thumb_files = string_pool::empty();
     for (int folderI = 0; folderI < thumb_folders.count; folderI++) {
         if (win32_IsDirectory(thumb_folders[folderI])) {
             string_pool subfiles = win32_GetAllFilesAndFoldersInDir(thumb_folders[folderI]);
@@ -350,8 +366,38 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             }
         } else {
             // files in top folder, add?
+            // todo: see xgz
         }
     }
+
+
+    items_without_matching_thumbs = string_pool::empty();
+    for (int i = 0; i < files.count; i++) {
+        string thumbpath = CopyItemPathAndConvertToThumbPath(files[i]);
+        if (!thumb_files.has(thumbpath)) {
+            items_without_matching_thumbs.add(files[i].Copy());
+        }
+        free(thumbpath.chars);
+    }
+
+
+    thumbs_without_matching_item = string_pool::empty();
+    for (int i = 0; i < thumb_files.count; i++) {
+        string itempath = CopyThumbPathAndConvertToItemPath(thumb_files[i]);
+        if (!files.has(itempath)) {
+            thumbs_without_matching_item.add(thumb_files[i].Copy());
+        }
+        free(itempath.chars);
+    }
+
+
+    // for (int i = 0; i < items_without_matching_thumbs.count; i++) {
+    //     DEBUGPRINT(items_without_matching_thumbs[i].ToUTF8Reusable());
+    // }
+    // for (int i = 0; i < thumbs_without_matching_item.count; i++) {
+    //     DEBUGPRINT(thumbs_without_matching_item[i].ToUTF8Reusable());
+    // }
+
 
     // todo: string allocs are a bit of a mess atm
 
@@ -371,9 +417,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     // }
 
 
+    LaunchBackgroundThumbnailLoop();
+    // LaunchBackgroundUnloadingLoop();
 
-    bool loading = true;
-    bool need_init = true;
 
     while(running)
     {
@@ -478,35 +524,35 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                 // trying to use quad list here so we can reuse textures each frame
 
 
-                if (!t->has_display_quad) {
-                    int newindex = display_quad_get_unused_index();
-                    t->has_display_quad = true;
-                    t->display_quad_index = newindex;
-                    t->texture_updated_since_last_read = true; // force new texture sent to gpu
-                }
+            //     if (!t->has_display_quad) {
+            //         int newindex = display_quad_get_unused_index();
+            //         t->has_display_quad = true;
+            //         t->display_quad_index = newindex;
+            //         t->texture_updated_since_last_read = true; // force new texture sent to gpu
+            //     }
 
 
-                opengl_quad *q = &display_quads[t->display_quad_index].quad;
-                if (t->texture_updated_since_last_read) {
-                    bitmap img = t->GetImage(actual_dt); // the bitmap memory should be freed when getimage is called again
-                    q->set_texture(img.data, img.w, img.h);
-                }
-                else if (t->is_media_loaded) {
-                    if (!t->media.IsStaticImageBestGuess()) {
-                        // if video, just force send new texture every frame
-                        bitmap img = t->GetImage(actual_dt); // the bitmap memory should be freed when getimage is called again
-                        q->set_texture(img.data, img.w, img.h);
-                    }
-                }
-                q->set_verts(t->pos.x, t->pos.y, t->size.w, t->size.h);
-                q->render(1);
-            }
-            else { // tile is offscreen
-                if (t->has_display_quad) {
-                    display_quad_set_index_unused(t->display_quad_index);
-                    t->has_display_quad = false;
-                    t->display_quad_index = 0;
-                }
+            //     opengl_quad *q = &display_quads[t->display_quad_index].quad;
+            //     if (t->texture_updated_since_last_read) {
+            //         bitmap img = t->GetImage(actual_dt); // the bitmap memory should be freed when getimage is called again
+            //         q->set_texture(img.data, img.w, img.h);
+            //     }
+            //     else if (t->is_media_loaded) {
+            //         if (!t->media.IsStaticImageBestGuess()) {
+            //             // if video, just force send new texture every frame
+            //             bitmap img = t->GetImage(actual_dt); // the bitmap memory should be freed when getimage is called again
+            //             q->set_texture(img.data, img.w, img.h);
+            //         }
+            //     }
+            //     q->set_verts(t->pos.x, t->pos.y, t->size.w, t->size.h);
+            //     q->render(1);
+            // }
+            // else { // tile is offscreen
+            //     if (t->has_display_quad) {
+            //         display_quad_set_index_unused(t->display_quad_index);
+            //         t->has_display_quad = false;
+            //         t->display_quad_index = 0;
+            //     }
             }
 
 
@@ -538,12 +584,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             }
             HUDPRINT("media loaded: %i", metric_media_loaded);
 
-            int display_quad_count = 0;
-            for (int i = 0; i < display_quad_count; i++) {
-                if (display_quads[i].is_used) display_quad_count++;
-            }
-            HUDPRINT("used display quads: %i", display_quad_count);
-            // HUDPRINT("unused display indices: %i", display_quad_unused_indices.count);
+            // int display_quad_count = 0;
+            // for (int i = 0; i < display_quad_count; i++) {
+            //     if (display_quads[i].is_used) display_quad_count++;
+            // }
+            // HUDPRINT("used display quads: %i", display_quad_count);
+            // // HUDPRINT("unused display indices: %i", display_quad_unused_indices.count);
 
             HUDPRINT("amt off: %i", state_amt_off_anchor);
 

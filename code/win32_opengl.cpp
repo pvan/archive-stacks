@@ -91,12 +91,24 @@ PFNGLUNIFORMMATRIX4FVPROC glUniformMatrix4fv;
 PFNGLACTIVETEXTUREPROC glActiveTexture;
 PFNGLGETATTRIBLOCATIONPROC glGetAttribLocation;
 PFNGLGENERATEMIPMAPPROC glGenerateMipmap;
+PFNGLDEBUGMESSAGECALLBACKPROC glDebugMessageCallback;
+// glDeleteTextures
 
 
 
 HDC opengl_hdc;
 
-GLuint shader_program;
+GLuint opengl_shader_program;
+GLuint opengl_vao;
+
+
+void APIENTRY opengl_message_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length,
+                                        const GLchar* message, const void* userParam) {
+    char msg[1024];
+    sprintf(msg, "GL CALLBACK: %s type = 0x%x, severity = 0x%x, message = %s\n",
+            type == GL_DEBUG_TYPE_ERROR ? "** GL ERROR **" : "", type, severity, message);
+    OutputDebugString(msg);
+}
 
 void opengl_init(HDC hdc)
 {
@@ -142,6 +154,7 @@ void opengl_init(HDC hdc)
     glActiveTexture = (PFNGLACTIVETEXTUREPROC)wglGetProcAddress("glActiveTexture");
     glGetAttribLocation = (PFNGLGETATTRIBLOCATIONPROC)wglGetProcAddress("glGetAttribLocation");
     glGenerateMipmap = (PFNGLGENERATEMIPMAPPROC)wglGetProcAddress("glGenerateMipmap");
+    glDebugMessageCallback = (PFNGLDEBUGMESSAGECALLBACKPROC)wglGetProcAddress("glDebugMessageCallback");
 
 
         char shaderlog[256];
@@ -164,20 +177,39 @@ void opengl_init(HDC hdc)
         OutputDebugString(displaybuf);
 
     // link shaders
-    shader_program = glCreateProgram();
-    glAttachShader(shader_program, vshader);
-    glAttachShader(shader_program, fshader);
-    glLinkProgram(shader_program);
-        glGetShaderInfoLog(shader_program, 256, 0, shaderlog);
+    opengl_shader_program = glCreateProgram();
+    glAttachShader(opengl_shader_program, vshader);
+    glAttachShader(opengl_shader_program, fshader);
+    glLinkProgram(opengl_shader_program);
+        glGetShaderInfoLog(opengl_shader_program, 256, 0, shaderlog);
         sprintf(displaybuf, "\nshader_program log:%s\n", shaderlog);
         OutputDebugString(displaybuf);
-    glUseProgram(shader_program);
+    glUseProgram(opengl_shader_program);
     glDeleteShader(vshader);
     glDeleteShader(fshader);
 
     // enable alpha
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glEnable(GL_BLEND);
+
+    // enable debug msg callback
+    glEnable(GL_DEBUG_OUTPUT);
+    glDebugMessageCallback(opengl_message_callback, 0);
+
+
+    // i think we can just set up a vao here since we're only using one vert/attrib style
+    glGenVertexArrays(1, &opengl_vao);
+    glBindVertexArray(opengl_vao);
+    // // position attrib
+    // glVertexAttribPointer(0/*loc*/, 2/*comps*/, GL_FLOAT, GL_FALSE, 7*sizeof(GLfloat), NULL);
+    // glEnableVertexAttribArray(0/*loc*/); // enable this attribute
+    // // color attrib
+    // glVertexAttribPointer(1/*loc*/, 3/*comps*/, GL_FLOAT, GL_FALSE, 7*sizeof(GLfloat), (void*)(2*sizeof(float)));
+    // glEnableVertexAttribArray(1/*loc*/); // enable this attribute
+    // // uv attrib
+    // glVertexAttribPointer(2/*loc*/, 2/*comps*/, GL_FLOAT, GL_FALSE, 7*sizeof(GLfloat), (void*)(5*sizeof(float)));
+    // glEnableVertexAttribArray(2/*loc*/); // enable this attribute
+
 }
 
 float cached_screen_width;
@@ -185,14 +217,14 @@ float cached_screen_height;
 void opengl_resize_if_change(float width, float height) {
     if (cached_screen_width != width || cached_screen_height != height) {
         glViewport(0,0, width, height);
-        GLuint loc_cam = glGetUniformLocation(shader_program, "camera");
+        GLuint loc_cam = glGetUniformLocation(opengl_shader_program, "camera");
         glUniform4f(loc_cam, 0,0, width,height);
     }
 }
 
 struct opengl_quad {
 
-    GLuint vao;
+    // GLuint vao;
     GLuint vbo;
     GLuint texture;
 
@@ -247,7 +279,10 @@ struct opengl_quad {
         glActiveTexture(GL_TEXTURE0); // texture unit
         glBindTexture(GL_TEXTURE_2D, texture);
 
+        // todo look into
+        //glGetInternalFormativ(GL_TEXTURE_2D, GL_RGBA8, GL_TEXTURE_IMAGE_FORMAT, 1, &preferred_format).
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, tex);
+        // todo check for GL_OUT_OF_MEMORY ?
         glGenerateMipmap(GL_TEXTURE_2D);
     }
 
@@ -260,15 +295,13 @@ struct opengl_quad {
         //     x+w,y,   1,0,1,
         //     x+w,y+h, 0,1,1,
         // };
-        glGenVertexArrays(1, &vao);
+
+        glBindVertexArray(opengl_vao); // kind of unnecessary since we only have 1 atm
+        // glBindVertexArray(vao);
+
         glGenBuffers(1, &vbo);
-
-        glBindVertexArray(vao);
-
         set_verts(x, y, w, h);
 
-
-        // position attrib
         glVertexAttribPointer(0/*loc*/, 2/*comps*/, GL_FLOAT, GL_FALSE, 7*sizeof(GLfloat), NULL);
         glEnableVertexAttribArray(0/*loc*/); // enable this attribute
         // color attrib
@@ -287,12 +320,13 @@ struct opengl_quad {
 
     void render(float a = 1) {
 
-        // glGenVertexArrays(1, &vao); // call in case we've switched vaos in the mean time
-        glBindVertexArray(vao); // has all our attribute info (et al?) tied to it
+        // we only have one atm anyway so should be already bound
+        glBindVertexArray(opengl_vao); // has all our attribute info (et al?) tied to it
+        // glBindVertexArray(vao); // has all our attribute info (et al?) tied to it
 
         // GLuint loc_color = glGetUniformLocation(shader_program, "color");
         // glUniform4f(loc_color, r,g,b,a);
-        GLuint loc_alpha = glGetUniformLocation(shader_program, "alpha");
+        GLuint loc_alpha = glGetUniformLocation(opengl_shader_program, "alpha");
         glUniform1f(loc_alpha, a);
 
         glActiveTexture(GL_TEXTURE0); // texture unit

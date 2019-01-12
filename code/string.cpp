@@ -115,9 +115,27 @@ struct string
         c++; // don't include the slash itself
 
         wchar_t *tempmem = string::CopyIntoReusableMem(c);
+
+        // skip forward to just the name
         c = tempmem;
         while(*c && *c != '/' && *c != '\\') c++;
         *c = 0;
+
+        return NewStringUsingMem(tempmem);
+    }
+    // todo: make into win32_file function or path/platform function instead?
+    // returns path of parent directory assuming string is a path
+    string ParentDirectoryPathReusable() {
+        string result;
+
+        wchar_t *c = chars;
+        while (*c) c++; // foward to end
+        while (*c != '/' && *c != '\\' && c > chars) c--;  // rewind to first slash (or first char)
+        c--; // skip past slash and to look for the next one
+        while (*c != '/' && *c != '\\' && c > chars) c--;  // rewind to second slash (or first char)
+        c++; // don't include the slash itself
+
+        wchar_t *tempmem = string::CopyIntoReusableMem(c);
 
         return NewStringUsingMem(tempmem);
     }
@@ -127,6 +145,56 @@ struct string
 
 
 
+string CopyItemPathAndConvertToThumbPath(string mainpath) {
+
+    // TODO: warning: wouldn't work on items not in a subdirectory, see xgz
+    string parent = mainpath.ParentDirectoryPathReusable();
+    string assumed_master_dir = parent.ParentDirectoryPathReusable().Copy();
+
+    string directory = mainpath.ParentDirectoryNameReusable();
+    string filename = string::CopyJustFilename(mainpath);
+
+    // haha, this api is a mess
+    // some of the above vars are still valid and some aren't, and some need to be freed
+
+    string result = assumed_master_dir;
+
+    result.Append(L"/~thumbs");
+    result.Append(L"/");
+    result.Append(directory.chars);
+    result.Append(L"/");
+    result.Append(filename.chars);
+
+    free(filename.chars);
+
+    return result;
+}
+
+
+string CopyThumbPathAndConvertToItemPath(string thumbpath) {
+
+    // TODO: warning: wouldn't work on items not in a subdirectory, see xgz
+    string subdir = thumbpath.ParentDirectoryPathReusable();
+    string thumbdir = subdir.ParentDirectoryPathReusable();
+    string assumed_master_dir = thumbdir.ParentDirectoryPathReusable().Copy();
+
+    string directory = thumbpath.ParentDirectoryNameReusable();
+    string filename = string::CopyJustFilename(thumbpath);
+
+    // haha, this api is a mess
+    // some of the above vars are still valid and some aren't, and some need to be freed
+
+    string result = assumed_master_dir;
+
+    result.Append(L"/");
+    result.Append(directory.chars);
+    result.Append(L"/");
+    result.Append(filename.chars);
+
+    free(filename.chars);
+
+    return result;
+}
 
 
 // //

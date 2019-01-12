@@ -4,7 +4,7 @@
 struct tile
 {
 
-    // position/shape in list
+    // position/shape in list/"world"
     v2 pos;
     v2 size;
 
@@ -13,6 +13,9 @@ struct tile
     string fullpath;
     string name;
     u64 modifiedTimeSinceLastEpoc;
+
+    // thumbnail data
+    string thumbpath;
 
 
     // media data
@@ -30,6 +33,12 @@ struct tile
     // debug stuff
     u32 rand_color;
     u32 red_color = 0xffff0000;
+
+    // for rendering
+    opengl_quad display_quad;
+    bool display_quad_created;
+    bool display_quad_texture_sent_to_gpu = false;
+
 
     void LoadMedia() {
         if (is_media_loaded) { OutputDebugString("tile media already loaded!\n"); return; }
@@ -80,8 +89,9 @@ struct tile
 
         newTile.fullpath = path.Copy();
         newTile.name = string::CopyJustFilename(path);
-
         newTile.modifiedTimeSinceLastEpoc = win32_GetModifiedTimeSinceEpoc(path);
+
+        newTile.thumbpath = CopyItemPathAndConvertToThumbPath(path);
 
         return newTile;
     };
