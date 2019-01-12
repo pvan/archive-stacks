@@ -322,12 +322,22 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     while(running)
     {
+
+float starttime = time_now();
+float framestart = time_now();
+
         MSG msg;
         while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
         {
             TranslateMessage(&msg);
             DispatchMessage(&msg);
         }
+
+float stepduration;
+// float stepduration = time_now() - starttime;
+// starttime = time_now();
+// DEBUGPRINT("1: %f\n", stepduration);
+
 
 
         // set frame rate
@@ -366,6 +376,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         // static float g = 0; g = (sin(t *2*3.1415)+1)/2;
         // static float b = 0; b = (-cos(t *2*3.1415)+1)/2;
 
+// stepduration = time_now() - starttime;
+// starttime = time_now();
+// DEBUGPRINT("2: %f\n", stepduration);
 
         RECT clientRect; GetClientRect(hwnd, &clientRect);
         int cw = clientRect.right-clientRect.left;
@@ -383,6 +396,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         Input keysUp = input_keys_changed(last_input, input);
         last_input = input;
 
+// stepduration = time_now() - starttime;
+// starttime = time_now();
+// DEBUGPRINT("3: %f\n", stepduration);
 
         // position the tiles
         {
@@ -392,6 +408,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             ShiftTilesBasedOnScrollPosition(&tiles, &master_scroll_delta, keysDown, ch, tile_height);
         }
 
+
+// stepduration = time_now() - starttime;
+// starttime = time_now();
+// DEBUGPRINT("4: %f\n", stepduration);
 
         for (int i = 0; i < tiles.count; i++) {
             if (tiles[i].IsOnScreen(ch)) {   // tile is on screen
@@ -403,16 +423,27 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             }
         }
 
+// stepduration = time_now() - starttime;
+// starttime = time_now();
+// DEBUGPRINT("5: %f\n", stepduration);
 
         // render
         opengl_clear();
 
+float time1total = 0;
+float time2total = 0;
+float time3total = 0;
+float time4total = 0;
+float time5total = 0;
+float time6total = 0;
 
         for (int tileI = 0; tileI < tiles.count; tileI++) {
             tile *t = &tiles[tileI];
             if (t->IsOnScreen(ch)) { // only render if on screen
 
                 // trying to use quad list here so we can reuse textures each frame
+
+starttime = time_now();
 
                 if (!t->has_display_quad) {
                     int newindex = display_quad_get_unused_index();
@@ -421,30 +452,62 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                     t->texture_updated_since_last_read = true; // force new texture sent to gpu
                 }
 
+stepduration = time_now() - starttime;
+starttime = time_now();
+time1total += stepduration;
+
                 opengl_quad *q = &display_quads[t->display_quad_index].quad;
                 if (t->texture_updated_since_last_read) {
+starttime = time_now();
                     bitmap img = t->GetImage(actual_dt); // the bitmap memory should be freed when getimage is called again
                     q->set_texture(img.data, img.w, img.h);
+
+stepduration = time_now() - starttime;
+starttime = time_now();
+time2total += stepduration;
                 }
                 else if (t->is_media_loaded) {
                     if (!t->media.IsStaticImageBestGuess()) {
+starttime = time_now();
                         // if video, just force send new texture every frame
                         bitmap img = t->GetImage(actual_dt); // the bitmap memory should be freed when getimage is called again
                         q->set_texture(img.data, img.w, img.h);
+
+starttime = time_now();
+time3total += stepduration;
                     }
                 }
-
+starttime = time_now();
                 q->set_verts(t->pos.x, t->pos.y, t->size.w, t->size.h);
                 q->render(1);
+
+stepduration = time_now() - starttime;
+starttime = time_now();
+time4total += stepduration;
+
             }
             else { // tile is offscreen
                 if (t->has_display_quad) {
+starttime = time_now();
                     display_quad_set_index_unused(t->display_quad_index);
                     t->has_display_quad = false;
                     t->display_quad_index = 0;
+
+stepduration = time_now() - starttime;
+starttime = time_now();
+time5total += stepduration;
                 }
             }
+
+
         }
+// DEBUGPRINT("1: %f\n", time1total);
+// DEBUGPRINT("2: %f\n", time2total);
+// DEBUGPRINT("3: %f\n", time3total);
+
+// stepduration = time_now() - starttime;
+// starttime = time_now();
+// DEBUGPRINT("6: %f\n", stepduration);
 
         // debug display metrics
         static bool show_debug_console = true;
@@ -510,6 +573,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             // OutputDebugString(buf);
         }
 
+// stepduration = time_now() - starttime;
+// starttime = time_now();
+// DEBUGPRINT("7: %f\n", stepduration);
+
         // quad.set_pos(0,0);
         // quad.render(1);
 
@@ -519,6 +586,15 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         opengl_swap();
 
         if (!measured_first_frame_time) { metric_time_to_first_frame = time_now() - time_at_startup; measured_first_frame_time = true; }
+
+if (time_now()-framestart > 200) {
+DEBUGPRINT("1: %f\n", time1total);
+DEBUGPRINT("2: %f\n", time2total);
+DEBUGPRINT("3: %f\n", time3total);
+DEBUGPRINT("4: %f\n", time4total);
+DEBUGPRINT("5: %f\n", time5total);
+DEBUGPRINT("total: %f\n", (time_now()-framestart));
+}
 
         // Sleep(16); // we set frame rate above right? or should we here?
     }
