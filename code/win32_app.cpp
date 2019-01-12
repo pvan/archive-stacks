@@ -30,6 +30,7 @@ void DEBUGPRINT(char *s, float f) { sprintf(debugprintbuffer, s, f); OutputDebug
 #include "ffmpeg.cpp"
 #include "tile.cpp"
 #include "text.cpp"
+#include "ui.cpp"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "../lib/stb_image.h"
@@ -146,6 +147,56 @@ bool running = true;
 int master_scroll_delta = 0;
 
 
+void init_app(string_pool files, int cw, int ch) {
+
+    // init tiles
+    {
+        tiles = tile_pool::empty();
+        for (int i = 0; i < files.count; i++) {
+            tiles.add(tile::CreateFromFile(files[i]));
+        }
+        // AddRandomColorToTilePool
+        {
+            for (int i = 0; i < tiles.count; i++) {
+                u32 col = rand() & 0xff;
+                col |= (rand() & 0xff) << 8;
+                col |= (rand() & 0xff) << 16;
+                col |= (rand() & 0xff) << 24;
+                tiles[i].rand_color = col;//rand();
+            }
+        }
+        // SortTilePoolByDate(&tiles);
+        ReadTileResolutions(&tiles);
+        ArrangeTilesInOrder(&tiles, {0,0,(float)cw,(float)ch}); // requires resolutions to be set
+    }
+
+
+    display_quads_init();
+
+
+    // constant-churning loop to load items on screen, and unlod those off the screen
+    LaunchBackgroundLoadingLoop();
+    LaunchBackgroundUnloadingLoop();
+
+}
+
+bool load_tick_and_return_false_if_done(string_pool files, string_pool thumb_files, int cw, int ch) {
+
+    // ui_progressbar(cw/2, ch2)
+
+    opengl_clear();
+
+    ui_text("media files: %f", files.count, cw/2, ch/2);
+    ui_text("thumb files: %f", thumb_files.count, cw/2, ch/2 + UI_TEXT_SIZE);
+
+
+
+    opengl_swap();
+    return true;
+
+}
+
+
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     switch (message)
@@ -251,20 +302,23 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     //     0x00,0x00,0xff,  0x00,0xff,0x00,  0x00,0x00,0xff,  0x00,0xff,0x00,
     //     0xff,0x00,0x00,  0x00,0xff,0xff,  0xff,0x00,0x00,  0x00,0xff,0xff,
     // };
-    u32 texture[4] = {0xc0ffeeff, 0xff00ffff, 0xff0077ff, 0xff0f00ff};
-    quad.set_texture(texture, 2, 2);
+    // u32 texture[4] = {0xc0ffeeff, 0xff00ffff, 0xff0077ff, 0xff0f00ff};
+    // quad.set_texture(texture, 2, 2);
 
 
     string master_path = string::Create(L"D:/Users/phil/Desktop/test archive");
     string_pool top_folders = win32_GetAllFilesAndFoldersInDir(master_path);
     string_pool files = string_pool::empty();
 
+    string THUMB_DIR_NAME = string::Create("~thumbs");
     for (int folderI = 0; folderI < top_folders.count; folderI++) {
         if (win32_IsDirectory(top_folders[folderI])) {
             string_pool subfiles = win32_GetAllFilesAndFoldersInDir(top_folders[folderI]);
             for (int fileI = 0; fileI < subfiles.count; fileI++) {
                 if (!win32_IsDirectory(subfiles[fileI].chars)) {
-                    files.add(subfiles[fileI]);
+                    // DEBUGPRINT(subfiles[fileI].ParentDirectoryNameReusable().ToUTF8Reusable());
+                    if (subfiles[fileI].ParentDirectoryNameReusable() != THUMB_DIR_NAME)
+                        files.add(subfiles[fileI]);
                 } else {
                     // wchar_t tempbuf[123];
                     // swprintf(tempbuf, L"%s is dir!\n", subfiles[fileI].chars);
@@ -272,8 +326,34 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                     // MessageBoxW(0,tempbuf,0,0);
                 }
             }
+        } else {
+            // files in top folder, add?
         }
     }
+
+    string thumb_path = master_path.Append(L"/~thumbs");
+    string_pool thumb_folders = win32_GetAllFilesAndFoldersInDir(thumb_path);
+    string_pool thumb_files = string_pool::empty();
+    for (int folderI = 0; folderI < thumb_folders.count; folderI++) {
+        if (win32_IsDirectory(thumb_folders[folderI])) {
+            string_pool subfiles = win32_GetAllFilesAndFoldersInDir(thumb_folders[folderI]);
+            for (int fileI = 0; fileI < subfiles.count; fileI++) {
+                if (!win32_IsDirectory(subfiles[fileI].chars)) {
+                    // DEBUGPRINT(subfiles[fileI].ParentDirectoryNameReusable().ToUTF8Reusable());
+                    thumb_files.add(subfiles[fileI]);
+                } else {
+                    // wchar_t tempbuf[123];
+                    // swprintf(tempbuf, L"%s is dir!\n", subfiles[fileI].chars);
+                    // // OutputDebugStringW(tempbuf);
+                    // MessageBoxW(0,tempbuf,0,0);
+                }
+            }
+        } else {
+            // files in top folder, add?
+        }
+    }
+
+    // todo: string allocs are a bit of a mess atm
 
     // if (win32_IsDirectory(L"D:/Users/phil/Desktop/test archive")) MessageBox(0,"1",0,0);
     // if (win32_IsDirectory(L"D:/Users/phil/Desktop/test archive/egs")) MessageBox(0,"2",0,0);
@@ -291,40 +371,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     // }
 
 
-    // init tiles
-    {
-        tiles = tile_pool::empty();
-        for (int i = 0; i < files.count; i++) {
-            tiles.add(tile::CreateFromFile(files[i]));
-        }
-        // AddRandomColorToTilePool
-        {
-            for (int i = 0; i < tiles.count; i++) {
-                u32 col = rand() & 0xff;
-                col |= (rand() & 0xff) << 8;
-                col |= (rand() & 0xff) << 16;
-                col |= (rand() & 0xff) << 24;
-                tiles[i].rand_color = col;//rand();
-            }
-        }
-        // SortTilePoolByDate(&tiles);
-        ReadTileResolutions(&tiles);
-        ArrangeTilesInOrder(&tiles, {0,0,(float)cw,(float)ch}); // requires resolutions to be set
-    }
 
-
-    display_quads_init();
-
-
-    // constant-churning loop to load items on screen, and unlod those off the screen
-    LaunchBackgroundLoadingLoop();
-    LaunchBackgroundUnloadingLoop();
+    bool loading = true;
+    bool need_init = true;
 
     while(running)
     {
-
-float starttime = time_now();
-float framestart = time_now();
 
         MSG msg;
         while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
@@ -332,11 +384,6 @@ float framestart = time_now();
             TranslateMessage(&msg);
             DispatchMessage(&msg);
         }
-
-float stepduration;
-// float stepduration = time_now() - starttime;
-// starttime = time_now();
-// DEBUGPRINT("1: %f\n", stepduration);
 
 
 
@@ -365,25 +412,27 @@ float stepduration;
             }
         }
 
-        // if (measured_first_frame_time) { // don't count first frame
-        //     if (actual_dt > metric_max_dt) {
-        //         metric_max_dt = actual_dt;
-        //     }
-        // }
 
-        // static float t = 0; t+=0.016;
-        // static float r = 0; r = (cos(t *2*3.1415)+1)/2;
-        // static float g = 0; g = (sin(t *2*3.1415)+1)/2;
-        // static float b = 0; b = (-cos(t *2*3.1415)+1)/2;
-
-// stepduration = time_now() - starttime;
-// starttime = time_now();
-// DEBUGPRINT("2: %f\n", stepduration);
 
         RECT clientRect; GetClientRect(hwnd, &clientRect);
         int cw = clientRect.right-clientRect.left;
         int ch = clientRect.bottom-clientRect.top;
         opengl_resize_if_change(cw, ch);
+
+
+
+
+
+        if (loading) {
+            loading = load_tick_and_return_false_if_done(files, thumb_files, cw, ch);
+            continue;
+        }
+
+        if (need_init) {
+            init_app(files, cw, ch);
+        }
+
+
 
 
         // main_loop(actual_dt);
@@ -396,9 +445,6 @@ float stepduration;
         Input keysUp = input_keys_changed(last_input, input);
         last_input = input;
 
-// stepduration = time_now() - starttime;
-// starttime = time_now();
-// DEBUGPRINT("3: %f\n", stepduration);
 
         // position the tiles
         {
@@ -409,9 +455,6 @@ float stepduration;
         }
 
 
-// stepduration = time_now() - starttime;
-// starttime = time_now();
-// DEBUGPRINT("4: %f\n", stepduration);
 
         for (int i = 0; i < tiles.count; i++) {
             if (tiles[i].IsOnScreen(ch)) {   // tile is on screen
@@ -423,19 +466,10 @@ float stepduration;
             }
         }
 
-// stepduration = time_now() - starttime;
-// starttime = time_now();
-// DEBUGPRINT("5: %f\n", stepduration);
 
         // render
         opengl_clear();
 
-float time1total = 0;
-float time2total = 0;
-float time3total = 0;
-float time4total = 0;
-float time5total = 0;
-float time6total = 0;
 
         for (int tileI = 0; tileI < tiles.count; tileI++) {
             tile *t = &tiles[tileI];
@@ -443,7 +477,6 @@ float time6total = 0;
 
                 // trying to use quad list here so we can reuse textures each frame
 
-starttime = time_now();
 
                 if (!t->has_display_quad) {
                     int newindex = display_quad_get_unused_index();
@@ -452,62 +485,32 @@ starttime = time_now();
                     t->texture_updated_since_last_read = true; // force new texture sent to gpu
                 }
 
-stepduration = time_now() - starttime;
-starttime = time_now();
-time1total += stepduration;
 
                 opengl_quad *q = &display_quads[t->display_quad_index].quad;
                 if (t->texture_updated_since_last_read) {
-starttime = time_now();
                     bitmap img = t->GetImage(actual_dt); // the bitmap memory should be freed when getimage is called again
                     q->set_texture(img.data, img.w, img.h);
-
-stepduration = time_now() - starttime;
-starttime = time_now();
-time2total += stepduration;
                 }
                 else if (t->is_media_loaded) {
                     if (!t->media.IsStaticImageBestGuess()) {
-starttime = time_now();
                         // if video, just force send new texture every frame
                         bitmap img = t->GetImage(actual_dt); // the bitmap memory should be freed when getimage is called again
                         q->set_texture(img.data, img.w, img.h);
-
-starttime = time_now();
-time3total += stepduration;
                     }
                 }
-starttime = time_now();
                 q->set_verts(t->pos.x, t->pos.y, t->size.w, t->size.h);
                 q->render(1);
-
-stepduration = time_now() - starttime;
-starttime = time_now();
-time4total += stepduration;
-
             }
             else { // tile is offscreen
                 if (t->has_display_quad) {
-starttime = time_now();
                     display_quad_set_index_unused(t->display_quad_index);
                     t->has_display_quad = false;
                     t->display_quad_index = 0;
-
-stepduration = time_now() - starttime;
-starttime = time_now();
-time5total += stepduration;
                 }
             }
 
 
         }
-// DEBUGPRINT("1: %f\n", time1total);
-// DEBUGPRINT("2: %f\n", time2total);
-// DEBUGPRINT("3: %f\n", time3total);
-
-// stepduration = time_now() - starttime;
-// starttime = time_now();
-// DEBUGPRINT("6: %f\n", stepduration);
 
         // debug display metrics
         static bool show_debug_console = true;
@@ -567,15 +570,11 @@ time5total += stepduration;
                 }
             }
 
-
             // char buf[235];
             // sprintf(buf, "dt: %f\n", actual_dt);
             // OutputDebugString(buf);
         }
 
-// stepduration = time_now() - starttime;
-// starttime = time_now();
-// DEBUGPRINT("7: %f\n", stepduration);
 
         // quad.set_pos(0,0);
         // quad.render(1);
@@ -587,14 +586,6 @@ time5total += stepduration;
 
         if (!measured_first_frame_time) { metric_time_to_first_frame = time_now() - time_at_startup; measured_first_frame_time = true; }
 
-if (time_now()-framestart > 200) {
-DEBUGPRINT("1: %f\n", time1total);
-DEBUGPRINT("2: %f\n", time2total);
-DEBUGPRINT("3: %f\n", time3total);
-DEBUGPRINT("4: %f\n", time4total);
-DEBUGPRINT("5: %f\n", time5total);
-DEBUGPRINT("total: %f\n", (time_now()-framestart));
-}
 
         // Sleep(16); // we set frame rate above right? or should we here?
     }
