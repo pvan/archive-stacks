@@ -107,7 +107,7 @@ void APIENTRY opengl_message_callback(GLenum source, GLenum type, GLuint id, GLe
     char msg[1024];
     sprintf(msg, "GL CALLBACK: %s type = 0x%x, severity = 0x%x, message = %s\n",
             type == GL_DEBUG_TYPE_ERROR ? "** GL ERROR **" : "", type, severity, message);
-    OutputDebugString(msg);
+    // OutputDebugString(msg);
 }
 
 void opengl_init(HDC hdc)

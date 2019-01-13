@@ -26,6 +26,7 @@ void DEBUGPRINT(char *s, float f) { sprintf(debugprintbuffer, s, f); OutputDebug
 #include "win32_icon/icon.h"
 #include "win32_opengl.cpp"
 #include "win32_file.cpp"
+#include "win32_system.cpp"
 
 #include "ffmpeg.cpp"
 #include "tile.cpp"
@@ -205,8 +206,10 @@ bool load_tick_and_return_false_if_done(string_pool files, string_pool thumb_fil
     ui_text("items_without_matching_thumbs: %f", items_without_matching_thumbs.count, cw/2, ch/2 + UI_TEXT_SIZE*2);
     ui_text("thumbs_without_matching_item: %f", thumbs_without_matching_item.count, cw/2, ch/2 + UI_TEXT_SIZE*3);
 
-
     opengl_swap();
+
+    // if () return false;
+    // else
     return true;
 
 }
@@ -245,6 +248,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
 
+    // string s1 = string::Create(L"D:/Users/phil/Desktop/test archive/art/xwfymstga9b11.png");
+    // string s2 = CopyItemPathAndConvertToThumbPath(s1);
+    // OutputDebugStringW(s2.chars);
+    // return 0;
+
     RECT win_rect = {0,0,600,400};
     int cw = win_rect.right;
     int ch = win_rect.bottom;
@@ -271,20 +279,20 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     ZeroMemory(metric_dt_history, METRIC_DT_HISTORY_COUNT*sizeof(float));
     // }
 
-    WNDCLASS wc = {0};
-    wc.style = CS_HREDRAW | CS_VREDRAW;
-    wc.lpfnWndProc = WndProc;
-    wc.hInstance = hInstance;
-    wc.hCursor = LoadCursor(0, IDC_ARROW);
-    wc.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(ID_ICON));
-    wc.lpszClassName = "the-stacks";
-    if (!RegisterClass(&wc)) { MessageBox(0, "RegisterClass failed", 0, 0); return 1; }
+    WNDCLASS wndc = {0};
+    wndc.style = CS_HREDRAW | CS_VREDRAW;
+    wndc.lpfnWndProc = WndProc;
+    wndc.hInstance = hInstance;
+    wndc.hCursor = LoadCursor(0, IDC_ARROW);
+    wndc.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(ID_ICON));
+    wndc.lpszClassName = "the-stacks";
+    if (!RegisterClass(&wndc)) { MessageBox(0, "RegisterClass failed", 0, 0); return 1; }
 
     DWORD win_style = WS_OVERLAPPEDWINDOW | WS_VISIBLE;
     AdjustWindowRect(&win_rect, win_style, 0);
 
     HWND hwnd = CreateWindowEx(
-        0, wc.lpszClassName, "The Stacks",
+        0, wndc.lpszClassName, "The Stacks",
         win_style,
         CW_USEDEFAULT, CW_USEDEFAULT,
         win_rect.right-win_rect.left, win_rect.bottom-win_rect.top,
@@ -332,7 +340,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             for (int fileI = 0; fileI < subfiles.count; fileI++) {
                 if (!win32_IsDirectory(subfiles[fileI].chars)) {
                     // DEBUGPRINT(subfiles[fileI].ParentDirectoryNameReusable().ToUTF8Reusable());
-                    if (subfiles[fileI].ParentDirectoryNameReusable() != THUMB_DIR_NAME)
+                    if (!StringEndsWith(subfiles[fileI].chars, THUMB_DIR_NAME.chars))
                         files.add(subfiles[fileI]);
                 } else {
                     // wchar_t tempbuf[123];
@@ -373,22 +381,24 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     items_without_matching_thumbs = string_pool::empty();
     for (int i = 0; i < files.count; i++) {
-        string thumbpath = CopyItemPathAndConvertToThumbPath(files[i]);
+        DEBUGPRINT("full: %s\n", files[i].ToUTF8Reusable());
+        string thumbpath = string::Create(CopyItemPathAndConvertToThumbPath(files[i].chars));
         if (!thumb_files.has(thumbpath)) {
             items_without_matching_thumbs.add(files[i].Copy());
+            DEBUGPRINT("can't find %s\n", thumbpath.ToUTF8Reusable());
         }
         free(thumbpath.chars);
     }
 
 
-    thumbs_without_matching_item = string_pool::empty();
-    for (int i = 0; i < thumb_files.count; i++) {
-        string itempath = CopyThumbPathAndConvertToItemPath(thumb_files[i]);
-        if (!files.has(itempath)) {
-            thumbs_without_matching_item.add(thumb_files[i].Copy());
-        }
-        free(itempath.chars);
-    }
+    // thumbs_without_matching_item = string_pool::empty();
+    // for (int i = 0; i < thumb_files.count; i++) {
+    //     string itempath = CopyThumbPathAndConvertToItemPath(thumb_files[i]);
+    //     if (!files.has(itempath)) {
+    //         thumbs_without_matching_item.add(thumb_files[i].Copy());
+    //     }
+    //     free(itempath.chars);
+    // }
 
 
     // for (int i = 0; i < items_without_matching_thumbs.count; i++) {
@@ -476,6 +486,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
         if (need_init) {
             init_app(files, cw, ch);
+            need_init = false;
         }
 
 

@@ -21,6 +21,7 @@ IF NOT EXIST %build_folder% mkdir %build_folder%
 
 set lib_folder=lib
 xcopy /s /y /q %lib_folder%\ffmpeg-4.1-win64-shared\bin\*.dll %build_folder%
+xcopy /s /y /q %lib_folder%\ffmpeg.exe %build_folder%
 
 pushd build
 cl %CompilerFlags% ..\code\win32_app.cpp %LinkerFlags%

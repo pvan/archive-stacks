@@ -88,10 +88,10 @@ struct tile
         // if (win32_IsDirectory(path)) return newTile;
 
         newTile.fullpath = path.Copy();
-        newTile.name = string::CopyJustFilename(path);
+        newTile.name = string::Create(CopyJustFilename(path.chars));
         newTile.modifiedTimeSinceLastEpoc = win32_GetModifiedTimeSinceEpoc(path);
 
-        newTile.thumbpath = CopyItemPathAndConvertToThumbPath(path);
+        newTile.thumbpath = string::Create(CopyItemPathAndConvertToThumbPath(path.chars));
 
         return newTile;
     };

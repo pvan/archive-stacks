@@ -573,4 +573,26 @@ struct ffmpeg_media {
 };
 
 
+// #include <stdlib.h>  // system()
+
+void DownresFileAtPathToPath(string inpath, string outpath) {
+
+    // ffmpeg_media infile = LoadFromFile(inpath);
+    // infile.DownsampleAndSaveToPath(outpath);
+
+    // ffmpeg -i input.jpg -vf "scale='min(320,iw)':'min(240,ih)'" input_not_upscaled.png
+
+    CreateAllDirectoriesForPathIfNeeded(outpath.chars);
+
+
+    wchar_t buffer[1024*8]; // todo make sure enough for in and out paths
+    // swprintf(buffer, L"ffmpeg -i \"%s\" -vf scale=200:-1 \"%s\"", inpath.chars, outpath.chars);
+    swprintf(buffer, L"ffmpeg -i \"%s\" -vf \"scale='min(200,iw)':-2\" \"%s\"", inpath.chars, outpath.chars);
+    OutputDebugStringW(buffer);
+    OutputDebugStringW(L"\n");
+    // _wsystem(buffer);
+    win32_run_cmd_command(buffer);
+
+}
+
 

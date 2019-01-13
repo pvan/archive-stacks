@@ -25,6 +25,7 @@
 
 
 #define wchar wchar_t
+#define wc wchar_t
 
 
 

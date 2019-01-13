@@ -1,6 +1,28 @@
 
 
 
+// return the pointer with the smaller address (for "which is first in a string" check)
+// try to never return a null pointer though (treat 0 as +infinity)
+wchar *min_but_not_null(wchar *p1, wchar *p2) { return p1<p2 && p1!=0 ? p1 : p2==0? 0 : p2; }
+
+void CreateAllDirectoriesForPathIfNeeded(wchar_t *path)
+{
+    // if (PathFileExistsA(path)) return;
+
+    wchar_t folder[MAX_PATH];
+    ZeroMemory(folder, MAX_PATH * sizeof(wchar_t));
+
+    wchar_t *end = min_but_not_null(wcschr(path, '\\'), wcschr(path, '/'));
+
+    while (end != 0)
+    {
+        wcsncpy(folder, path, end - path + 1);
+        CreateDirectoryW(folder, 0);
+        end++;
+        end = min_but_not_null(wcschr(end, '\\'), wcschr(end, '/'));
+    }
+}
+
 
 
 string_pool win32_GetAllFilesAndFoldersInDir(string path)

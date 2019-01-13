@@ -1,16 +1,18 @@
 
 
 
+
 DWORD WINAPI RunBackgroundThumbnailThread( LPVOID lpParam ) {
-    while (running && loading) {
+    // while (running && loading) {
         for (int i = items_without_matching_thumbs.count-1; i >= 0; i--) {
-            string thumbpath = CopyItemPathAndConvertToThumbPath(items_without_matching_thumbs[i]);
+            string thumbpath = string::Create(CopyItemPathAndConvertToThumbPath(items_without_matching_thumbs[i].chars));
             DownresFileAtPathToPath(items_without_matching_thumbs[i], thumbpath);
             thumb_files.add(thumbpath);
             items_without_matching_thumbs.count--; // should add .pop()
             free(thumbpath.chars); // should just use the same memory
         }
-    }
+        loading = false;
+    // }
     return 0;
 }
 void LaunchBackgroundThumbnailLoop() {
