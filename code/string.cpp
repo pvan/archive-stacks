@@ -99,12 +99,12 @@ struct string
 //
 // generic wchar* stuff
 
-void ExpandAndAppend(wc **s1, wc *s2) {
-    int len1 = wcslen(*s1);
-    int len2 = wcslen(s2);
-    *s1 = (wc*)realloc(*s1, (len1+len2+1) * sizeof(wc));
-    swprintf(*s1, L"%s%s", *s1, s2);
-}
+// void ExpandAndAppend(wc **s1, wc *s2) {
+//     int len1 = wcslen(*s1);
+//     int len2 = wcslen(s2);
+//     *s1 = (wc*)realloc(*s1, (len1+len2+1) * sizeof(wc));
+//     swprintf(*s1, L"%s%s", *s1, s2);
+// }
 
 bool StringEndsWith(wc *s1, wc *s2) {
     wc *startOfS2 = s2;
@@ -237,57 +237,12 @@ wc *CopyJustParentDirectoryName(wc *source) {
 wc *CopyItemPathAndConvertToThumbPath(wc *mainpath) {
 
     // TODO: warning: wouldn't work on items not in a subdirectory, see xgz
-        // OutputDebugStringW(L"orignl: ");
-        // OutputDebugStringW(mainpath.chars);
-        // OutputDebugStringW(L"\n");
-    // string parent = mainpath.ParentDirectoryPathCopy();
     wc *parent = CopyJustParentDirectoryPath(mainpath);
-    // wc *parent = (wc*)malloc((wcslen(mainpath)+1) * sizeof(wc));
-        // OutputDebugStringW(L"parent: ");
-        // OutputDebugStringW(parent.chars);
-        // OutputDebugStringW(L"\n");
     wc *assumed_master_dir = CopyJustParentDirectoryPath(parent);
-    // wc *assumed_master_dir = (wc*)malloc((wcslen(mainpath)+1) * sizeof(wc));
-    // memcpy(assumed_master_dir, mainpath, (wcslen(mainpath)+1) * sizeof(wc));
-    // wc *c = assumed_master_dir;
-    // while (*c) c++; // foward to end
-    // c--; while (*c == '/' || *c == '\\') {*c = 0; c--;} // remove all trailing \ or /
-    // while (*c != '/' && *c != '\\' && c > assumed_master_dir) c--;  // rewind to last slash in string (or first char)
-    // if (c>assumed_master_dir) c--; // if not alerady at start of string, skip over this slash to find next
-    // while (*c != '/' && *c != '\\' && c > assumed_master_dir) c--;  // rewind to next slash in string (or first char)
-    // *c = 0; // zap the slash and everything after it
-        // OutputDebugStringW(L"master: ");
-        // OutputDebugStringW(assumed_master_dir.chars);
-        // OutputDebugStringW(L"\n");
 
     wc *directory = CopyJustParentDirectoryName(mainpath);
     wc *filename = CopyJustFilename(mainpath);
 
-
-    // wc *directory = (wc*)malloc((wcslen(mainpath)+1) * sizeof(wc));
-    // memcpy(directory, mainpath, (wcslen(mainpath)+1) * sizeof(wc));
-    // c = directory;
-    // while (*c) c++; // foward to end
-    // c--; while (*c == '/' || *c == '\\') {*c = 0; c--;} // remove all trailing \ or /
-    // while (*c != '/' && *c != '\\' && c > directory) c--;  // rewind to last slash in string (or first char)
-    // *c = 0; // zap the slash and everything after it
-    // if (c>assumed_master_dir) c--; // if not alerady at start of string, skip over this slash to find next
-    // while (*c != '/' && *c != '\\' && c > assumed_master_dir) c--;  // rewind to next slash in string (or first char)
-    // c++;
-    // directory = c; // new start
-
-
-    // wc *filename = (wc*)malloc((wcslen(mainpath)+1) * sizeof(wc));
-    // memcpy(filename, mainpath, (wcslen(mainpath)+1) * sizeof(wc));
-    // c = filename;
-    // while (*c) c++; // foward to end
-    // c--; while (*c == '/' || *c == '\\') {*c = 0; c--;} // remove all trailing \ or /
-    // while (*c != '/' && *c != '\\' && c > filename) c--;  // rewind to last slash in string (or first char)
-    // c++;
-    // filename = c; // new start
-
-
-    // wc *result = assumed_master_dir;
     wc *result = (wc*)malloc((wcslen(assumed_master_dir) +
                              wcslen(L"/~thumbs/") +
                              wcslen(directory) +
@@ -296,12 +251,8 @@ wc *CopyItemPathAndConvertToThumbPath(wc *mainpath) {
                              1) * sizeof(wc));
     swprintf(result, L"%s/~thumbs/%s/%s", assumed_master_dir, directory, filename);
 
-    // ExpandAndAppend(&result, L"/~thumbs/");
-    // ExpandAndAppend(&result, directory);
-    // ExpandAndAppend(&result, L"/");
-    // ExpandAndAppend(&result, filename);
-
     free(parent);
+    free(assumed_master_dir);
     free(directory);
     free(filename);
 

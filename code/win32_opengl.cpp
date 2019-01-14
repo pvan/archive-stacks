@@ -92,14 +92,19 @@ PFNGLACTIVETEXTUREPROC glActiveTexture;
 PFNGLGETATTRIBLOCATIONPROC glGetAttribLocation;
 PFNGLGENERATEMIPMAPPROC glGenerateMipmap;
 PFNGLDEBUGMESSAGECALLBACKPROC glDebugMessageCallback;
-// glDeleteTextures
+PFNGLDELETEBUFFERSPROC glDeleteBuffers;
+PFNGLGETINTERNALFORMATIVPROC glGetInternalFormativ;
 
 
 
 HDC opengl_hdc;
 
 GLuint opengl_shader_program;
-GLuint opengl_vao;
+// GLuint opengl_vao;
+
+
+bool OPENGL_DEBUG_MESSAGES = true;
+// bool OPENGL_DEBUG_MESSAGES = false;
 
 
 void APIENTRY opengl_message_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length,
@@ -107,7 +112,7 @@ void APIENTRY opengl_message_callback(GLenum source, GLenum type, GLuint id, GLe
     char msg[1024];
     sprintf(msg, "GL CALLBACK: %s type = 0x%x, severity = 0x%x, message = %s\n",
             type == GL_DEBUG_TYPE_ERROR ? "** GL ERROR **" : "", type, severity, message);
-    // OutputDebugString(msg);
+    if (OPENGL_DEBUG_MESSAGES) OutputDebugString(msg);
 }
 
 void opengl_init(HDC hdc)
@@ -155,6 +160,8 @@ void opengl_init(HDC hdc)
     glGetAttribLocation = (PFNGLGETATTRIBLOCATIONPROC)wglGetProcAddress("glGetAttribLocation");
     glGenerateMipmap = (PFNGLGENERATEMIPMAPPROC)wglGetProcAddress("glGenerateMipmap");
     glDebugMessageCallback = (PFNGLDEBUGMESSAGECALLBACKPROC)wglGetProcAddress("glDebugMessageCallback");
+    glDeleteBuffers = (PFNGLDELETEBUFFERSPROC)wglGetProcAddress("glDeleteBuffers");
+    glGetInternalFormativ = (PFNGLGETINTERNALFORMATIVPROC)wglGetProcAddress("glGetInternalFormativ");
 
 
         char shaderlog[256];
@@ -197,9 +204,10 @@ void opengl_init(HDC hdc)
     glDebugMessageCallback(opengl_message_callback, 0);
 
 
+    // on trying this, it seems lke maybe we need a vao for every vbo?
     // i think we can just set up a vao here since we're only using one vert/attrib style
-    glGenVertexArrays(1, &opengl_vao);
-    glBindVertexArray(opengl_vao);
+    // glGenVertexArrays(1, &opengl_vao);
+    // glBindVertexArray(opengl_vao);
     // // position attrib
     // glVertexAttribPointer(0/*loc*/, 2/*comps*/, GL_FLOAT, GL_FALSE, 7*sizeof(GLfloat), NULL);
     // glEnableVertexAttribArray(0/*loc*/); // enable this attribute
@@ -209,6 +217,13 @@ void opengl_init(HDC hdc)
     // // uv attrib
     // glVertexAttribPointer(2/*loc*/, 2/*comps*/, GL_FLOAT, GL_FALSE, 7*sizeof(GLfloat), (void*)(5*sizeof(float)));
     // glEnableVertexAttribArray(2/*loc*/); // enable this attribute
+
+
+    // need opengl 4.2 at least
+    //todo: look at glGetInternalFormativ to make sure we're passing texture in format gpu likes
+    // GLint preferred_format = 0;
+    // glGetInternalFormativ(GL_TEXTURE_2D, GL_RGBA, GL_TEXTURE_IMAGE_FORMAT, 1, &preferred_format);
+    // DEBUGPRINT("preferred_format: %i\n", preferred_format);
 
 }
 
@@ -224,7 +239,7 @@ void opengl_resize_if_change(float width, float height) {
 
 struct opengl_quad {
 
-    // GLuint vao;
+    GLuint vao;
     GLuint vbo;
     GLuint texture;
 
@@ -258,6 +273,7 @@ struct opengl_quad {
             x+w,y,   1,1,1,   1.0f, 0.0f,
             x+w,y+h, 1,1,1,   1.0f, 1.0f,
         };
+        glBindVertexArray(vao);
         glBindBuffer(GL_ARRAY_BUFFER, vbo);
         glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STATIC_DRAW);
     }
@@ -280,8 +296,9 @@ struct opengl_quad {
         glBindTexture(GL_TEXTURE_2D, texture);
 
         // todo look into
-        //glGetInternalFormativ(GL_TEXTURE_2D, GL_RGBA8, GL_TEXTURE_IMAGE_FORMAT, 1, &preferred_format).
+        // glGetInternalFormativ(GL_TEXTURE_2D, GL_RGBA8, GL_TEXTURE_IMAGE_FORMAT, 1, &preferred_format).
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, tex);
+        // glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, tex);
         // todo check for GL_OUT_OF_MEMORY ?
         glGenerateMipmap(GL_TEXTURE_2D);
     }
@@ -296,12 +313,14 @@ struct opengl_quad {
         //     x+w,y+h, 0,1,1,
         // };
 
-        glBindVertexArray(opengl_vao); // kind of unnecessary since we only have 1 atm
-        // glBindVertexArray(vao);
+        // glBindVertexArray(opengl_vao); // kind of unnecessary since we only have 1 atm
+        glGenVertexArrays(1, &vao);
+        glBindVertexArray(vao);
 
         glGenBuffers(1, &vbo);
         set_verts(x, y, w, h);
 
+        // do we need to set these up for every vbo? shouldn't they be tied to our vao somehow?
         glVertexAttribPointer(0/*loc*/, 2/*comps*/, GL_FLOAT, GL_FALSE, 7*sizeof(GLfloat), NULL);
         glEnableVertexAttribArray(0/*loc*/); // enable this attribute
         // color attrib
@@ -314,6 +333,13 @@ struct opengl_quad {
         created = true;
     }
 
+    // delete texture memory
+    void destroy() {
+        glDeleteTextures(1, &texture);
+        glDeleteBuffers(1, &vbo);
+        created = false;
+    }
+
     void set_pos(float x, float y) {
         set_verts(x, y, cached_w, cached_h);
     }
@@ -321,8 +347,8 @@ struct opengl_quad {
     void render(float a = 1) {
 
         // we only have one atm anyway so should be already bound
-        glBindVertexArray(opengl_vao); // has all our attribute info (et al?) tied to it
-        // glBindVertexArray(vao); // has all our attribute info (et al?) tied to it
+        // glBindVertexArray(opengl_vao); // has all our attribute info (et al?) tied to it
+        glBindVertexArray(vao); // has all our attribute info (et al?) tied to it
 
         // GLuint loc_color = glGetUniformLocation(shader_program, "color");
         // glUniform4f(loc_color, r,g,b,a);

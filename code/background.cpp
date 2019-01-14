@@ -25,7 +25,9 @@ DWORD WINAPI RunBackgroundLoadingThread( LPVOID lpParam ) {
         for (int i = 0; i < tiles.count; i++) {
             if (tiles[i].needs_loading) {
                 if (!tiles[i].is_media_loaded) {
-                    tiles[i].LoadMedia();
+                    // tiles[i].LoadMedia(tiles[i].fullpath);
+                    tiles[i].LoadMedia(tiles[i].thumbpath);
+                    // DEBUGPRINT("loading: %s\n", tiles[i].thumbpath.ToUTF8Reusable());
                 }
             }
         }
