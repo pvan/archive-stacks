@@ -163,7 +163,7 @@ void init_app(string_pool files, int cw, int ch) {
 
 }
 
-bool load_tick_and_return_false_if_done(string_pool files, string_pool thumb_files, int cw, int ch) {
+void load_tick(string_pool files, string_pool thumb_files, int cw, int ch) {
 
     // ui_progressbar(cw/2, ch2)
 
@@ -176,10 +176,6 @@ bool load_tick_and_return_false_if_done(string_pool files, string_pool thumb_fil
     ui_text("thumbs_without_matching_item: %f", thumbs_without_matching_item.count, cw/2, ch/2 + UI_TEXT_SIZE*3);
 
     opengl_swap();
-
-    // if () return false;
-    // else
-    return true;
 
 }
 
@@ -411,18 +407,18 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         }
 
 
-
-        // set frame rate
-        float frame_duration = time_now() - last_time;
-        if (frame_duration < target_ms_per_frame + 0.0001f) {
-            DWORD sleep_ms = (DWORD)(target_ms_per_frame - frame_duration);
-            if (sleep_ms > 0)
-                Sleep(sleep_ms);  // should probably check if sleep has 1ms resolution first
-            while (frame_duration < target_ms_per_frame)  // churn and burn the last few fractional ms if needed
-                frame_duration = time_now() - last_time;
-        } else {
-            // frame took longer than our target fps
-        }
+        // just see how fast we can get for now
+        // // set frame rate
+        // float frame_duration = time_now() - last_time;
+        // if (frame_duration < target_ms_per_frame + 0.0001f) {
+        //     DWORD sleep_ms = (DWORD)(target_ms_per_frame - frame_duration);
+        //     if (sleep_ms > 0)
+        //         Sleep(sleep_ms);  // should probably check if sleep has 1ms resolution first
+        //     while (frame_duration < target_ms_per_frame)  // churn and burn the last few fractional ms if needed
+        //         frame_duration = time_now() - last_time;
+        // } else {
+        //     // frame took longer than our target fps
+        // }
         float actual_dt = time_now() - last_time;
         last_time = time_now();
 
@@ -449,7 +445,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 
         if (loading) {
-            loading = load_tick_and_return_false_if_done(files, thumb_files, cw, ch);
+            load_tick(files, thumb_files, cw, ch);
             continue;
         }
 
@@ -532,12 +528,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                 t->display_quad.render(1);
 
 
-            } else {
-                if (t->display_quad_created) {
-                    t->display_quad_created = false;
-                    t->display_quad_texture_sent_to_gpu = false;
-                    t->display_quad.destroy();
-                }
+            // } else {
+            //     if (t->display_quad_created) {
+            //         t->display_quad_created = false;
+            //         t->display_quad_texture_sent_to_gpu = false;
+            //         t->display_quad.destroy();
+            //     }
 
 
 

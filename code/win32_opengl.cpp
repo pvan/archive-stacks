@@ -282,7 +282,7 @@ struct opengl_quad {
         // create texture
         glGenTextures(1, &texture);
         glBindTexture(GL_TEXTURE_2D, texture);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR); // what to use?
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);//GL_NEAREST_MIPMAP_LINEAR); // what to use?
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST); //GL_LINEAR
         // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
         // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
@@ -406,5 +406,123 @@ void opengl_swap() {
     SwapBuffers(opengl_hdc);
 }
 
+
+
+float *batch_verts;
+int batch_count = 0;
+int batch_allocated = 0;
+
+// int texture_ids[1024]; // TODO: just assume this max for now
+
+GLuint batch_vao;
+GLuint batch_vbo;
+
+
+void opengl_batch_init() {
+
+    // glBindVertexArray(opengl_vao); // kind of unnecessary since we only have 1 atm
+    glGenVertexArrays(1, &batch_vao);
+    glBindVertexArray(batch_vao);
+
+    glGenBuffers(1, &batch_vbo);
+    glBindVertexArray(batch_vao);
+    glBindBuffer(GL_ARRAY_BUFFER, batch_vbo);
+    // glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STATIC_DRAW); // pass verts later
+
+    // do we need to set these up for every vbo? shouldn't they be tied to our vao somehow?
+    glVertexAttribPointer(0/*loc*/, 2/*comps*/, GL_FLOAT, GL_FALSE, 7*sizeof(GLfloat), NULL);
+    glEnableVertexAttribArray(0/*loc*/); // enable this attribute
+    // color attrib
+    glVertexAttribPointer(1/*loc*/, 3/*comps*/, GL_FLOAT, GL_FALSE, 7*sizeof(GLfloat), (void*)(2*sizeof(float)));
+    glEnableVertexAttribArray(1/*loc*/); // enable this attribute
+    // uv attrib
+    glVertexAttribPointer(2/*loc*/, 2/*comps*/, GL_FLOAT, GL_FALSE, 7*sizeof(GLfloat), (void*)(5*sizeof(float)));
+    glEnableVertexAttribArray(2/*loc*/); // enable this attribute
+}
+
+void opengl_batch_add_quad(float x, float y, float w, float h) {
+
+    float new_verts[] = {
+        // pos   // col   // uv
+        x,y,     1,1,1,   0.0f, 0.0f,
+        x,y+h,   1,1,1,   0.0f, 1.0f,
+        x+w,y,   1,1,1,   1.0f, 0.0f,
+        x+w,y+h, 1,1,1,   1.0f, 1.0f,
+    };
+
+    int new_vert_count = sizeof(new_verts)/sizeof(new_verts[0]);
+
+    int new_total_count = batch_count + new_vert_count;
+
+    if (!batch_verts) {
+        batch_allocated = 1024;
+        batch_verts = (float*)malloc(batch_allocated * sizeof(float));
+    }
+    if (new_total_count > batch_allocated) {
+        batch_allocated *= 2;
+        batch_verts = (float*)realloc(batch_verts, batch_allocated * sizeof(float));
+        // potentially could still not have enough space
+    }
+
+    for (int i = 0; i < new_vert_count; i++) {
+        batch_verts[batch_count++] = new_verts[i];
+    }
+
+
+}
+
+bool opengl_batch_texture_created = false;
+GLuint opengl_batch_texture;
+
+void opengl_batch_upload_textures() {
+
+    if (!opengl_batch_texture_created) {
+        glGenTextures(1, &opengl_batch_texture);
+        glBindTexture(GL_TEXTURE_2D, opengl_batch_texture);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR); // what to use?
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST); //GL_LINEAR
+        // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        opengl_batch_texture_created = true;
+    }
+
+    glActiveTexture(GL_TEXTURE0); // texture unit
+    glBindTexture(GL_TEXTURE_2D, opengl_batch_texture);
+
+    // todo: upload texture/textures here
+    // but how to tie certain textures back to certain verts?
+    // and do we atlas them (how to tile?) or array them (need to be same size)?
+    // // todo look into
+    // // glGetInternalFormativ(GL_TEXTURE_2D, GL_RGBA8, GL_TEXTURE_IMAGE_FORMAT, 1, &preferred_format).
+    // glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, tex);
+    // // glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, tex);
+    // // todo check for GL_OUT_OF_MEMORY ?
+    // glGenerateMipmap(GL_TEXTURE_2D);
+}
+
+void opengl_batch_upload_verts() {
+    glBindVertexArray(batch_vao);
+    glBindBuffer(GL_ARRAY_BUFFER, batch_vbo);
+    glBufferData(GL_ARRAY_BUFFER, batch_count*sizeof(float), batch_verts, GL_STATIC_DRAW);
+}
+
+void opengl_batch_render() {
+
+    // we only have one atm anyway so should be already bound
+    // glBindVertexArray(opengl_vao); // has all our attribute info (et al?) tied to it
+    glBindVertexArray(batch_vao); // has all our attribute info (et al?) tied to it
+
+    // GLuint loc_color = glGetUniformLocation(shader_program, "color");
+    // glUniform4f(loc_color, r,g,b,a);
+    GLuint loc_alpha = glGetUniformLocation(opengl_shader_program, "alpha");
+    glUniform1f(loc_alpha, 1);
+
+    glActiveTexture(GL_TEXTURE0); // texture unit
+    glBindTexture(GL_TEXTURE_2D, opengl_batch_texture);
+
+    // glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, batch_count);
+
+}
 
 
