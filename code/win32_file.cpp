@@ -2,7 +2,7 @@
 
 
 // return the pointer with the smaller address (for "which is first in a string" check)
-// try to never return a null pointer though (treat 0 as +infinity)
+// try to never return a null pointer though (treat 0 as +infinity for comparisons)
 wchar *min_but_not_null(wchar *p1, wchar *p2) { return p1<p2 && p1!=0 ? p1 : p2==0? 0 : p2; }
 
 void CreateAllDirectoriesForPathIfNeeded(wchar_t *path)

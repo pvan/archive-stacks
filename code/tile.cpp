@@ -130,11 +130,28 @@ void SortTilePoolByDate(tile_pool *pool)
 }
 
 
+bool GetCachedResolutionIfPossible(string path, v2 *result) {
+    FILE* file = fopen (path.ToUTF8Reusable(), "r");
+    if (!file) { return false; }
+    fscanf (file, "%f%f", &result->x, &result->y);
+    fclose (file);
+    return true;
+}
+void CreateCachedResolution(string path) {
+}
 void ReadTileResolutions(tile_pool *pool)
 {
     for (int i = 0; i < pool->count; i++) {
         tile& t = pool->pool[i];
-        t.resolution = ffmpeg_GetResolution(t.fullpath);
+
+        // if (!GetCachedResolutionIfPossible(t.fullpath, &t.resolution)) {
+            t.resolution = ffmpeg_GetResolution(t.fullpath);
+        //     CreateCachedResolution(t.fullpath);
+        // }
+
+        // for now....
+        if (t.resolution.x == -1 && t.resolution.y == -1)
+            t.resolution = {10,10};
     }
 }
 

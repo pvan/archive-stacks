@@ -260,6 +260,37 @@ wc *CopyItemPathAndConvertToThumbPath(wc *mainpath) {
 }
 
 
+string ItemPathToSubfolderPath(string mainpath, wc *subfolder) {
+
+    // TODO: warning: wouldn't work on items not in a subdirectory, see xgz
+    wc *parent = CopyJustParentDirectoryPath(mainpath.chars);
+    wc *assumed_master_dir = CopyJustParentDirectoryPath(parent);
+
+    wc *directory = CopyJustParentDirectoryName(mainpath.chars);
+    wc *filename = CopyJustFilename(mainpath.chars);
+
+    wc *result = (wc*)malloc((wcslen(assumed_master_dir) +
+                             // wcslen(L"/~thumbs/") +
+                             wcslen(subfolder) +
+                             wcslen(directory) +
+                             wcslen(L"/") +
+                             wcslen(filename) +
+                             1) * sizeof(wc));
+    swprintf(result, L"%s/%s/%s/%s", assumed_master_dir, subfolder, directory, filename);
+
+    free(parent);
+    free(assumed_master_dir);
+    free(directory);
+    free(filename);
+
+    string resultString;
+    resultString.chars = result;
+    resultString.length = wcslen(result);
+    return resultString;
+}
+
+
+
 // string CopyThumbPathAndConvertToItemPath(string thumbpath) {
 
 //     // TODO: warning: wouldn't work on items not in a subdirectory, see xgz

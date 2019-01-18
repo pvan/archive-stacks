@@ -108,13 +108,14 @@ v2 ffmpeg_GetResolution(string path)
 
     if (open_result1 != 0)
     {
-        PRINT("Unable to load a format context...\n");
-        char averr[1024];
-        av_strerror(open_result1, averr, 1024);
-        char msg[2048];
-        sprintf(msg, "ffmpeg: Can't open file: %s\n", averr);
-        PRINT(msg);
-        return {-1,-1};
+        return {-1,-1}; // probably not a file ffmpeg can handle (txt, lnk, zip, etc)
+        // PRINT("Unable to load a format context...\n");
+        // char averr[1024];
+        // av_strerror(open_result1, averr, 1024);
+        // char msg[2048];
+        // sprintf(msg, "ffmpeg: Can't open file: %s\n", averr);
+        // PRINT(msg);
+        // return {-1,-1};
     }
 
 
@@ -553,6 +554,8 @@ struct ffmpeg_media {
             assert(false); // file not loaded yet, for now just don't do this
         }
 
+        if (!vfc->iformat || vfc->iformat==nullptr) { return true; } // assume not a video
+
         // TODO: add to this list all formats we don't want to send to gpu every frame
         string definitely_static_image_formats[] = {
             string::Create(L"image2"),
@@ -596,3 +599,9 @@ void DownresFileAtPathToPath(string inpath, string outpath) {
 }
 
 
+
+// tries to read resolution and if it can't, then we assume we can't read the file
+bool ffmpeg_can_open(string path) {
+    v2 res = ffmpeg_GetResolution(path);
+    return res.x != -1 && res.y != -1;
+}

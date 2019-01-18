@@ -233,3 +233,19 @@ void HUDPRINTTIME(u64 i) { FormatTimeIntoCharBuffer(i, display_log_reuseable_mem
 void HUDPRINTRESET() { display_log_count = 0; }
 
 
+
+
+
+void CreateDummyThumb(string inpath, string outpath) {
+
+    CreateAllDirectoriesForPathIfNeeded(outpath.chars);
+
+    OutputDebugString("Saving bmp!!\n");
+    bitmap img = ttf_create_bitmap(inpath.ToUTF8Reusable(), 24, 255, true, true, 200);
+        int result = stbi_write_bmp(outpath.ToUTF8Reusable(), img.w, img.h, 4, img.data);
+        if (!result) { OutputDebugString("ERROR SAVING BITMAP\n"); }
+    free(img.data);
+}
+
+
+

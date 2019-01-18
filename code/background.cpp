@@ -3,16 +3,30 @@
 
 
 DWORD WINAPI RunBackgroundThumbnailThread( LPVOID lpParam ) {
-    // while (running && loading) {
-        for (int i = items_without_matching_thumbs.count-1; i >= 0; i--) {
-            string thumbpath = string::Create(CopyItemPathAndConvertToThumbPath(items_without_matching_thumbs[i].chars));
-            DownresFileAtPathToPath(items_without_matching_thumbs[i], thumbpath);
-            thumb_files.add(thumbpath);
-            items_without_matching_thumbs.count--; // should add .pop()
-            free(thumbpath.chars); // should just use the same memory
-        }
-        loading = false;
+
+    // for (int i = 0; i < items.count; i++) {
+    //     if (!win32_PathExists(items[i].thumbpath128.chars)) {
+    //         if (ffmpeg_can_open(items[i].thumbpath128)) {
+    //             DownresFileAtPathToPath(items[i].fullpath, items[i].thumbpath128);
+    //         } else  {
+    //             CreateDummyThumb(items[i].fullpath, items[i].thumbpath128);
+    //         }
+    //     }
     // }
+    // loading = false;
+
+    for (int i = items_without_matching_thumbs.count-1; i >= 0; i--) {
+        string thumbpath = string::Create(CopyItemPathAndConvertToThumbPath(items_without_matching_thumbs[i].chars));
+        if (ffmpeg_can_open(thumbpath)) {
+            DownresFileAtPathToPath(items_without_matching_thumbs[i], thumbpath);
+        } else  {
+            CreateDummyThumb(items_without_matching_thumbs[i], thumbpath);
+        }
+        thumb_files.add(thumbpath);
+        items_without_matching_thumbs.count--; // should add .pop()
+        free(thumbpath.chars); // should just use the same memory
+    }
+    loading = false;
     return 0;
 }
 void LaunchBackgroundThumbnailLoop() {
