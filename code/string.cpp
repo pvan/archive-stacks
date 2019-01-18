@@ -260,6 +260,7 @@ wc *CopyItemPathAndConvertToThumbPath(wc *mainpath) {
 }
 
 
+// subfolder needs to not have leading and trailing /, eg; "~thumbs" not "/~thumbs/"
 string ItemPathToSubfolderPath(string mainpath, wc *subfolder) {
 
     // TODO: warning: wouldn't work on items not in a subdirectory, see xgz
@@ -270,8 +271,9 @@ string ItemPathToSubfolderPath(string mainpath, wc *subfolder) {
     wc *filename = CopyJustFilename(mainpath.chars);
 
     wc *result = (wc*)malloc((wcslen(assumed_master_dir) +
-                             // wcslen(L"/~thumbs/") +
+                             wcslen(L"/") +
                              wcslen(subfolder) +
+                             wcslen(L"/") +
                              wcslen(directory) +
                              wcslen(L"/") +
                              wcslen(filename) +

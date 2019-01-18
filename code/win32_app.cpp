@@ -163,8 +163,8 @@ void load_tick(string_pool files, string_pool thumb_files, int cw, int ch) {
 
     opengl_clear();
 
-    ui_text("media files: %f", files.count, cw/2, ch/2);
-    ui_text("thumb files: %f", thumb_files.count, cw/2, ch/2 + UI_TEXT_SIZE);
+    // ui_text("media files: %f", files.count, cw/2, ch/2);
+    // ui_text("thumb files: %f", thumb_files.count, cw/2, ch/2 + UI_TEXT_SIZE);
 
     ui_text("items_without_matching_thumbs: %f", items_without_matching_thumbs.count, cw/2, ch/2 + UI_TEXT_SIZE*2);
     ui_text("thumbs_without_matching_item: %f", thumbs_without_matching_item.count, cw/2, ch/2 + UI_TEXT_SIZE*3);
@@ -272,164 +272,33 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     opengl_quad quad;
     quad.create(0,0,300,200);
 
-    // int width, height, channels;
-    // stbi_set_flip_vertically_on_load(true);
-    // u8 *data = stbi_load("D:\\~phil\\projects\\endless-drive\\art\\car.jpg", &width, &height, &channels, 4);
-    // if (!data) { assert(false); }
-    // quad.set_texture((u32*)data, width, height);
 
-    // u8 texture[4*4*3] = {//0xc0ffeeff, 0xff00ffff, 0xff0077ff, 0xff0f00ff};
-    //     0x00,0x00,0xff,  0x00,0xff,0x00,  0x00,0x00,0xff,  0x00,0xff,0x00,
-    //     0xff,0x00,0x00,  0x00,0xff,0xff,  0xff,0x00,0x00,  0x00,0xff,0xff,
-    //     0x00,0x00,0xff,  0x00,0xff,0x00,  0x00,0x00,0xff,  0x00,0xff,0x00,
-    //     0xff,0x00,0x00,  0x00,0xff,0xff,  0xff,0x00,0x00,  0x00,0xff,0xff,
-    // };
-    // u32 texture[4] = {0xc0ffeeff, 0xff00ffff, 0xff0077ff, 0xff0f00ff};
-    // quad.set_texture(texture, 2, 2);
 
     // string master_path = string::Create(L"D:/Users/phil/Desktop/test archive");
     string master_path = string::Create(L"E:\\inspiration test folder");
-    string_pool top_folders = win32_GetAllFilesAndFoldersInDir(master_path);
-    files = string_pool::empty();
-    // item_pool items = item_pool::empty();
 
-    string ignore1 = string::Create("~thumbs");
-    string ignore2 = string::Create("~metadata");
-
-    // for (int folderI = 0; folderI < top_folders.count; folderI++) {
-
-    //     if (win32_IsDirectory(top_folders[folderI])) {
-    //         // if (!ignore_folders.has(top_folders[folderI])) {
-    //         if (StringEndsWith(top_folders[folderI].chars, ignore1.chars) ||
-    //             StringEndsWith(top_folders[folderI].chars, ignore2.chars))
-    //         {
-    //             DEBUGPRINT("ignoring: %s\n", top_folders[folderI].ToUTF8Reusable());
-    //         } else {
-    //             string_pool subfiles = win32_GetAllFilesAndFoldersInDir(top_folders[folderI]);
-    //             for (int fileI = 0; fileI < subfiles.count; fileI++) {
-    //                 if (!win32_IsDirectory(subfiles[fileI].chars)) {
-    //                     // DEBUGPRINT(subfiles[fileI].ParentDirectoryNameReusable().ToUTF8Reusable());
-    //                     // if (!StringEndsWith(subfiles[fileI].chars, THUMB_DIR_NAME.chars))
-    //                         // files.add(subfiles[fileI]);
-    //                     items.add({subfiles[fileI]});
-    //                 } else {
-    //                     // wchar_t tempbuf[123];
-    //                     // swprintf(tempbuf, L"%s is dir!\n", subfiles[fileI].chars);
-    //                     // // OutputDebugStringW(tempbuf);
-    //                     // MessageBoxW(0,tempbuf,0,0);
-    //                 }
-    //             }
-    //         }
-    //     }
-
-    //     // else {
-    //     //     // files in top folder, add?
-    //     //     // todo: see xgz
-    //     // }
-    // }
-
-    // for (int i = 0; i < items.count; i++) {
-    //     DEBUGPRINT(items[i].fullpath.ToUTF8Reusable());
-    // }
-
-    // PopulateItemPaths();
-
-    // string THUMB_DIR_NAME = string::Create("~thumbs");
-    for (int folderI = 0; folderI < top_folders.count; folderI++) {
-        if (win32_IsDirectory(top_folders[folderI])) {
-            if (StringEndsWith(top_folders[folderI].chars, ignore1.chars) ||
-                StringEndsWith(top_folders[folderI].chars, ignore2.chars))
-            {
-                DEBUGPRINT("Ignoring: %s\n", top_folders[folderI].ToUTF8Reusable());
-            } else {
-                string_pool subfiles = win32_GetAllFilesAndFoldersInDir(top_folders[folderI]);
-                for (int fileI = 0; fileI < subfiles.count; fileI++) {
-                    if (!win32_IsDirectory(subfiles[fileI].chars)) {
-                        files.add(subfiles[fileI]);
-                    } else {
-                        // wchar_t tempbuf[123];
-                        // swprintf(tempbuf, L"%s is dir!\n", subfiles[fileI].chars);
-                        // // OutputDebugStringW(tempbuf);
-                        // MessageBoxW(0,tempbuf,0,0);
-                    }
-                }
-            }
-        } else {
-            // files in top folder, add?
-            // todo: see xgz
-        }
+    files_full = FindAllItemPaths(master_path);
+    for (int i = 0; i < files_full.count; i++) {
+        files_thumb.add(ItemPathToSubfolderPath(files_full[i], L"~thumbs"));
     }
 
-    string thumb_path = master_path.Append(L"/~thumbs");
-    string_pool thumb_folders = win32_GetAllFilesAndFoldersInDir(thumb_path);
-    thumb_files = string_pool::empty();
-    for (int folderI = 0; folderI < thumb_folders.count; folderI++) {
-        if (win32_IsDirectory(thumb_folders[folderI])) {
-            string_pool subfiles = win32_GetAllFilesAndFoldersInDir(thumb_folders[folderI]);
-            for (int fileI = 0; fileI < subfiles.count; fileI++) {
-                if (!win32_IsDirectory(subfiles[fileI].chars)) {
-                    // DEBUGPRINT(subfiles[fileI].ParentDirectoryNameReusable().ToUTF8Reusable());
-                    thumb_files.add(subfiles[fileI]);
-                } else {
-                    // wchar_t tempbuf[123];
-                    // swprintf(tempbuf, L"%s is dir!\n", subfiles[fileI].chars);
-                    // // OutputDebugStringW(tempbuf);
-                    // MessageBoxW(0,tempbuf,0,0);
-                }
-            }
-        } else {
-            // files in top folder, add?
-            // todo: see xgz
-        }
-    }
+    existing_thumbs = FindAllSubfolderPaths(master_path, L"/~thumbs");
 
 
-    items_without_matching_thumbs = string_pool::empty();
-    for (int i = 0; i < files.count; i++) {
-        // DEBUGPRINT("full: %s\n", files[i].ToUTF8Reusable());
-        string thumbpath = string::Create(CopyItemPathAndConvertToThumbPath(files[i].chars));
-        if (!thumb_files.has(thumbpath)) {
-            items_without_matching_thumbs.add(files[i].Copy());
-            // DEBUGPRINT("can't find %s\n", thumbpath.ToUTF8Reusable());
-        }
-        free(thumbpath.chars);
-    }
+    items_without_matching_thumbs = ItemsInFirstPoolButNotSecond(files_thumb, existing_thumbs);
+    thumbs_without_matching_item = ItemsInFirstPoolButNotSecond(existing_thumbs, files_thumb);
 
 
-    // thumbs_without_matching_item = string_pool::empty();
-    // for (int i = 0; i < thumb_files.count; i++) {
-    //     string itempath = CopyThumbPathAndConvertToItemPath(thumb_files[i]);
-    //     if (!files.has(itempath)) {
-    //         thumbs_without_matching_item.add(thumb_files[i].Copy());
-    //     }
-    //     free(itempath.chars);
-    // }
 
-
+    // DEBUGPRINT("files needing thumbs:\n");
     // for (int i = 0; i < items_without_matching_thumbs.count; i++) {
     //     DEBUGPRINT(items_without_matching_thumbs[i].ToUTF8Reusable());
     // }
+    // DEBUGPRINT("thumb files to delete:\n");
     // for (int i = 0; i < thumbs_without_matching_item.count; i++) {
     //     DEBUGPRINT(thumbs_without_matching_item[i].ToUTF8Reusable());
     // }
 
-
-    // todo: string allocs are a bit of a mess atm
-
-    // if (win32_IsDirectory(L"D:/Users/phil/Desktop/test archive")) MessageBox(0,"1",0,0);
-    // if (win32_IsDirectory(L"D:/Users/phil/Desktop/test archive/egs")) MessageBox(0,"2",0,0);
-    // if (win32_IsDirectory(L"D:/Users/phil/Desktop/test archive/egs/")) MessageBox(0,"3",0,0);
-
-    // // string master_path = string::Create(L"D:/Users/phil/Desktop/test archive/egs");
-    // // string_pool files = win32io_GetAllFilesAndFoldersInDir(master_path);
-    // wchar_t buf[213];
-    // swprintf(buf, L"files: %i\n", files.count);
-    // OutputDebugStringW(buf);
-    // for (int i = 0; i < files.count; i++) {
-    //     swprintf(buf, L"%ls\n", files[i].chars);
-    //     OutputDebugStringW(buf);
-    //     // MessageBoxW(0,buf,0,0);
-    // }
 
 
     LaunchBackgroundThumbnailLoop();
@@ -485,12 +354,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 
         if (loading) {
-            load_tick(files, thumb_files, cw, ch);
+            load_tick(files_full, existing_thumbs, cw, ch);
             continue;
         }
 
         if (need_init) {
-            init_app(files, cw, ch);
+            init_app(files_full, cw, ch);
             need_init = false;
         }
 

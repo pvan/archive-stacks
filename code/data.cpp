@@ -11,13 +11,96 @@ tile_pool tiles; // access from background thread as well
 
 // paths...
 
-string_pool files; // string collection of paths to all item files
-string_pool thumb_files; // string collection of paths to the thumbnail files
+string_pool files_full; // string collection of paths to all item files
+string_pool files_thumb; // string collection of paths to the thumbnail files
+// string_pool files_thumb128; // string collection of paths to the thumbnail files
+// string_pool files_thumb256; // string collection of paths to the thumbnail files
+// string_pool files_thumb512; // string collection of paths to the thumbnail files
+// string_pool files_metadata; // paths to metadata files (resolution, probably tags eventually)
 
 
-// if we start using index lists like this, we'll need to keep items in the same order at all times
+
+// kind of just for loading....
+string_pool existing_thumbs;
 string_pool items_without_matching_thumbs;
 string_pool thumbs_without_matching_item;
+
+
+string_pool FindAllItemPaths(string master_path) {
+    string_pool top_folders = win32_GetAllFilesAndFoldersInDir(master_path);
+    string_pool result = string_pool::empty();
+
+    string ignore1 = string::Create("~thumbs");
+    string ignore2 = string::Create("~metadata");
+
+    for (int folderI = 0; folderI < top_folders.count; folderI++) {
+        if (win32_IsDirectory(top_folders[folderI])) {
+            if (StringEndsWith(top_folders[folderI].chars, ignore1.chars) ||
+                StringEndsWith(top_folders[folderI].chars, ignore2.chars))
+            {
+                DEBUGPRINT("Ignoring: %s\n", top_folders[folderI].ToUTF8Reusable());
+            } else {
+                string_pool subfiles = win32_GetAllFilesAndFoldersInDir(top_folders[folderI]);
+                for (int fileI = 0; fileI < subfiles.count; fileI++) {
+                    if (!win32_IsDirectory(subfiles[fileI].chars)) {
+                        result.add(subfiles[fileI]);
+                    } else {
+                        // wchar_t tempbuf[123];
+                        // swprintf(tempbuf, L"%s is dir!\n", subfiles[fileI].chars);
+                        // // OutputDebugStringW(tempbuf);
+                        // MessageBoxW(0,tempbuf,0,0);
+                    }
+                }
+            }
+        } else {
+            // files in top folder, add?
+            // todo: see xgz
+        }
+    }
+    return result;
+}
+
+string_pool FindAllSubfolderPaths(string master_path, wc *subfolder) {
+
+    string thumb_path = master_path.Append(subfolder);
+    string_pool top_files = win32_GetAllFilesAndFoldersInDir(thumb_path);
+    string_pool result = string_pool::empty();
+    for (int folderI = 0; folderI < top_files.count; folderI++) {
+        if (win32_IsDirectory(top_files[folderI])) {
+            string_pool subfiles = win32_GetAllFilesAndFoldersInDir(top_files[folderI]);
+            for (int fileI = 0; fileI < subfiles.count; fileI++) {
+                if (!win32_IsDirectory(subfiles[fileI].chars)) {
+                    // DEBUGPRINT(subfiles[fileI].ParentDirectoryNameReusable().ToUTF8Reusable());
+                    result.add(subfiles[fileI]);
+                } else {
+                    // wchar_t tempbuf[123];
+                    // swprintf(tempbuf, L"%s is dir!\n", subfiles[fileI].chars);
+                    // // OutputDebugStringW(tempbuf);
+                    // MessageBoxW(0,tempbuf,0,0);
+                }
+            }
+        } else {
+            // files in top folder, add?
+            // todo: see xgz
+        }
+    }
+    return result;
+}
+
+string_pool ItemsInFirstPoolButNotSecond(string_pool p1, string_pool p2) {
+    string_pool result = string_pool::empty();
+    for (int i = 0; i < p1.count; i++) {
+        if (!p2.has(p1[i]))
+            result.add(p1[i]);
+        // string thumbpath = string::Create(CopyItemPathAndConvertToThumbPath(files[i].chars));
+        // if (!thumb_files.has(thumbpath)) {
+        //     items_without_matching_thumbs.add(files[i].Copy());
+        //     // DEBUGPRINT("can't find %s\n", thumbpath.ToUTF8Reusable());
+        // }
+        // free(thumbpath.chars);
+    }
+    return result;
+}
 
 
 

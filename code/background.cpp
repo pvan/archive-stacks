@@ -22,7 +22,7 @@ DWORD WINAPI RunBackgroundThumbnailThread( LPVOID lpParam ) {
         } else  {
             CreateDummyThumb(items_without_matching_thumbs[i], thumbpath);
         }
-        thumb_files.add(thumbpath);
+        existing_thumbs.add(thumbpath);
         items_without_matching_thumbs.count--; // should add .pop()
         free(thumbpath.chars); // should just use the same memory
     }
