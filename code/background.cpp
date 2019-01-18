@@ -1,8 +1,39 @@
 
 
 
+// bool GetCachedResolutionIfPossible(string path, v2 *result) {
+//     FILE* file = fopen (path.ToUTF8Reusable(), "r");
+//     if (!file) { return false; }
+//     fscanf (file, "%f%f", &result->x, &result->y);
+//     fclose (file);
+//     return true;
+// }
+
+void CreateCachedMetadataFile(string origpath, string metapath) {
+    v2 res = {0,0};
+    if (ffmpeg_can_open(origpath)) {
+        res = ffmpeg_GetResolution(origpath);
+    }
+    // todo: should we set any other limitations here?
+    // maybe if we can't load it, pull res from any thumbs that exist?
+    if (res.w == 0) res.w = 10;
+    if (res.h == 0) res.h = 10;
+    CreateCachedResolution(metapath, res);
+}
+
+int_pool item_indices_without_thumbs;
+int_pool item_indices_without_metadata;
 
 DWORD WINAPI RunBackgroundThumbnailThread( LPVOID lpParam ) {
+
+    for (int i = item_indices_without_metadata.count-1; i >= 0; i--) {
+        // string metapath = ItemPathToSubfolderPath(items_without_matching_metadata[i], L"~metadata");
+        string fullpath = items[item_indices_without_metadata[i]].fullpath;
+        string metadatapath = items[item_indices_without_metadata[i]].metadatapath;
+        CreateCachedMetadataFile(fullpath, metadatapath);
+        item_indices_without_metadata.count--; // should add .pop()
+        // free(metapath.chars); // should just use the same memory
+    }
 
     // for (int i = 0; i < items.count; i++) {
     //     if (!win32_PathExists(items[i].thumbpath128.chars)) {
@@ -15,16 +46,16 @@ DWORD WINAPI RunBackgroundThumbnailThread( LPVOID lpParam ) {
     // }
     // loading = false;
 
-    for (int i = items_without_matching_thumbs.count-1; i >= 0; i--) {
-        string thumbpath = string::Create(CopyItemPathAndConvertToThumbPath(items_without_matching_thumbs[i].chars));
+    for (int i = item_indices_without_thumbs.count-1; i >= 0; i--) {
+        string fullpath = items[item_indices_without_thumbs[i]].fullpath;
+        string thumbpath = items[item_indices_without_thumbs[i]].thumbpath;
         if (ffmpeg_can_open(thumbpath)) {
-            DownresFileAtPathToPath(items_without_matching_thumbs[i], thumbpath);
+            DownresFileAtPathToPath(fullpath, thumbpath);
         } else  {
-            CreateDummyThumb(items_without_matching_thumbs[i], thumbpath);
+            CreateDummyThumb(fullpath, thumbpath);
         }
-        existing_thumbs.add(thumbpath);
-        items_without_matching_thumbs.count--; // should add .pop()
-        free(thumbpath.chars); // should just use the same memory
+        item_indices_without_thumbs.count--; // should add .pop()
+        // free(thumbpath.chars); // should just use the same memory
     }
     loading = false;
     return 0;

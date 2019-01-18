@@ -37,6 +37,7 @@
     static thetype##_pool empty() { thetype##_pool new_blank = {0}; return new_blank;  } \
 };
 
+DEFINE_TYPE_POOL(int);
 DEFINE_TYPE_POOL(v2);
 DEFINE_TYPE_POOL(string);
 

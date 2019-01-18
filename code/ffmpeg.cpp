@@ -560,6 +560,8 @@ struct ffmpeg_media {
         string definitely_static_image_formats[] = {
             string::Create(L"image2"),
             string::Create(L"png_pipe"),
+            string::Create(L"bmp_pipe"),
+            // todo: add way to detect missing formats (e.g. check if getframe is never changing or something)
         };
 
         for (int i = 0; i < 2; i++) {

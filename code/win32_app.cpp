@@ -15,6 +15,7 @@ void DEBUGPRINT(char *s) { sprintf(debugprintbuffer, "%s\n", s); OutputDebugStri
 void DEBUGPRINT(char *s, int i) { sprintf(debugprintbuffer, s, i); OutputDebugString(debugprintbuffer); }
 void DEBUGPRINT(char *s, char *s2) { sprintf(debugprintbuffer, s, s2); OutputDebugString(debugprintbuffer); }
 void DEBUGPRINT(char *s, float f) { sprintf(debugprintbuffer, s, f); OutputDebugString(debugprintbuffer); }
+void DEBUGPRINT(char *s, float f1, float f2) { sprintf(debugprintbuffer, s, f1, f2); OutputDebugString(debugprintbuffer); }
 
 #include "v2.cpp"
 #include "rect.cpp"
@@ -35,10 +36,10 @@ void DEBUGPRINT(char *s, float f) { sprintf(debugprintbuffer, s, f); OutputDebug
 #include "../lib/stb_image_write.h"
 
 #include "ffmpeg.cpp"
+#include "data.cpp"
 #include "tile.cpp"
 #include "text.cpp"
 #include "ui.cpp"
-#include "data.cpp"
 
 
 
@@ -124,13 +125,14 @@ bool need_init = true;
 int master_scroll_delta = 0;
 
 
-void init_app(string_pool files, int cw, int ch) {
+void init_app(item_pool all_items, int cw, int ch) {
 
     // init tiles
     {
         tiles = tile_pool::empty();
-        for (int i = 0; i < files.count; i++) {
-            tiles.add(tile::CreateFromFile(files[i]));
+        for (int i = 0; i < all_items.count; i++) {
+            // tiles.add(tile::CreateFromFile(all_items[i].fullpath));
+            tiles.add(tile::CreateFromItem(all_items[i]));
         }
         // AddRandomColorToTilePool
         {
@@ -143,7 +145,7 @@ void init_app(string_pool files, int cw, int ch) {
             }
         }
         // SortTilePoolByDate(&tiles);
-        ReadTileResolutions(&tiles);
+        ReadTileResolutions(&tiles); // should be loading cached files that are created in background while loading now
         ArrangeTilesInOrder(&tiles, {0,0,(float)cw,(float)ch}); // requires resolutions to be set
     }
 
@@ -157,17 +159,20 @@ void init_app(string_pool files, int cw, int ch) {
 
 }
 
-void load_tick(string_pool files, string_pool thumb_files, int cw, int ch) {
+void load_tick(item_pool all_items, int cw, int ch) {
 
     // ui_progressbar(cw/2, ch2)
 
     opengl_clear();
 
-    // ui_text("media files: %f", files.count, cw/2, ch/2);
-    // ui_text("thumb files: %f", thumb_files.count, cw/2, ch/2 + UI_TEXT_SIZE);
+    ui_text("media files: %f", all_items.count, cw/2, ch/2 + UI_TEXT_SIZE*-1);
+    // ui_text("thumb files: %f", thumb_files.count, cw/2, ch/2 + UI_TEXT_SIZE*0);
+    // ui_text("metadata files: %f", thumb_files.count, cw/2, ch/2 + UI_TEXT_SIZE*1);
 
-    ui_text("items_without_matching_thumbs: %f", items_without_matching_thumbs.count, cw/2, ch/2 + UI_TEXT_SIZE*2);
-    ui_text("thumbs_without_matching_item: %f", thumbs_without_matching_item.count, cw/2, ch/2 + UI_TEXT_SIZE*3);
+    ui_text("items_without_matching_thumbs: %f", item_indices_without_thumbs.count, cw/2, ch/2 + UI_TEXT_SIZE*3);
+    // ui_text("thumbs_without_matching_item: %f", thumbs_without_matching_item.count, cw/2, ch/2 + UI_TEXT_SIZE*3);
+
+    ui_text("items_without_matching_metadata: %f", item_indices_without_metadata.count, cw/2, ch/2 + UI_TEXT_SIZE*5);
 
     opengl_swap();
 
@@ -274,31 +279,67 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 
 
-    // string master_path = string::Create(L"D:/Users/phil/Desktop/test archive");
     string master_path = string::Create(L"E:\\inspiration test folder");
 
-    files_full = FindAllItemPaths(master_path);
-    for (int i = 0; i < files_full.count; i++) {
-        files_thumb.add(ItemPathToSubfolderPath(files_full[i], L"~thumbs"));
+    // create item list with fullpath populated
+    // just adapt old method for now
+    string_pool itempaths = FindAllItemPaths(master_path);
+    items = item_pool::empty();
+    for (int i = 0; i < itempaths.count; i++) {
+        item newitem = {0};
+        newitem.fullpath = itempaths[i];
+        items.add(newitem);
+    }
+    PopulateItemPaths(); // fill in thumb paths, metdata path, etc.
+
+
+    // create work queue for loading thread
+    item_indices_without_thumbs = int_pool::empty();
+    item_indices_without_metadata = int_pool::empty();
+    for (int i = 0; i < items.count; i++) {
+        if (!win32_PathExists(items[i].thumbpath.chars)) { item_indices_without_thumbs.add(i); }
+        if (!win32_PathExists(items[i].metadatapath.chars)) { item_indices_without_metadata.add(i); }
     }
 
-    existing_thumbs = FindAllSubfolderPaths(master_path, L"/~thumbs");
 
 
-    items_without_matching_thumbs = ItemsInFirstPoolButNotSecond(files_thumb, existing_thumbs);
-    thumbs_without_matching_item = ItemsInFirstPoolButNotSecond(existing_thumbs, files_thumb);
+    // // string master_path = string::Create(L"D:/Users/phil/Desktop/test archive");
+    // string master_path = string::Create(L"E:\\inspiration test folder");
+    // files_full = FindAllItemPaths(master_path);
+
+    // for (int i = 0; i < files_full.count; i++) {
+    //     files_thumb.add(ItemPathToSubfolderPath(files_full[i], L"~thumbs"));
+    //     files_metadata.add(ItemPathToSubfolderPath(files_full[i], L"~metadata"));
+    // }
+
+    // existing_thumbs = FindAllSubfolderPaths(master_path, L"/~thumbs");
+    // items_without_matching_thumbs = ItemsInFirstPoolButNotSecond(files_thumb, existing_thumbs);
+    // thumbs_without_matching_item = ItemsInFirstPoolButNotSecond(existing_thumbs, files_thumb);
+
+    // existing_metadata = FindAllSubfolderPaths(master_path, L"/~metadata");
+    // items_without_matching_metadata = ItemsInFirstPoolButNotSecond(files_metadata, existing_metadata);
+    // metadata_without_matching_item = ItemsInFirstPoolButNotSecond(existing_metadata, files_metadata);
 
 
 
-    // DEBUGPRINT("files needing thumbs:\n");
+    // DEBUGPRINT("items_without_matching_thumbs: (%i)\n", items_without_matching_thumbs.count);
     // for (int i = 0; i < items_without_matching_thumbs.count; i++) {
     //     DEBUGPRINT(items_without_matching_thumbs[i].ToUTF8Reusable());
     // }
-    // DEBUGPRINT("thumb files to delete:\n");
+    // DEBUGPRINT("thumbs_without_matching_item: (%i)\n", thumbs_without_matching_item.count);
     // for (int i = 0; i < thumbs_without_matching_item.count; i++) {
     //     DEBUGPRINT(thumbs_without_matching_item[i].ToUTF8Reusable());
     // }
 
+    // DEBUGPRINT("items_without_matching_metadata: (%i)\n", items_without_matching_metadata.count);
+    // for (int i = 0; i < items_without_matching_metadata.count; i++) {
+    //     DEBUGPRINT(items_without_matching_metadata[i].ToUTF8Reusable());
+    // }
+    // DEBUGPRINT("metadata_without_matching_item: (%i)\n", metadata_without_matching_item.count);
+    // for (int i = 0; i < metadata_without_matching_item.count; i++) {
+    //     DEBUGPRINT(metadata_without_matching_item[i].ToUTF8Reusable());
+    // }
+    // return 0;
 
 
     LaunchBackgroundThumbnailLoop();
@@ -354,12 +395,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 
         if (loading) {
-            load_tick(files_full, existing_thumbs, cw, ch);
+            load_tick(items, cw, ch);
             continue;
         }
 
         if (need_init) {
-            init_app(files_full, cw, ch);
+            init_app(items, cw, ch);
             need_init = false;
         }
 
@@ -515,6 +556,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             }
             HUDPRINT("media loaded: %i", metric_media_loaded);
 
+            HUDPRINT("tiles: %i", tiles.count);
+            HUDPRINT("items: %i", items.count);
+
             // int display_quad_count = 0;
             // for (int i = 0; i < display_quad_count; i++) {
             //     if (display_quads[i].is_used) display_quad_count++;
@@ -533,7 +577,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                     HUDPRINT("quad index: %i", tiles[i].display_quad_index);
                     HUDPRINT("has disp quad: %i", (int)tiles[i].has_display_quad);
 
-                    if (tiles[i].media.vfc)
+                    if (tiles[i].media.vfc && tiles[i].media.vfc->iformat)
                         HUDPRINT("format name: %s", (char*)tiles[i].media.vfc->iformat->name);
 
                     HUDPRINT("fps: %f", (float)tiles[i].media.fps);
@@ -543,6 +587,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
                     if (tiles[i].media.vfc && tiles[i].media.vfc->iformat)
                         HUDPRINT("is image: %i", (int)tiles[i].media.IsStaticImageBestGuess());
+
+                    wc *directory = CopyJustParentDirectoryName(tiles[i].paths.fullpath.chars);
+                    string temp = string::Create(directory);
+                    HUDPRINT("folder: %s", temp.ToUTF8Reusable());
+                    free(directory);
+
+                    HUDPRINT("tile index: %i", i);
 
                 }
             }

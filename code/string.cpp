@@ -19,12 +19,19 @@ struct string
     bool operator!= (string o) { return !string::Equals(chars, o.chars); }
 
 
-    string& Append(wchar *suffix) {
-        assert(chars);
-        length += wcslen(suffix);
-        chars = (wchar_t*)realloc(chars, (length+1)*sizeof(wchar_t));
-        wcscat(chars, suffix);
-        return *this;
+    // string& Append(wchar *suffix) {
+    //     assert(chars);
+    //     length += wcslen(suffix);
+    //     chars = (wchar_t*)realloc(chars, (length+1)*sizeof(wchar_t));
+    //     wcscat(chars, suffix);
+    //     return *this;
+    // }
+    string CopyAndAppend(wchar *suffix) {
+        string c = Copy();
+        c.length += wcslen(suffix);
+        c.chars = (wchar_t*)realloc(c.chars, (c.length+1)*sizeof(wchar_t));
+        wcscat(c.chars, suffix);
+        return c;
     }
 
     string Copy() {

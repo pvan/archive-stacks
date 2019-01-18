@@ -29,8 +29,8 @@ string_pool win32_GetAllFilesAndFoldersInDir(string path)
 {
     string_pool results = string_pool::empty();
 
-    string dir_path = path.Copy().Append(L"/"); // for use when appending subfolders to this path
-    string search_path = dir_path.Copy().Append(L"*"); // wildcard for search
+    string dir_path = path.CopyAndAppend(L"/"); // for use when appending subfolders to this path
+    string search_path = dir_path.CopyAndAppend(L"*"); // wildcard for search
 
     WIN32_FIND_DATAW ffd;
     HANDLE hFind = FindFirstFileW(search_path.chars, &ffd);
@@ -38,7 +38,7 @@ string_pool win32_GetAllFilesAndFoldersInDir(string path)
     do {
         if(string::Equals(ffd.cFileName, L".") || string::Equals(ffd.cFileName, L"..")) continue;
 
-        string full_path = dir_path.Copy().Append(ffd.cFileName);
+        string full_path = dir_path.CopyAndAppend(ffd.cFileName);
         results.add(full_path);
 
         // string this_path = string::Create(ffd.cFileName);

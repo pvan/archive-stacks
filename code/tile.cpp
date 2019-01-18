@@ -10,7 +10,8 @@ struct tile
 
 
     // file data
-    string fullpath;
+    // string fullpath;
+    item paths;
     string name;
     u64 modifiedTimeSinceLastEpoc;
 
@@ -87,7 +88,7 @@ struct tile
         // if (!win32_PathExists(path)) return newTile; // i feel like these are just the error down the line
         // if (win32_IsDirectory(path)) return newTile;
 
-        newTile.fullpath = path.Copy();
+        newTile.paths.fullpath = path.Copy();
         newTile.name = string::Create(CopyJustFilename(path.chars));
         newTile.modifiedTimeSinceLastEpoc = win32_GetModifiedTimeSinceEpoc(path);
 
@@ -96,8 +97,14 @@ struct tile
         return newTile;
     };
 
+    static tile CreateFromItem(item it) {
+        tile newTile = CreateFromFile(it.fullpath);
+        newTile.paths = it;
+        return newTile;
+    }
 
-    bool operator== (tile o) { return fullpath==o.fullpath; }
+
+    bool operator== (tile o) { return paths.fullpath==o.paths.fullpath; }
 
 
 };
@@ -131,26 +138,40 @@ void SortTilePoolByDate(tile_pool *pool)
 
 
 bool GetCachedResolutionIfPossible(string path, v2 *result) {
-    FILE* file = fopen (path.ToUTF8Reusable(), "r");
-    if (!file) { return false; }
-    fscanf (file, "%f%f", &result->x, &result->y);
-    fclose (file);
+    FILE *file = fopen(path.ToUTF8Reusable(), "rb");
+    if (!file) {  DEBUGPRINT("error reading %s\n", path.ToUTF8Reusable()); return false; }
+    fscanf(file, "%f,%f", &result->x, &result->y);
+    fclose(file);
     return true;
 }
-void CreateCachedResolution(string path) {
+void CreateCachedResolution(string path, v2 size) {
+    // DEBUGPRINT("creating %s\n", path.ToUTF8Reusable());
+    CreateAllDirectoriesForPathIfNeeded(path.chars);
+    FILE *file = fopen(path.ToUTF8Reusable(), "wb");
+    if (!file) { DEBUGPRINT("error creating %s\n", path.ToUTF8Reusable()); return; }
+    fprintf(file, "%f,%f", size.x, size.y);
+    fclose(file);
+    // return true;
 }
 void ReadTileResolutions(tile_pool *pool)
 {
+    // DEBUGPRINT("here: coutn: %i", pool->count);
     for (int i = 0; i < pool->count; i++) {
         tile& t = pool->pool[i];
 
-        // if (!GetCachedResolutionIfPossible(t.fullpath, &t.resolution)) {
-            t.resolution = ffmpeg_GetResolution(t.fullpath);
-        //     CreateCachedResolution(t.fullpath);
-        // }
+        if (GetCachedResolutionIfPossible(t.paths.metadatapath, &t.resolution)) {
+            // successfully loaded cached resolution
+            // DEBUGPRINT("read cached res success: %f, %f\n", t.resolution.x, t.resolution.y);
+            continue;
+        } else {
+            // // can't find cached resolution file.. create new one
+            // t.resolution = ffmpeg_GetResolution(t.fullpath);
+            // CreateCachedResolution(t.fullpath, t.resolution);
+        }
+        // DEBUGPRINT("couldn't read cached res: %s\n", t.paths.metadatapath.ToUTF8Reusable());
 
         // for now....
-        if (t.resolution.x == -1 && t.resolution.y == -1)
+        // if (t.resolution.x == -1 && t.resolution.y == -1)
             t.resolution = {10,10};
     }
 }
@@ -184,10 +205,19 @@ int ArrangeTilesInOrder(tile_pool *pool, rect destination_rect) {
     for (int i = 0; i < pool->count; i++) {
         tile& thisTile = pool->pool[i];
 
+        // todo: should be set to min of 10 from trying to find resolution originally
+        // assert(thisTile.size.w >= 10 && thisTile.size.h >= 10);
+        if (thisTile.resolution.w < 10) thisTile.resolution.w = 10;
+        if (thisTile.resolution.h < 10) thisTile.resolution.h = 10;
+
         float aspect_ratio = thisTile.resolution.w / thisTile.resolution.h;
 
         thisTile.size.w = realWidth;
         thisTile.size.h = realWidth / aspect_ratio;
+
+        // if (thisTile.size.w > 3000 || thisTile.size.h > 3000) {
+        //     assert(false);
+        // }
 
         int shortestCol = 0;
         for (int c = 1; c < cols; c++)
@@ -296,4 +326,9 @@ state_amt_off_anchor = 0;
     //     }
     // }
 }
+
+
+tile_pool tiles; // access from background thread as well
+
+
 

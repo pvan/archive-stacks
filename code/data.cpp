@@ -4,33 +4,37 @@
 // global app data
 // for use by multiple threads, etc
 
-tile_pool tiles; // access from background thread as well
 
 
 
 
 // paths...
 
-string_pool files_full; // string collection of paths to all item files
-string_pool files_thumb; // string collection of paths to the thumbnail files
-// string_pool files_thumb128; // string collection of paths to the thumbnail files
-// string_pool files_thumb256; // string collection of paths to the thumbnail files
-// string_pool files_thumb512; // string collection of paths to the thumbnail files
+// string_pool files_full; // string collection of paths to all item files
+// string_pool files_thumb; // string collection of paths to the thumbnail files
+// // string_pool files_thumb128; // string collection of paths to the thumbnail files
+// // string_pool files_thumb256; // string collection of paths to the thumbnail files
+// // string_pool files_thumb512; // string collection of paths to the thumbnail files
 // string_pool files_metadata; // paths to metadata files (resolution, probably tags eventually)
 
 
+// // TODO: rename, these should be "thumbpaths_that_need_creation" or something
+// // because they are not item paths but the paths to the files that don't exist yet
+// // kind of just for loading....
+// string_pool existing_thumbs;
+// string_pool items_without_matching_thumbs;
+// string_pool thumbs_without_matching_item;
 
-// kind of just for loading....
-string_pool existing_thumbs;
-string_pool items_without_matching_thumbs;
-string_pool thumbs_without_matching_item;
+// string_pool existing_metadata;
+// string_pool items_without_matching_metadata;
+// string_pool metadata_without_matching_item;
 
 
 string_pool FindAllItemPaths(string master_path) {
     string_pool top_folders = win32_GetAllFilesAndFoldersInDir(master_path);
     string_pool result = string_pool::empty();
 
-    string ignore1 = string::Create("~thumbs");
+    string ignore1 = string::Create("~thumbs");  // todo: these should be consts somewhere
     string ignore2 = string::Create("~metadata");
 
     for (int folderI = 0; folderI < top_folders.count; folderI++) {
@@ -44,6 +48,10 @@ string_pool FindAllItemPaths(string master_path) {
                 for (int fileI = 0; fileI < subfiles.count; fileI++) {
                     if (!win32_IsDirectory(subfiles[fileI].chars)) {
                         result.add(subfiles[fileI]);
+                        // if (result.count > 1630) {
+                        //     result.count++;
+                        //     result.count--;
+                        // }
                     } else {
                         // wchar_t tempbuf[123];
                         // swprintf(tempbuf, L"%s is dir!\n", subfiles[fileI].chars);
@@ -62,8 +70,8 @@ string_pool FindAllItemPaths(string master_path) {
 
 string_pool FindAllSubfolderPaths(string master_path, wc *subfolder) {
 
-    string thumb_path = master_path.Append(subfolder);
-    string_pool top_files = win32_GetAllFilesAndFoldersInDir(thumb_path);
+    string subfolder_path = master_path.CopyAndAppend(subfolder);
+    string_pool top_files = win32_GetAllFilesAndFoldersInDir(subfolder_path);
     string_pool result = string_pool::empty();
     for (int folderI = 0; folderI < top_files.count; folderI++) {
         if (win32_IsDirectory(top_files[folderI])) {
@@ -104,26 +112,28 @@ string_pool ItemsInFirstPoolButNotSecond(string_pool p1, string_pool p2) {
 
 
 
-// struct item {
-//     string fullpath;
-//     string thumbpath128;
-//     string thumbpath256;
-//     string thumbpath512;
-//     string metadatapath; //cached metadata
-//     bool operator==(item o) { return fullpath==o.fullpath; } // for now just check fullpath
-// };
+struct item {
+    string fullpath;
+    string thumbpath;
+    // string thumbpath128;
+    // string thumbpath256;
+    // string thumbpath512;
+    string metadatapath; //cached metadata
+    bool operator==(item o) { return fullpath==o.fullpath; } // for now just check fullpath
+};
 
-// DEFINE_TYPE_POOL(item);
+DEFINE_TYPE_POOL(item);
 
-// item_pool items;
+item_pool items;
 
-// // todo: pass pool into this or keep items global??
-// void PopulateItemPaths() {
-//     for (int i = 0; i < items.count; i++) {
-//         items[i].thumbpath128 = ItemPathToSubfolderPath(items[i].fullpath, L"~thumbs128");
-//         items[i].thumbpath256 = ItemPathToSubfolderPath(items[i].fullpath, L"~thumbs256");
-//         items[i].thumbpath512 = ItemPathToSubfolderPath(items[i].fullpath, L"~thumbs512");
-//         items[i].metadatapath = ItemPathToSubfolderPath(items[i].fullpath, L"~metadata");
-//     }
-// }
+// todo: pass pool into this or keep items global??
+void PopulateItemPaths() {
+    for (int i = 0; i < items.count; i++) {
+        items[i].thumbpath = ItemPathToSubfolderPath(items[i].fullpath, L"~thumbs");
+        // items[i].thumbpath128 = ItemPathToSubfolderPath(items[i].fullpath, L"~thumbs128");
+        // items[i].thumbpath256 = ItemPathToSubfolderPath(items[i].fullpath, L"~thumbs256");
+        // items[i].thumbpath512 = ItemPathToSubfolderPath(items[i].fullpath, L"~thumbs512");
+        items[i].metadatapath = ItemPathToSubfolderPath(items[i].fullpath, L"~metadata");
+    }
+}
 
