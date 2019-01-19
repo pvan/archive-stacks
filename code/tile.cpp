@@ -183,13 +183,14 @@ void CalcWidthToFit(float desired_image_width, int container_width,
     *number_of_columns = cols;
 }
 
-int ArrangeTilesInOrder(tile_pool *pool, rect destination_rect) {
+int ArrangeTilesInOrder(tile_pool *pool, float desired_tile_width, rect destination_rect) {
 
-    float MASTER_IMG_WIDTH = 200; // todo: pass as input, affected by zoom
+    // float MASTER_IMG_WIDTH = 200; // todo: pass as input, affected by zoom
+    desired_tile_width = fmax(desired_tile_width, 50);
 
     float realWidth;
     int cols;
-    CalcWidthToFit(MASTER_IMG_WIDTH, destination_rect.w, &realWidth, &cols);
+    CalcWidthToFit(desired_tile_width, destination_rect.w, &realWidth, &cols);
 
     float *colbottoms = (float*)malloc(cols*sizeof(float));
     for (int c = 0; c < cols; c++)
@@ -244,81 +245,116 @@ int ArrangeTilesInOrder(tile_pool *pool, rect destination_rect) {
 }
 
 
-int state_amt_off_anchor = 0;
-int state_anchor_item = 0;
-void ShiftTilesBasedOnScrollPosition(tile_pool *pool, int *scroll_delta, Input keysDown, int ch, int tile_height) {
 
-    if (*scroll_delta != 0) {
-        state_amt_off_anchor += *scroll_delta;
-        *scroll_delta = 0;
+int TileIndexMouseIsOver(tile_pool ts, int mouseX, int mouseY) {
+    for (int i = 0; i < ts.count; i++) {
+        rect tile_rect = {ts[i].pos.x, ts[i].pos.y, ts[i].size.w, ts[i].size.h};
+        if (tile_rect.ContainsPoint(mouseX, mouseY)) {
+            return i;
+        }
     }
+    return 0; // mouse is not over at tile... any special handling needed? hmm
+}
 
-    // convert anchor point / amt_off to pixels down the camera is
-    // note we use ANCHOR_ITEM not dispalyList[ANCHOR_ITEM] because
-    // we want to tie to the actual item, not it's position in the list (or we could change it)
-    // tile_pool &pool_ref = *pool;
-    // tile *anchor_tile = &pool_ref[state_anchor_item];
-    // int MASTER_SCROLL = (anchor_tile->pos.y + state_amt_off_anchor);
+int CalculateScrollPosition(int last_scroll_pos, int mwheeldelta, Input keysdown, int ch, int tiles_height) {
 
-static int MASTER_SCROLL = 0;
-MASTER_SCROLL += state_amt_off_anchor;
-state_amt_off_anchor = 0;
+    int result = last_scroll_pos + mwheeldelta;
 
-    // // input that might affect position
-    // if (keysDown.pgDown) { MASTER_SCROLL += ch; }
-    // if (keysDown.pgUp) { MASTER_SCROLL -= ch; }
+    // input that might affect position
+    if (keysdown.pgDown) { result += ch; }
+    if (keysdown.pgUp) { result -= ch; }
 
+    // limit camera to content area
+    if (result+ch > tiles_height) result = tiles_height-ch;
+    if (result < 0) result = 0;  // do this last so we default to "display from top"
 
-    // // MOUSE   scrollbar
-    // {
-    //     // skip any proc if outside client area
-    //     RECT clientRect; GetClientRect(g_hwnd, &clientRect);
-    //     if (input.mouseX > 0 && input.mouseX <= clientRect.right-clientRect.left &&
-    //         input.mouseY > 0 && input.mouseY <= clientRect.bottom-clientRect.top)
-    //     {
-    //         // enable drag
-    //         if (input.mouseX > g_cw-SCROLL_WIDTH)// &&
-    //             // input.mouseX < g_sw-GetSystemMetrics(SM_CXFRAME)) // don't register clicks in resize area
-    //         {
-    //             if (input.mouseL && !is_dragging_scrollbar) {
-    //                 is_dragging_scrollbar = true;
-    //             }
-    //         }
-    //         // disable drag
-    //         if (!input.mouseL && is_dragging_scrollbar) {
-    //             is_dragging_scrollbar = false;
-    //         }
-    //         // drag processing
-    //         if (is_dragging_scrollbar) {
-    //             float percent = (float)input.mouseY / (float)g_ch;
-    //             MASTER_SCROLL = (percent*total_height);
-    //         }
-    //     }
-    // } // end mouse handling
+    return result;
+}
 
+// int state_amt_off_anchor = 0;
+// int state_anchor_item = 0;
+// void ShiftTilesBasedOnScrollPosition(tile_pool *pool, int *scroll_delta, Input keysDown, int ch, int tile_height) {
 
-    // // limit camera to content area
-    // if (MASTER_SCROLL+ch > tile_height) MASTER_SCROLL = tile_height-ch;
-    // if (MASTER_SCROLL < 0) MASTER_SCROLL = 0;  // do this last so we default to "display from top"
-
+// consider: replace this with a single transform uniform in the shader?
+void ShiftTilesBasedOnScrollPosition(tile_pool *pool, int scroll_position) {
 
     // adjust rects for camera position (basically)
     // for (int j = 0; j < stubRectCount; j++) {
     for (int j = 0; j < pool->count; j++) {
-        pool->pool[j].pos.y -= MASTER_SCROLL;
+        pool->pool[j].pos.y -= scroll_position;
     }
 
-    // // set new anchor point / amt_off for next frame
-    // float smallest_delta = ch; // just some big seed value
-    // // for (int j = 0; j < stubRectCount; j++) {
-    // for (int i = 0; i < pool_ref.count; i++) {
-    //     float delta = fabs(pool_ref[i].pos.y);    // works because y==0 means top of screen (after we add camera offset)
-    //     if (delta < smallest_delta) {
-    //         smallest_delta = delta;
-    //         state_anchor_item = i;
-    //         state_amt_off_anchor = -pool_ref[i].pos.y;
-    //     }
-    // }
+//     if (*scroll_delta != 0) {
+//         state_amt_off_anchor += *scroll_delta;
+//         *scroll_delta = 0;
+//     }
+
+//     // convert anchor point / amt_off to pixels down the camera is
+//     // note we use ANCHOR_ITEM not dispalyList[ANCHOR_ITEM] because
+//     // we want to tie to the actual item, not it's position in the list (or we could change it)
+//     // tile_pool &pool_ref = *pool;
+//     // tile *anchor_tile = &pool_ref[state_anchor_item];
+//     // int MASTER_SCROLL = (anchor_tile->pos.y + state_amt_off_anchor);
+
+// static int MASTER_SCROLL = 0;
+// MASTER_SCROLL += state_amt_off_anchor;
+// state_amt_off_anchor = 0;
+
+//     // // input that might affect position
+//     // if (keysDown.pgDown) { MASTER_SCROLL += ch; }
+//     // if (keysDown.pgUp) { MASTER_SCROLL -= ch; }
+
+
+//     // // MOUSE   scrollbar
+//     // {
+//     //     // skip any proc if outside client area
+//     //     RECT clientRect; GetClientRect(g_hwnd, &clientRect);
+//     //     if (input.mouseX > 0 && input.mouseX <= clientRect.right-clientRect.left &&
+//     //         input.mouseY > 0 && input.mouseY <= clientRect.bottom-clientRect.top)
+//     //     {
+//     //         // enable drag
+//     //         if (input.mouseX > g_cw-SCROLL_WIDTH)// &&
+//     //             // input.mouseX < g_sw-GetSystemMetrics(SM_CXFRAME)) // don't register clicks in resize area
+//     //         {
+//     //             if (input.mouseL && !is_dragging_scrollbar) {
+//     //                 is_dragging_scrollbar = true;
+//     //             }
+//     //         }
+//     //         // disable drag
+//     //         if (!input.mouseL && is_dragging_scrollbar) {
+//     //             is_dragging_scrollbar = false;
+//     //         }
+//     //         // drag processing
+//     //         if (is_dragging_scrollbar) {
+//     //             float percent = (float)input.mouseY / (float)g_ch;
+//     //             MASTER_SCROLL = (percent*total_height);
+//     //         }
+//     //     }
+//     // } // end mouse handling
+
+
+//     // // limit camera to content area
+//     // if (MASTER_SCROLL+ch > tile_height) MASTER_SCROLL = tile_height-ch;
+//     // if (MASTER_SCROLL < 0) MASTER_SCROLL = 0;  // do this last so we default to "display from top"
+
+
+//     // adjust rects for camera position (basically)
+//     // for (int j = 0; j < stubRectCount; j++) {
+//     for (int j = 0; j < pool->count; j++) {
+//         pool->pool[j].pos.y -= MASTER_SCROLL;
+//     }
+
+//     // // set new anchor point / amt_off for next frame
+//     // float smallest_delta = ch; // just some big seed value
+//     // // for (int j = 0; j < stubRectCount; j++) {
+//     // for (int i = 0; i < pool_ref.count; i++) {
+//     //     float delta = fabs(pool_ref[i].pos.y);    // works because y==0 means top of screen (after we add camera offset)
+//     //     if (delta < smallest_delta) {
+//     //         smallest_delta = delta;
+//     //         state_anchor_item = i;
+//     //         state_amt_off_anchor = -pool_ref[i].pos.y;
+//     //     }
+//     // }
 }
 
 

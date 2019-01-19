@@ -73,7 +73,9 @@ bool need_init = true;
 
 
 int master_scroll_delta = 0;
+int master_ctrl_scroll_delta = 0;
 
+float master_desired_tile_width = 200;
 
 void init_app(item_pool all_items, int cw, int ch) {
 
@@ -96,7 +98,7 @@ void init_app(item_pool all_items, int cw, int ch) {
         }
         // SortTilePoolByDate(&tiles);
         ReadCachedTileResolutions(&tiles); // should be loading cached files that are created in background while loading now
-        ArrangeTilesInOrder(&tiles, {0,0,(float)cw,(float)ch}); // requires resolutions to be set
+        ArrangeTilesInOrder(&tiles, master_desired_tile_width, {0,0,(float)cw,(float)ch}); // requires resolutions to be set
     }
 
 
@@ -138,7 +140,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         case WM_MOUSEWHEEL: {
             float delta = GET_WHEEL_DELTA_WPARAM(wParam);
             if (GET_KEYSTATE_WPARAM(wParam) & MK_CONTROL) {
-
+                master_ctrl_scroll_delta -= (delta / 120) * 10;
             } else {
                 // if (loadItem == -1) {
                     master_scroll_delta -= delta * 1;
@@ -322,12 +324,24 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 
         // position the tiles
+        static int tile_index_mouse_was_on = 0;
         {
             // arrange every frame, in case window size changed
-            // todo: could just arrange if window resize / tag settigns change
-            int tile_height = ArrangeTilesInOrder(&tiles, {0,0,(float)cw,(float)ch}); // requires resolutions to be set
+            // todo: could just arrange if window resize / tag settigns change / etc
 
-            ShiftTilesBasedOnScrollPosition(&tiles, &master_scroll_delta, keysDown, ch, tile_height);
+            master_desired_tile_width += master_ctrl_scroll_delta;
+            master_ctrl_scroll_delta = 0; // done using this in this frame
+
+            int tiles_height = ArrangeTilesInOrder(&tiles, master_desired_tile_width, {0,0,(float)cw,(float)ch}); // requires resolutions to be set
+
+            static int last_scroll_pos = 0;
+            int scroll_pos = CalculateScrollPosition(last_scroll_pos, master_scroll_delta, keysDown, ch, tiles_height);
+            last_scroll_pos = scroll_pos;
+            master_scroll_delta = 0; // done using this in this frame
+
+            ShiftTilesBasedOnScrollPosition(&tiles, last_scroll_pos);
+
+            tile_index_mouse_was_on = TileIndexMouseIsOver(tiles, input.mouseX, input.mouseY);
         }
 
 
@@ -406,12 +420,19 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             HUDPRINT("tiles: %i", tiles.count);
             HUDPRINT("items: %i", items.count);
 
-            HUDPRINT("amt off: %i", state_amt_off_anchor);
+            HUDPRINT("master_desired_tile_width: %f", master_desired_tile_width);
+
+            // HUDPRINT("amt off: %i", state_amt_off_anchor);
 
 
-            for (int i = 0; i < tiles.count; i++) {
-                rect tile_rect = {tiles[i].pos.x, tiles[i].pos.y, tiles[i].size.w, tiles[i].size.h};
-                if (tile_rect.ContainsPoint(input.mouseX, input.mouseY)) {
+            // for (int i = 0; i < tiles.count; i++) {
+            //     rect tile_rect = {tiles[i].pos.x, tiles[i].pos.y, tiles[i].size.w, tiles[i].size.h};
+            //     if (tile_rect.ContainsPoint(input.mouseX, input.mouseY)) {
+
+                    // can just used our value calc'd above now:
+                    int i = tile_index_mouse_was_on;
+                    HUDPRINT("tile_index_mouse_was_on: %i", tile_index_mouse_was_on);
+
                     HUDPRINT("name: %s", tiles[i].name.ToUTF8());
 
                     HUDPRINT("quad index: %i", tiles[i].display_quad_index);
@@ -433,10 +454,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                     HUDPRINT("folder: %s", temp.ToUTF8Reusable());
                     free(directory);
 
-                    HUDPRINT("tile index: %i", i);
+                    HUDPRINT("tile size: %f, %f", tiles[i].size.w, tiles[i].size.h);
 
-                }
-            }
+
+            //     }
+            // }
 
             char buf[235];
             sprintf(buf, "dt: %f\n", actual_dt);
