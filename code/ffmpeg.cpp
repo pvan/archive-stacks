@@ -22,9 +22,9 @@ extern "C"
 
 
 
-// The flush packet is a non-NULL packet with size 0 and data NULL
-void ffmpeg_decode(AVCodecContext *avctx, AVFrame *frame, bool *got_frame, AVPacket *pkt)
-{
+// // The flush packet is a non-NULL packet with size 0 and data NULL
+// void ffmpeg_decode(AVCodecContext *avctx, AVFrame *frame, bool *got_frame, AVPacket *pkt)
+// {
     // *got_frame = false;
 
     // int ret = avcodec_send_packet(avctx, pkt);
@@ -64,7 +64,7 @@ void ffmpeg_decode(AVCodecContext *avctx, AVFrame *frame, bool *got_frame, AVPac
     //     *got_frame = true;
 
     // return 0;
-}
+// }
 
 
 AVCodecContext *ffmpeg_open_codec(AVFormatContext *fc, int streamIndex)
@@ -301,16 +301,20 @@ struct ffmpeg_media {
             return;
         }
 
-        // todo: call the string function for this now
-        // convert wchar to utf-8 which is what ffmpeg wants...
-        int numChars = WideCharToMultiByte(CP_UTF8,0,  path.chars,-1,  0,0,  0,0);
-        char *utf8path = (char*)malloc(numChars*sizeof(char));
-        WideCharToMultiByte(CP_UTF8,0,  path.chars,-1,  utf8path,numChars*sizeof(char),  0,0);
+        // // todo: call the string function for this now
+        // // convert wchar to utf-8 which is what ffmpeg wants...
+        // int numChars = WideCharToMultiByte(CP_UTF8,0,  path.chars,-1,  0,0,  0,0);
+        // char *utf8path = (char*)malloc(numChars*sizeof(char));
+        // WideCharToMultiByte(CP_UTF8,0,  path.chars,-1,  utf8path,numChars*sizeof(char),  0,0);
+
+        // vfc = avformat_alloc_context(); // needs avformat_free_context
+        // int open_result1 = avformat_open_input(&vfc, utf8path, 0, 0); // needs avformat_close_input
+
+        // free(utf8path);
+
 
         vfc = avformat_alloc_context(); // needs avformat_free_context
-        int open_result1 = avformat_open_input(&vfc, utf8path, 0, 0); // needs avformat_close_input
-
-        free(utf8path);
+        int open_result1 = avformat_open_input(&vfc, path.ToUTF8Reusable(), 0, 0); // needs avformat_close_input
 
 
         if (open_result1 != 0) {
@@ -579,24 +583,18 @@ struct ffmpeg_media {
 };
 
 
-// #include <stdlib.h>  // system()
 
 void DownresFileAtPathToPath(string inpath, string outpath) {
-
-    // ffmpeg_media infile = LoadFromFile(inpath);
-    // infile.DownsampleAndSaveToPath(outpath);
 
     // ffmpeg -i input.jpg -vf "scale='min(320,iw)':'min(240,ih)'" input_not_upscaled.png
 
     CreateAllDirectoriesForPathIfNeeded(outpath.chars);
-
 
     wchar_t buffer[1024*8]; // todo make sure enough for in and out paths
     // swprintf(buffer, L"ffmpeg -i \"%s\" -vf scale=200:-1 \"%s\"", inpath.chars, outpath.chars);
     swprintf(buffer, L"ffmpeg -i \"%s\" -vf \"scale='min(200,iw)':-2\" \"%s\"", inpath.chars, outpath.chars);
     OutputDebugStringW(buffer);
     OutputDebugStringW(L"\n");
-    // _wsystem(buffer);
     win32_run_cmd_command(buffer);
 
 }
@@ -608,3 +606,4 @@ bool ffmpeg_can_open(string path) {
     v2 res = ffmpeg_GetResolution(path);
     return res.x != -1 && res.y != -1;
 }
+

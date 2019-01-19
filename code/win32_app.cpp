@@ -64,56 +64,6 @@ float time_now() {
 
 
 
-// display quads
-// todo: add bounds checking
-
-struct display_quad {
-    opengl_quad quad;
-    bool is_used = false;
-};
-
-const int MAX_DISPLAY_QUADS = 100;
-display_quad *display_quads;
-// int display_quad_count = 0;
-
-void display_quads_init() {
-    display_quads = (display_quad*)malloc(sizeof(display_quad) * MAX_DISPLAY_QUADS);
-    for (int i = 0; i < MAX_DISPLAY_QUADS; i++) {
-        display_quads[i].quad.create(0,0,1,1);
-        //     u32 col = rand() & 0xff;
-        //     col |= (rand() & 0xff) << 8;
-        //     col |= (rand() & 0xff) << 16;
-        //     col |= (rand() & 0xff) << 24;
-        // display_quads[i].quad.set_texture(&col, 1, 1);
-        display_quads[i].is_used = false;
-    }
-    // display_quad_count = 0;
-}
-
-int display_quad_get_unused_index() {
-    for (int i = 0; i < MAX_DISPLAY_QUADS; i++) {
-        if (!display_quads[i].is_used) {
-            display_quads[i].is_used = true;
-            return i;
-        }
-    }
-    OutputDebugString("ERROR: trying to use more display quads that we have, just allocate more here");
-    assert(false);
-    return 0;
-}
-
-void display_quad_set_index_unused(int i) {
-    if (display_quads[i].is_used) {
-        // display_quads[i].destroy(); // could remove texture from gpu here
-        display_quads[i].is_used = false;
-    }
-}
-
-
-// end display quads
-
-
-
 bool running = true;
 
 bool loading = true;
@@ -145,12 +95,10 @@ void init_app(item_pool all_items, int cw, int ch) {
             }
         }
         // SortTilePoolByDate(&tiles);
-        ReadTileResolutions(&tiles); // should be loading cached files that are created in background while loading now
+        ReadCachedTileResolutions(&tiles); // should be loading cached files that are created in background while loading now
         ArrangeTilesInOrder(&tiles, {0,0,(float)cw,(float)ch}); // requires resolutions to be set
     }
 
-
-    display_quads_init();
 
 
     // constant-churning loop to load items on screen, and unlod those off the screen
@@ -211,12 +159,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
-
-    // string s1 = string::Create(L"D:/Users/phil/Desktop/test archive/art/xwfymstga9b11.png");
-    // string s2 = CopyItemPathAndConvertToThumbPath(s1);
-    // OutputDebugStringW(s2.chars);
-    // return 0;
-
     RECT win_rect = {0,0,600,400};
     int cw = win_rect.right;
     int ch = win_rect.bottom;
@@ -301,45 +243,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         if (!win32_PathExists(items[i].metadatapath.chars)) { item_indices_without_metadata.add(i); }
     }
 
-
-
-    // // string master_path = string::Create(L"D:/Users/phil/Desktop/test archive");
-    // string master_path = string::Create(L"E:\\inspiration test folder");
-    // files_full = FindAllItemPaths(master_path);
-
-    // for (int i = 0; i < files_full.count; i++) {
-    //     files_thumb.add(ItemPathToSubfolderPath(files_full[i], L"~thumbs"));
-    //     files_metadata.add(ItemPathToSubfolderPath(files_full[i], L"~metadata"));
-    // }
-
-    // existing_thumbs = FindAllSubfolderPaths(master_path, L"/~thumbs");
-    // items_without_matching_thumbs = ItemsInFirstPoolButNotSecond(files_thumb, existing_thumbs);
-    // thumbs_without_matching_item = ItemsInFirstPoolButNotSecond(existing_thumbs, files_thumb);
-
-    // existing_metadata = FindAllSubfolderPaths(master_path, L"/~metadata");
-    // items_without_matching_metadata = ItemsInFirstPoolButNotSecond(files_metadata, existing_metadata);
-    // metadata_without_matching_item = ItemsInFirstPoolButNotSecond(existing_metadata, files_metadata);
-
-
-
-    // DEBUGPRINT("items_without_matching_thumbs: (%i)\n", items_without_matching_thumbs.count);
-    // for (int i = 0; i < items_without_matching_thumbs.count; i++) {
-    //     DEBUGPRINT(items_without_matching_thumbs[i].ToUTF8Reusable());
-    // }
-    // DEBUGPRINT("thumbs_without_matching_item: (%i)\n", thumbs_without_matching_item.count);
-    // for (int i = 0; i < thumbs_without_matching_item.count; i++) {
-    //     DEBUGPRINT(thumbs_without_matching_item[i].ToUTF8Reusable());
-    // }
-
-    // DEBUGPRINT("items_without_matching_metadata: (%i)\n", items_without_matching_metadata.count);
-    // for (int i = 0; i < items_without_matching_metadata.count; i++) {
-    //     DEBUGPRINT(items_without_matching_metadata[i].ToUTF8Reusable());
-    // }
-    // DEBUGPRINT("metadata_without_matching_item: (%i)\n", metadata_without_matching_item.count);
-    // for (int i = 0; i < metadata_without_matching_item.count; i++) {
-    //     DEBUGPRINT(metadata_without_matching_item[i].ToUTF8Reusable());
-    // }
-    // return 0;
 
 
     LaunchBackgroundThumbnailLoop();
@@ -448,13 +351,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             tile *t = &tiles[tileI];
             if (t->IsOnScreen(ch)) { // only render if on screen
 
-                // bitmap img = t->GetImage(actual_dt); // the bitmap memory should be freed when getimage is called again
-                // quad.set_texture(img.data, img.w, img.h);
-                // quad.set_verts(t->pos.x, t->pos.y, t->size.w, t->size.h);
-                // quad.render(1);
-
-                ////
-
                 if (!t->display_quad_created) {
                     t->display_quad.create(0,0,1,1);
                     t->display_quad_created = true;
@@ -476,55 +372,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
                 t->display_quad.set_verts(t->pos.x, t->pos.y, t->size.w, t->size.h);
                 t->display_quad.render(1);
-
-
-            // } else {
-            //     if (t->display_quad_created) {
-            //         t->display_quad_created = false;
-            //         t->display_quad_texture_sent_to_gpu = false;
-            //         t->display_quad.destroy();
-            //     }
-
-
-
-                ////
-
-
-            //     // trying to use quad list here so we can reuse textures each frame
-
-
-            //     if (!t->has_display_quad) {
-            //         int newindex = display_quad_get_unused_index();
-            //         t->has_display_quad = true;
-            //         t->display_quad_index = newindex;
-            //         t->texture_updated_since_last_read = true; // force new texture sent to gpu
-            //     }
-
-
-            //     opengl_quad *q = &display_quads[t->display_quad_index].quad;
-            //     if (t->texture_updated_since_last_read) {
-            //         bitmap img = t->GetImage(actual_dt); // the bitmap memory should be freed when getimage is called again
-            //         q->set_texture(img.data, img.w, img.h);
-            //     }
-            //     else if (t->is_media_loaded) {
-            //         if (!t->media.IsStaticImageBestGuess()) {
-            //             // if video, just force send new texture every frame
-            //             bitmap img = t->GetImage(actual_dt); // the bitmap memory should be freed when getimage is called again
-            //             q->set_texture(img.data, img.w, img.h);
-            //         }
-            //     }
-            //     q->set_verts(t->pos.x, t->pos.y, t->size.w, t->size.h);
-            //     q->render(1);
-            // }
-            // else { // tile is offscreen
-            //     if (t->has_display_quad) {
-            //         display_quad_set_index_unused(t->display_quad_index);
-            //         t->has_display_quad = false;
-            //         t->display_quad_index = 0;
-            //     }
-
-
-                ////
 
             }
 
@@ -558,13 +405,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
             HUDPRINT("tiles: %i", tiles.count);
             HUDPRINT("items: %i", items.count);
-
-            // int display_quad_count = 0;
-            // for (int i = 0; i < display_quad_count; i++) {
-            //     if (display_quads[i].is_used) display_quad_count++;
-            // }
-            // HUDPRINT("used display quads: %i", display_quad_count);
-            // // HUDPRINT("unused display indices: %i", display_quad_unused_indices.count);
 
             HUDPRINT("amt off: %i", state_amt_off_anchor);
 

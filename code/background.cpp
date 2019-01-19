@@ -1,13 +1,6 @@
 
 
 
-// bool GetCachedResolutionIfPossible(string path, v2 *result) {
-//     FILE* file = fopen (path.ToUTF8Reusable(), "r");
-//     if (!file) { return false; }
-//     fscanf (file, "%f%f", &result->x, &result->y);
-//     fclose (file);
-//     return true;
-// }
 
 void CreateCachedMetadataFile(string origpath, string metapath) {
     v2 res = {0,0};
@@ -27,24 +20,11 @@ int_pool item_indices_without_metadata;
 DWORD WINAPI RunBackgroundThumbnailThread( LPVOID lpParam ) {
 
     for (int i = item_indices_without_metadata.count-1; i >= 0; i--) {
-        // string metapath = ItemPathToSubfolderPath(items_without_matching_metadata[i], L"~metadata");
         string fullpath = items[item_indices_without_metadata[i]].fullpath;
         string metadatapath = items[item_indices_without_metadata[i]].metadatapath;
         CreateCachedMetadataFile(fullpath, metadatapath);
         item_indices_without_metadata.count--; // should add .pop()
-        // free(metapath.chars); // should just use the same memory
     }
-
-    // for (int i = 0; i < items.count; i++) {
-    //     if (!win32_PathExists(items[i].thumbpath128.chars)) {
-    //         if (ffmpeg_can_open(items[i].thumbpath128)) {
-    //             DownresFileAtPathToPath(items[i].fullpath, items[i].thumbpath128);
-    //         } else  {
-    //             CreateDummyThumb(items[i].fullpath, items[i].thumbpath128);
-    //         }
-    //     }
-    // }
-    // loading = false;
 
     for (int i = item_indices_without_thumbs.count-1; i >= 0; i--) {
         string fullpath = items[item_indices_without_thumbs[i]].fullpath;
@@ -55,7 +35,6 @@ DWORD WINAPI RunBackgroundThumbnailThread( LPVOID lpParam ) {
             CreateDummyThumb(fullpath, thumbpath);
         }
         item_indices_without_thumbs.count--; // should add .pop()
-        // free(thumbpath.chars); // should just use the same memory
     }
     loading = false;
     return 0;

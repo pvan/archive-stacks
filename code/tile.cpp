@@ -151,28 +151,22 @@ void CreateCachedResolution(string path, v2 size) {
     if (!file) { DEBUGPRINT("error creating %s\n", path.ToUTF8Reusable()); return; }
     fprintf(file, "%f,%f", size.x, size.y);
     fclose(file);
-    // return true;
 }
-void ReadTileResolutions(tile_pool *pool)
+void ReadCachedTileResolutions(tile_pool *pool)
 {
-    // DEBUGPRINT("here: coutn: %i", pool->count);
     for (int i = 0; i < pool->count; i++) {
         tile& t = pool->pool[i];
 
         if (GetCachedResolutionIfPossible(t.paths.metadatapath, &t.resolution)) {
             // successfully loaded cached resolution
-            // DEBUGPRINT("read cached res success: %f, %f\n", t.resolution.x, t.resolution.y);
             continue;
         } else {
-            // // can't find cached resolution file.. create new one
-            // t.resolution = ffmpeg_GetResolution(t.fullpath);
-            // CreateCachedResolution(t.fullpath, t.resolution);
-        }
-        // DEBUGPRINT("couldn't read cached res: %s\n", t.paths.metadatapath.ToUTF8Reusable());
-
-        // for now....
-        // if (t.resolution.x == -1 && t.resolution.y == -1)
+            // don't try to read resolution from file here,
+            // we now do in during loading (background)
+            // to keep this function fast (ran in 1 frame)
             t.resolution = {10,10};
+        }
+
     }
 }
 

@@ -19,6 +19,7 @@ struct string
     bool operator!= (string o) { return !string::Equals(chars, o.chars); }
 
 
+    // might be a bug in here...
     // string& Append(wchar *suffix) {
     //     assert(chars);
     //     length += wcslen(suffix);
@@ -297,32 +298,4 @@ string ItemPathToSubfolderPath(string mainpath, wc *subfolder) {
     resultString.length = wcslen(result);
     return resultString;
 }
-
-
-
-// string CopyThumbPathAndConvertToItemPath(string thumbpath) {
-
-//     // TODO: warning: wouldn't work on items not in a subdirectory, see xgz
-//     wc (subdir = thumbpath.ParentDirectoryPathReusable();
-//     string thumbdir = subdir.ParentDirectoryPathReusable();
-//     string assumed_master_dir = thumbdir.ParentDirectoryPathReusable().Copy();
-
-//     string directory = thumbpath.ParentDirectoryNameReusable();
-//     string filename = string::CopyJustFilename(thumbpath);
-
-//     // haha, this api is a mess
-//     // some of the above vars are still valid and some aren't, and some need to be freed
-
-//     string result = assumed_master_dir;
-
-//     result.Append(L"/");
-//     result.Append(directory.chars);
-//     result.Append(L"/");
-//     result.Append(filename.chars);
-
-//     free(filename.chars);
-
-//     return result;
-// }
-
 

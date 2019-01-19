@@ -32,6 +32,9 @@ void win32_run_cmd_command(wchar_t *cmd) {
             DEBUGPRINT(errtext);
         }
     }
+    // check return value or anything from this?
+    // bind it so any child processes are closes when this program ends?
+    // see: https://stackoverflow.com/questions/3342941/kill-child-process-when-parent-process-is-killed
 }
 
 

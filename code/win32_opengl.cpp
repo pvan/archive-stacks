@@ -205,7 +205,7 @@ void opengl_init(HDC hdc)
 
 
     // on trying this, it seems lke maybe we need a vao for every vbo?
-    // i think we can just set up a vao here since we're only using one vert/attrib style
+    // // i think we can just set up a vao here since we're only using one vert/attrib style
     // glGenVertexArrays(1, &opengl_vao);
     // glBindVertexArray(opengl_vao);
     // // position attrib
@@ -220,7 +220,7 @@ void opengl_init(HDC hdc)
 
 
     // need opengl 4.2 at least
-    //todo: look at glGetInternalFormativ to make sure we're passing texture in format gpu likes
+    // // todo: look at glGetInternalFormativ to make sure we're passing texture in format gpu likes
     // GLint preferred_format = 0;
     // glGetInternalFormativ(GL_TEXTURE_2D, GL_RGBA, GL_TEXTURE_IMAGE_FORMAT, 1, &preferred_format);
     // DEBUGPRINT("preferred_format: %i\n", preferred_format);
@@ -248,20 +248,6 @@ struct opengl_quad {
 
     bool texture_created = false;
     bool created = false;
-
-    // void set_verts_raw(float x1,float y1, float x2,float y2, float x3,float y3,float x4,float y4) {
-    //     cached_w = 1;
-    //     cached_h = 1;
-    //     float verts[] = {
-    //         // pos   // col   // uv
-    //         x1,y1,   1,1,1,   0.0f, 0.0f,
-    //         x2,y2,   1,1,1,   0.0f, 1.0f,
-    //         x4,y4,   1,1,1,   1.0f, 0.0f,
-    //         x3,y3,   1,1,1,   1.0f, 1.0f,
-    //     };
-    //     glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    //     glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STATIC_DRAW);
-    // }
 
     void set_verts(float x, float y, float w, float h) {
         cached_w = w;
@@ -305,22 +291,14 @@ struct opengl_quad {
 
     void create(float x, float y, float w, float h) {
         if (created) return;
-        // float verts[] = {
-        //     // pos   // col
-        //     x,y,     1,0,0,
-        //     x,y+h,   1,1,0,
-        //     x+w,y,   1,0,1,
-        //     x+w,y+h, 0,1,1,
-        // };
 
-        // glBindVertexArray(opengl_vao); // kind of unnecessary since we only have 1 atm
         glGenVertexArrays(1, &vao);
         glBindVertexArray(vao);
 
         glGenBuffers(1, &vbo);
         set_verts(x, y, w, h);
 
-        // do we need to set these up for every vbo? shouldn't they be tied to our vao somehow?
+        // pos attrib
         glVertexAttribPointer(0/*loc*/, 2/*comps*/, GL_FLOAT, GL_FALSE, 7*sizeof(GLfloat), NULL);
         glEnableVertexAttribArray(0/*loc*/); // enable this attribute
         // color attrib
@@ -346,8 +324,7 @@ struct opengl_quad {
 
     void render(float a = 1) {
 
-        // we only have one atm anyway so should be already bound
-        // glBindVertexArray(opengl_vao); // has all our attribute info (et al?) tied to it
+        // todo: it might be faster to rebind the attributes every frame than switch vaos?
         glBindVertexArray(vao); // has all our attribute info (et al?) tied to it
 
         // GLuint loc_color = glGetUniformLocation(shader_program, "color");
@@ -362,40 +339,6 @@ struct opengl_quad {
     }
 };
 
-// #include "../lib/stb_easy_font.h"
-
-// // opengl_quad text_quad;
-// u32 text_colorW = 0xffffffff;
-// u32 text_colorB = 0xff000000;
-// struct easy_font_vert { float x, y, z; u8 col[4]; };
-
-// void opengl_print_string(float x, float y, char *text, float r, float g, float b, opengl_quad q)
-// {
-//     static char buffer[99999]; // ~500 chars
-//     int num_quads = stb_easy_font_print(x, y, text, NULL, buffer, sizeof(buffer));
-
-//     // only need to call once..
-//     // text_quad.create(0,0,1,1);
-//     stb_easy_font_spacing(-0.5);
-
-//     float s = 3;
-
-//     easy_font_vert *verts = (easy_font_vert*)buffer;
-//     for (int i = 0; i < num_quads*4; i+=4) {
-//         easy_font_vert v1 = verts[i];
-//         easy_font_vert v2 = verts[i+1];
-//         easy_font_vert v3 = verts[i+2];
-//         easy_font_vert v4 = verts[i+3];
-
-//         q.set_verts_raw(v1.x*s,v1.y*s, v2.x*s,v2.y*s, v3.x*s,v3.y*s, v4.x*s,v4.y*s);
-//         q.set_texture(&text_colorB, 1, 1);
-//         q.render(1);
-
-//         // q.set_verts_raw(v1.x*s+1,v1.y*s-1, v2.x*s-1,v2.y*s-1, v3.x*s-1,v3.y*s+1, v4.x*s+1,v4.y*s+1);
-//         // q.set_texture(&text_colorW, 1, 1);
-//         // q.render(1);
-//     }
-// }
 
 void opengl_clear() {
     glClearColor(0, 0.5, 0.7, 1);
@@ -407,6 +350,11 @@ void opengl_swap() {
 }
 
 
+
+//
+// BATCHED QUADS idea below
+// untested
+//
 
 float *batch_verts;
 int batch_count = 0;
@@ -420,7 +368,6 @@ GLuint batch_vbo;
 
 void opengl_batch_init() {
 
-    // glBindVertexArray(opengl_vao); // kind of unnecessary since we only have 1 atm
     glGenVertexArrays(1, &batch_vao);
     glBindVertexArray(batch_vao);
 
@@ -508,8 +455,6 @@ void opengl_batch_upload_verts() {
 
 void opengl_batch_render() {
 
-    // we only have one atm anyway so should be already bound
-    // glBindVertexArray(opengl_vao); // has all our attribute info (et al?) tied to it
     glBindVertexArray(batch_vao); // has all our attribute info (et al?) tied to it
 
     // GLuint loc_color = glGetUniformLocation(shader_program, "color");
