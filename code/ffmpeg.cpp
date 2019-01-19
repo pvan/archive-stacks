@@ -563,8 +563,9 @@ struct ffmpeg_media {
             string::Create(L"bmp_pipe"),
             // todo: add way to detect missing formats (e.g. check if getframe is never changing or something)
         };
+        int length_of_formats = sizeof(definitely_static_image_formats)/sizeof(definitely_static_image_formats[0]);
 
-        for (int i = 0; i < 2; i++) {
+        for (int i = 0; i < length_of_formats; i++) {
             if (string::Create((char*)vfc->iformat->name) == definitely_static_image_formats[i]) {
                 return true;
             }
