@@ -253,7 +253,7 @@ int TileIndexMouseIsOver(tile_pool ts, int mouseX, int mouseY) {
             return i;
         }
     }
-    return 0; // mouse is not over at tile... any special handling needed? hmm
+    return 0; // mouse is not over a tile... any special handling needed? hmm
 }
 
 int CalculateScrollPosition(int last_scroll_pos, int mwheeldelta, Input keysdown, int ch, int tiles_height) {

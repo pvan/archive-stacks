@@ -1,6 +1,7 @@
 @echo off
 
-set filesToOpen=code\win32_app.cpp
+set filesToOpen=%~dp0\code\win32_app.cpp
+set exeToOpen=%~dp0\build\win32_app.exe
 
 
 if not defined DevEnvDir (
@@ -10,6 +11,7 @@ if not defined DevEnvDir (
 
 start "" "D:\Program Files\Sublime Text 3\sublime_text.exe" %filesToOpen%
 
-start "" "devenv" "build\win32_app.exe" %filesToOpen%
+start "" "devenv" %exeToOpen% %filesToOpen%
 
+cd /d %~dp0
 start cmd.exe

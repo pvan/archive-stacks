@@ -115,14 +115,18 @@ void load_tick(item_pool all_items, int cw, int ch) {
 
     opengl_clear();
 
-    ui_text("media files: %f", all_items.count, cw/2, ch/2 + UI_TEXT_SIZE*-1);
-    // ui_text("thumb files: %f", thumb_files.count, cw/2, ch/2 + UI_TEXT_SIZE*0);
-    // ui_text("metadata files: %f", thumb_files.count, cw/2, ch/2 + UI_TEXT_SIZE*1);
+    int line = -1;
 
-    ui_text("items_without_matching_thumbs: %f", item_indices_without_thumbs.count, cw/2, ch/2 + UI_TEXT_SIZE*3);
-    // ui_text("thumbs_without_matching_item: %f", thumbs_without_matching_item.count, cw/2, ch/2 + UI_TEXT_SIZE*3);
+    ui_text("media files: %f", all_items.count, cw/2, ch/2 + UI_TEXT_SIZE*line++);
+    // ui_text("thumb files: %f", thumb_files.count, cw/2, ch/2 + UI_TEXT_SIZE*line++);
+    // ui_text("metadata files: %f", thumb_files.count, cw/2, ch/2 + UI_TEXT_SIZE*line++);
 
-    ui_text("items_without_matching_metadata: %f", item_indices_without_metadata.count, cw/2, ch/2 + UI_TEXT_SIZE*5);
+    line++;
+    ui_text("items_without_matching_thumbs: %f", item_indices_without_thumbs.count, cw/2, ch/2 + UI_TEXT_SIZE*line++);
+    // ui_text("thumbs_without_matching_item: %f", thumbs_without_matching_item.count, cw/2, ch/2 + UI_TEXT_SIZE*line++);
+
+    line++;
+    ui_text("items_without_matching_metadata: %f", item_indices_without_metadata.count, cw/2, ch/2 + UI_TEXT_SIZE*line++);
 
     opengl_swap();
 
@@ -233,16 +237,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         item newitem = {0};
         newitem.fullpath = itempaths[i];
         items.add(newitem);
-    }
-    PopulateItemPaths(); // fill in thumb paths, metdata path, etc.
-
-
-    // create work queue for loading thread
-    item_indices_without_thumbs = int_pool::empty();
-    item_indices_without_metadata = int_pool::empty();
-    for (int i = 0; i < items.count; i++) {
-        if (!win32_PathExists(items[i].thumbpath.chars)) { item_indices_without_thumbs.add(i); }
-        if (!win32_PathExists(items[i].metadatapath.chars)) { item_indices_without_metadata.add(i); }
     }
 
 

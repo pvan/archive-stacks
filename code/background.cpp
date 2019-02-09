@@ -19,6 +19,21 @@ int_pool item_indices_without_metadata;
 
 DWORD WINAPI RunBackgroundThumbnailThread( LPVOID lpParam ) {
 
+    // read paths
+    for (int i = 0; i < items.count; i++) {
+        items[i].thumbpath = ItemPathToSubfolderPath(items[i].fullpath, L"~thumbs");
+        items[i].metadatapath = ItemPathToSubfolderPath(items[i].fullpath, L"~metadata");
+    }
+
+    // create work queue for rest of loading thread (do after reading paths)
+    item_indices_without_thumbs = int_pool::empty();
+    item_indices_without_metadata = int_pool::empty();
+    for (int i = 0; i < items.count; i++) {
+        if (!win32_PathExists(items[i].thumbpath.chars)) { item_indices_without_thumbs.add(i); }
+        if (!win32_PathExists(items[i].metadatapath.chars)) { item_indices_without_metadata.add(i); }
+    }
+
+    // create cached metadata files
     for (int i = item_indices_without_metadata.count-1; i >= 0; i--) {
         string fullpath = items[item_indices_without_metadata[i]].fullpath;
         string metadatapath = items[item_indices_without_metadata[i]].metadatapath;
@@ -26,6 +41,7 @@ DWORD WINAPI RunBackgroundThumbnailThread( LPVOID lpParam ) {
         item_indices_without_metadata.count--; // should add .pop()
     }
 
+    // create cached thumbnail files
     for (int i = item_indices_without_thumbs.count-1; i >= 0; i--) {
         string fullpath = items[item_indices_without_thumbs[i]].fullpath;
         string thumbpath = items[item_indices_without_thumbs[i]].thumbpath;
