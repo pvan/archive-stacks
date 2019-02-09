@@ -98,7 +98,7 @@ void init_app(item_pool all_items, int cw, int ch) {
         }
         // SortTilePoolByDate(&tiles);
         ReadCachedTileResolutions(&tiles); // should be loading cached files that are created in background while loading now
-        ArrangeTilesInOrder(&tiles, master_desired_tile_width, {0,0,(float)cw,(float)ch}); // requires resolutions to be set
+        ArrangeTilesInOrder(&tiles, master_desired_tile_width, cw); // requires resolutions to be set
     }
 
 
@@ -316,17 +316,20 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         Input keysUp = input_keys_changed(last_input, input);
         last_input = input;
 
-
         // position the tiles
         static int tile_index_mouse_was_on = 0;
         {
             // arrange every frame, in case window size changed
             // todo: could just arrange if window resize / tag settigns change / etc
 
-            master_desired_tile_width += master_ctrl_scroll_delta;
+            int col_count = CalcColumnsNeededForDesiredWidth(master_desired_tile_width, cw);
+
+            if (master_ctrl_scroll_delta > 0) { col_count++; master_desired_tile_width = CalcWidthToFitXColumns(col_count, cw); }
+            if (master_ctrl_scroll_delta < 0) { col_count--; master_desired_tile_width = CalcWidthToFitXColumns(col_count, cw); }
             master_ctrl_scroll_delta = 0; // done using this in this frame
 
-            int tiles_height = ArrangeTilesInOrder(&tiles, master_desired_tile_width, {0,0,(float)cw,(float)ch}); // requires resolutions to be set
+
+            int tiles_height = ArrangeTilesInOrder(&tiles, master_desired_tile_width, cw); // requires resolutions to be set
 
             static int last_scroll_pos = 0;
             int scroll_pos = CalculateScrollPosition(last_scroll_pos, master_scroll_delta, keysDown, ch, tiles_height);
@@ -414,7 +417,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             HUDPRINT("tiles: %i", tiles.count);
             HUDPRINT("items: %i", items.count);
 
-            HUDPRINT("master_desired_tile_width: %f", master_desired_tile_width);
 
             // HUDPRINT("amt off: %i", state_amt_off_anchor);
 

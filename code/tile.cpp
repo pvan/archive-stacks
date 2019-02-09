@@ -171,26 +171,37 @@ void ReadCachedTileResolutions(tile_pool *pool)
 }
 
 
-void CalcWidthToFit(float desired_image_width, int container_width,
-                    float *real_width, int *number_of_columns) {
-    float img_width = desired_image_width;
-    if (img_width < 1) img_width = 1;
-    if (img_width > 2000) img_width = 2000;
+// todo: audit the usage of limits, do we need a max?
+float MIN_TILE_WIDTH = 50;
+
+float CalcWidthToFitXColumns(int col_count, int container_width) {
+    if (col_count < 1) col_count = 1;
+    if (col_count > container_width) col_count = container_width; // 1 pixel result.. hmm
+    float width = (float)container_width / (float)col_count;
+    width = fmax(width, MIN_TILE_WIDTH);
+    return width;
+}
+
+// given a desired item width,
+// return the number of columns needed to fill container_width
+// also pass back the resulting actual width in *actual_width (if passed given a non-null pointer)
+int CalcColumnsNeededForDesiredWidth(float desired_width, int container_width, float *actual_width = 0) {
+    float img_width = desired_width;
+    // if (img_width < 1) img_width = 1;
+    // if (img_width > 2000) img_width = 2000;
+    desired_width = fmax(desired_width, MIN_TILE_WIDTH);
 
     int cols = container_width / img_width;
     if (cols < 1) cols = 1;
-    *real_width = (float)(container_width) / (float)cols;
-    *number_of_columns = cols;
+    if (actual_width) *actual_width = (float)(container_width) / (float)cols;
+    return cols;
 }
 
-int ArrangeTilesInOrder(tile_pool *pool, float desired_tile_width, rect destination_rect) {
+int ArrangeTilesInOrder(tile_pool *pool, float desired_tile_width, int dest_width) {
 
-    // float MASTER_IMG_WIDTH = 200; // todo: pass as input, affected by zoom
-    desired_tile_width = fmax(desired_tile_width, 50);
-
+    desired_tile_width = fmax(desired_tile_width, MIN_TILE_WIDTH);
     float realWidth;
-    int cols;
-    CalcWidthToFit(desired_tile_width, destination_rect.w, &realWidth, &cols);
+    int cols = CalcColumnsNeededForDesiredWidth(desired_tile_width, dest_width, &realWidth);
 
     float *colbottoms = (float*)malloc(cols*sizeof(float));
     for (int c = 0; c < cols; c++)
