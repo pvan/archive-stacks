@@ -37,6 +37,14 @@ DWORD WINAPI RunBackgroundThumbnailThread( LPVOID lpParam ) {
         if (!win32_PathExists(items[i].metadatapath.chars)) { item_indices_without_metadata.add(i); }
     }
 
+    // // force re-create thumbnails
+    // // todo: temp dev-only, toggle as needed
+    // {
+    //     for (int i = 0; i < items.count; i++) {
+    //         if (!ffmpeg_can_open(items[i].fullpath)) { item_indices_without_thumbs.add(i); }
+    //     }
+    // }
+
     // create cached thumbnail files
     for (int i = item_indices_without_thumbs.count-1; i >= 0; i--) {
         // item it = items[item_indices_without_thumbs[i]];
