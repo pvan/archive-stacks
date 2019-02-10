@@ -92,7 +92,6 @@ v2 ffmpeg_GetResolution(string path)
     //     return {-1,-1};
     // }
 
-
     // convert wchar to utf-8 which is what ffmpeg wants...
     // TODO: just call the string function that does this
 
@@ -155,8 +154,30 @@ v2 ffmpeg_GetResolution(string path)
     if (video_index == -1)
     {
         PRINT("ffmpeg: No video streams in file.");
-        return {-1,-1};
+
     }
+
+
+    // string temp = string::Create((char*)vfc->iformat->name);
+    // PRINT((char*)vfc->iformat->name);
+
+        // if (!vfc->iformat || vfc->iformat==nullptr) { return {-1,-1}; } // assume not a video
+
+        // // TODO: add to this list all formats we don't want to send to gpu every frame
+        // string definitely_static_image_formats[] = {
+        //     string::Create(L"image2"),
+        //     string::Create(L"png_pipe"),
+        //     string::Create(L"bmp_pipe"),
+        //     // todo: add way to detect missing formats (e.g. check if getframe is never changing or something)
+        // };
+        // int length_of_formats = sizeof(definitely_static_image_formats)/sizeof(definitely_static_image_formats[0]);
+
+        // for (int i = 0; i < length_of_formats; i++) {
+        //     if (string::Create((char*)vfc->iformat->name) == definitely_static_image_formats[i]) {
+        //         return true;
+        //     }
+        // }
+        // return false;
 
 
     v2 result;
@@ -165,8 +186,9 @@ v2 ffmpeg_GetResolution(string path)
         result.w = vcc->width;
         result.h = vcc->height;
     } else {
-        result.w = 400; // todo: what to use here?
-        result.h = 400;
+        // if no vcc, we can't get a resolution
+        PRINT("ffmpeg: No video context in file.");
+        return {-1,-1};
     }
 
     avcodec_free_context(&vcc);

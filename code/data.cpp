@@ -120,6 +120,8 @@ struct item {
     // string thumbpath512;
     string metadatapath; //cached metadata
     bool operator==(item o) { return fullpath==o.fullpath; } // for now just check fullpath
+
+    string justname() { wc *result = CopyJustFilename(fullpath.chars); return string::Create(result); }
 };
 
 DEFINE_TYPE_POOL(item);

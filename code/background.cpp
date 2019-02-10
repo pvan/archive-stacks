@@ -2,15 +2,19 @@
 
 
 
-void CreateCachedMetadataFile(string origpath, string metapath) {
+void CreateCachedMetadataFile(string origpath, string thumbpath, string metapath) {
     v2 res = {0,0};
     if (ffmpeg_can_open(origpath)) {
         res = ffmpeg_GetResolution(origpath);
     }
-    // todo: should we set any other limitations here?
-    // maybe if we can't load it, pull res from any thumbs that exist?
-    if (res.w == 0) res.w = 10;
-    if (res.h == 0) res.h = 10;
+    // fallback to using thumbnail resolution
+    else if (ffmpeg_can_open(thumbpath)) {
+        res = ffmpeg_GetResolution(thumbpath);
+    }
+    // if can't get resoution from either, hmm...
+    else {
+        res = {10, 10};
+    }
     CreateCachedResolution(metapath, res);
 }
 
@@ -33,25 +37,32 @@ DWORD WINAPI RunBackgroundThumbnailThread( LPVOID lpParam ) {
         if (!win32_PathExists(items[i].metadatapath.chars)) { item_indices_without_metadata.add(i); }
     }
 
-    // create cached metadata files
-    for (int i = item_indices_without_metadata.count-1; i >= 0; i--) {
-        string fullpath = items[item_indices_without_metadata[i]].fullpath;
-        string metadatapath = items[item_indices_without_metadata[i]].metadatapath;
-        CreateCachedMetadataFile(fullpath, metadatapath);
-        item_indices_without_metadata.count--; // should add .pop()
-    }
-
     // create cached thumbnail files
     for (int i = item_indices_without_thumbs.count-1; i >= 0; i--) {
+        // item it = items[item_indices_without_thumbs[i]];
         string fullpath = items[item_indices_without_thumbs[i]].fullpath;
         string thumbpath = items[item_indices_without_thumbs[i]].thumbpath;
-        if (ffmpeg_can_open(thumbpath)) {
+        string justname = items[item_indices_without_thumbs[i]].justname();
+        if (ffmpeg_can_open(fullpath)) {
+            DEBUGPRINT("creating media thumb for %s\n", fullpath.ToUTF8Reusable());
             DownresFileAtPathToPath(fullpath, thumbpath);
         } else  {
-            CreateDummyThumb(fullpath, thumbpath);
+            DEBUGPRINT("creating dummy thumb for %s\n", fullpath.ToUTF8Reusable());
+            CreateDummyThumb(fullpath, thumbpath, justname);
         }
         item_indices_without_thumbs.count--; // should add .pop()
     }
+
+    // create cached metadata files
+    // do metadata second because it thumbnails as a fallback
+    for (int i = item_indices_without_metadata.count-1; i >= 0; i--) {
+        string fullpath = items[item_indices_without_metadata[i]].fullpath;
+        string thumbpath = items[item_indices_without_metadata[i]].thumbpath;
+        string metadatapath = items[item_indices_without_metadata[i]].metadatapath;
+        CreateCachedMetadataFile(fullpath, thumbpath, metadatapath);
+        item_indices_without_metadata.count--; // should add .pop()
+    }
+
     loading = false;
     return 0;
 }

@@ -186,12 +186,9 @@ float CalcWidthToFitXColumns(int col_count, int container_width) {
 // return the number of columns needed to fill container_width
 // also pass back the resulting actual width in *actual_width (if passed given a non-null pointer)
 int CalcColumnsNeededForDesiredWidth(float desired_width, int container_width, float *actual_width = 0) {
-    float img_width = desired_width;
-    // if (img_width < 1) img_width = 1;
-    // if (img_width > 2000) img_width = 2000;
     desired_width = fmax(desired_width, MIN_TILE_WIDTH);
 
-    int cols = container_width / img_width;
+    int cols = container_width / desired_width;
     if (cols < 1) cols = 1;
     if (actual_width) *actual_width = (float)(container_width) / (float)cols;
     return cols;
