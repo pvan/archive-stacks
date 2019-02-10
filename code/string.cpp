@@ -1,5 +1,7 @@
 
 
+// todo: we should probably check every sprintf, wcscat, memcpy, etc for space/bounds here
+
 
 // todo: look at this again after trying it for a bit
 // basically just for comparisons or printing, as memory will expire after 1 more use
@@ -59,6 +61,7 @@ struct string
         WideCharToMultiByte(CP_UTF8,0,  chars,-1,  utf8,numChars*sizeof(char),  0,0);
         return utf8;
     }
+
 
 
     static bool Equals(wchar_t *s1, wchar_t *s2) {
@@ -125,6 +128,38 @@ bool StringEndsWith(wc *s1, wc *s2) {
         s2--;
     }
 }
+
+
+void CopyStringWithCharsEscaped(wc *outbuffer, int outsize, wc *instring, wc char_to_escape, wc escape_char) {
+    int count = 0;
+    for (wc *c = instring; *c; c++) {
+        if (*c == char_to_escape)
+            count++;
+    }
+
+    int newsize = wcslen(instring) + count + 1; // wcslen doesn't include null terminator
+
+    assert(newsize <= outsize);
+
+    wc *dest = outbuffer;
+    wc *source = instring;
+
+    while (*source) {
+        if (*source == char_to_escape) {
+            *dest = escape_char;
+            dest++;
+        }
+        *dest = *source;
+        dest++;
+        source++;
+    }
+
+    *dest = 0;
+
+    assert(outbuffer+newsize-1 == dest);
+
+}
+
 
 //
 // path stuff (move to io/file/platform oriented files?)
