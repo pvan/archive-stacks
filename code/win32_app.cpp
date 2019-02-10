@@ -431,9 +431,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
                     HUDPRINT("name: %s", tiles[i].name.ToUTF8());
 
-                    HUDPRINT("quad index: %i", tiles[i].display_quad_index);
-                    HUDPRINT("has disp quad: %i", (int)tiles[i].has_display_quad);
-
                     if (tiles[i].media.vfc && tiles[i].media.vfc->iformat)
                         HUDPRINT("format name: %s", (char*)tiles[i].media.vfc->iformat->name);
 
@@ -443,7 +440,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                     // HUDPRINT("frames: %f", (float)tiles[i].media.totalFrameCount);
 
                     if (tiles[i].media.vfc && tiles[i].media.vfc->iformat)
-                        HUDPRINT("is image: %i", (int)tiles[i].media.IsStaticImageBestGuess());
+                        HUDPRINT(tiles[i].media.IsStaticImageBestGuess() ? "image" : "video");
 
                     wc *directory = CopyJustParentDirectoryName(tiles[i].paths.fullpath.chars);
                     string temp = string::Create(directory);

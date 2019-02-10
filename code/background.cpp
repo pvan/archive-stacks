@@ -25,8 +25,19 @@ DWORD WINAPI RunBackgroundThumbnailThread( LPVOID lpParam ) {
 
     // read paths
     for (int i = 0; i < items.count; i++) {
-        items[i].thumbpath = ItemPathToSubfolderPath(items[i].fullpath, L"~thumbs", L".bmp");
-        items[i].metadatapath = ItemPathToSubfolderPath(items[i].fullpath, L"~metadata", L".txt");
+        // items[i].thumbpath = ItemPathToSubfolderPath(items[i].fullpath, L"~thumbs", L".bmp");
+        // items[i].metadatapath = ItemPathToSubfolderPath(items[i].fullpath, L"~metadata", L".txt");
+
+        // for now, special case for txt...
+        // we need txt thumbs to be something other than txt so we can open them
+        // with our "ignore all .txt files" ffmpeg code
+        // but we need most thumbs to have original extensions to (for example) animate correctly
+        if (StringEndsWith(items[i].fullpath.chars, L".txt")) {
+            items[i].thumbpath = ItemPathToSubfolderPath(items[i].fullpath, L"~thumbs", L".bmp");
+        } else {
+            items[i].thumbpath = ItemPathToSubfolderPath(items[i].fullpath, L"~thumbs", L"");
+        }
+        items[i].metadatapath = ItemPathToSubfolderPath(items[i].fullpath, L"~metadata", L"");
     }
 
     // create work queue for rest of loading thread (do after reading paths)

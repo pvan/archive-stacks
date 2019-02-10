@@ -28,8 +28,8 @@ struct tile
 
     // state for rendering
     bool texture_updated_since_last_read = false; // set true when changing texture, false when reading texture
-    bool has_display_quad = false; // already assigned a display quad (set/unset based on on/offscreen at render time)
-    int display_quad_index = 0; // only used if has_display_quad true
+    // bool has_display_quad = false; // already assigned a display quad (set/unset based on on/offscreen at render time)
+    // int display_quad_index = 0; // only used if has_display_quad true
 
     // debug stuff
     u32 rand_color;
