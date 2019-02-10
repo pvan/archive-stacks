@@ -92,6 +92,12 @@ v2 ffmpeg_GetResolution(string path)
     //     return {-1,-1};
     // }
 
+    if (StringEndsWith(path.chars, L".txt")) {
+        // todo: special case to skip text files for now,
+        // ffmpeg likes to eat these up and then our code doesn't know what to do with them
+        return {-1,-1};
+    }
+
     // convert wchar to utf-8 which is what ffmpeg wants...
     // TODO: just call the string function that does this
 
@@ -154,7 +160,7 @@ v2 ffmpeg_GetResolution(string path)
     if (video_index == -1)
     {
         PRINT("ffmpeg: No video streams in file.");
-
+        return {-1,-1};
     }
 
 

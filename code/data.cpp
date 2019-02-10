@@ -128,15 +128,15 @@ DEFINE_TYPE_POOL(item);
 
 item_pool items;
 
-// done async in loading thread now
-// consider: pass pool into this or keep items global??
-void PopulateItemPaths_DEP() {
-    for (int i = 0; i < items.count; i++) {
-        items[i].thumbpath = ItemPathToSubfolderPath(items[i].fullpath, L"~thumbs");
-        // items[i].thumbpath128 = ItemPathToSubfolderPath(items[i].fullpath, L"~thumbs128");
-        // items[i].thumbpath256 = ItemPathToSubfolderPath(items[i].fullpath, L"~thumbs256");
-        // items[i].thumbpath512 = ItemPathToSubfolderPath(items[i].fullpath, L"~thumbs512");
-        items[i].metadatapath = ItemPathToSubfolderPath(items[i].fullpath, L"~metadata");
-    }
-}
+// // done async in loading thread now
+// // consider: pass pool into this or keep items global??
+// void PopulateItemPaths_DEP() {
+//     for (int i = 0; i < items.count; i++) {
+//         items[i].thumbpath = ItemPathToSubfolderPath(items[i].fullpath, L"~thumbs");
+//         // items[i].thumbpath128 = ItemPathToSubfolderPath(items[i].fullpath, L"~thumbs128");
+//         // items[i].thumbpath256 = ItemPathToSubfolderPath(items[i].fullpath, L"~thumbs256");
+//         // items[i].thumbpath512 = ItemPathToSubfolderPath(items[i].fullpath, L"~thumbs512");
+//         items[i].metadatapath = ItemPathToSubfolderPath(items[i].fullpath, L"~metadata");
+//     }
+// }
 

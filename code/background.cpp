@@ -25,8 +25,8 @@ DWORD WINAPI RunBackgroundThumbnailThread( LPVOID lpParam ) {
 
     // read paths
     for (int i = 0; i < items.count; i++) {
-        items[i].thumbpath = ItemPathToSubfolderPath(items[i].fullpath, L"~thumbs");
-        items[i].metadatapath = ItemPathToSubfolderPath(items[i].fullpath, L"~metadata");
+        items[i].thumbpath = ItemPathToSubfolderPath(items[i].fullpath, L"~thumbs", L".bmp");
+        items[i].metadatapath = ItemPathToSubfolderPath(items[i].fullpath, L"~metadata", L".txt");
     }
 
     // create work queue for rest of loading thread (do after reading paths)
@@ -77,7 +77,7 @@ DWORD WINAPI RunBackgroundLoadingThread( LPVOID lpParam ) {
             if (tiles[i].needs_loading) {
                 if (!tiles[i].is_media_loaded) {
                     // tiles[i].LoadMedia(tiles[i].fullpath);
-                    tiles[i].LoadMedia(tiles[i].thumbpath);
+                    tiles[i].LoadMedia(tiles[i].paths.thumbpath);
                     // DEBUGPRINT("loading: %s\n", tiles[i].thumbpath.ToUTF8Reusable());
                 }
             }

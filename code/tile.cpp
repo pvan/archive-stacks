@@ -16,7 +16,7 @@ struct tile
     u64 modifiedTimeSinceLastEpoc;
 
     // thumbnail data
-    string thumbpath;
+    // string thumbpath;
 
 
     // media data
@@ -92,7 +92,7 @@ struct tile
         newTile.name = string::Create(CopyJustFilename(path.chars));
         newTile.modifiedTimeSinceLastEpoc = win32_GetModifiedTimeSinceEpoc(path);
 
-        newTile.thumbpath = string::Create(CopyItemPathAndConvertToThumbPath(path.chars));
+        // newTile.thumbpath = string::Create(CopyItemPathAndConvertToThumbPath(path.chars));
 
         return newTile;
     };
