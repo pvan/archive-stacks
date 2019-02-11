@@ -6,7 +6,7 @@
 // todo: look at this again after trying it for a bit
 // basically just for comparisons or printing, as memory will expire after 1 more use
 // we toggle between which we use, so we can technically use 2 to compare to each other
-// todo: add longer history
+// todo: add longer history?
 char string_reusable_mem1[1024];
 char string_reusable_mem2[1024];
 bool string_reusable_toggle = false; // which reusable mem should we use next?

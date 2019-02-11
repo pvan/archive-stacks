@@ -16,6 +16,8 @@ void DEBUGPRINT(char *s, int i) { sprintf(debugprintbuffer, s, i); OutputDebugSt
 void DEBUGPRINT(char *s, char *s2) { sprintf(debugprintbuffer, s, s2); OutputDebugString(debugprintbuffer); }
 void DEBUGPRINT(char *s, float f) { sprintf(debugprintbuffer, s, f); OutputDebugString(debugprintbuffer); }
 void DEBUGPRINT(char *s, float f1, float f2) { sprintf(debugprintbuffer, s, f1, f2); OutputDebugString(debugprintbuffer); }
+// wc debugprintbufferW[256];
+// void DEBUGPRINT(wc *s) { swprintf(debugprintbufferW, L"%s\n", s); OutputDebugStringW(debugprintbufferW); }
 
 #include "v2.cpp"
 #include "rect.cpp"

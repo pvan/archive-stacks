@@ -60,6 +60,8 @@ bool win32_IsDirectory(string path) { return win32_IsDirectory(path.chars); }
 
 bool win32_PathExists(wchar_t *path) { return GetFileAttributesW(path) != INVALID_FILE_ATTRIBUTES; }
 bool win32_PathExists(string path) { return win32_PathExists(path.chars); }
+// bool win32_PathExists(char *path) { return GetFileAttributes(path) != INVALID_FILE_ATTRIBUTES; }
+// bool win32_PathExists(string path) { return win32_PathExists(path.ToUTF8Reusable()); }
 
 
 

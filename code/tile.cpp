@@ -138,18 +138,33 @@ void SortTilePoolByDate(tile_pool *pool)
 
 
 bool GetCachedResolutionIfPossible(string path, v2 *result) {
-    FILE *file = fopen(path.ToUTF8Reusable(), "rb");
+    // FILE *file = fopen(path.ToUTF8Reusable(), "rb");
+    // if (!file) {  DEBUGPRINT("error reading %s\n", path.ToUTF8Reusable()); return false; }
+    // fscanf(file, "%f,%f", &result->x, &result->y);
+    // fclose(file);
+    // return true;
+
+    // wchar version
+    FILE *file = _wfopen(path.chars, L"rb");
     if (!file) {  DEBUGPRINT("error reading %s\n", path.ToUTF8Reusable()); return false; }
-    fscanf(file, "%f,%f", &result->x, &result->y);
+    fwscanf(file, L"%f,%f", &result->x, &result->y);
     fclose(file);
     return true;
 }
 void CreateCachedResolution(string path, v2 size) {
+    // // DEBUGPRINT("creating %s\n", path.ToUTF8Reusable());
+    // CreateAllDirectoriesForPathIfNeeded(path.chars);
+    // FILE *file = fopen(path.ToUTF8Reusable(), "wb");
+    // if (!file) { DEBUGPRINT("error creating %s\n", path.ToUTF8Reusable()); return; }
+    // fprintf(file, "%f,%f", size.x, size.y);
+    // fclose(file);
     // DEBUGPRINT("creating %s\n", path.ToUTF8Reusable());
+
+    // wchar version
     CreateAllDirectoriesForPathIfNeeded(path.chars);
-    FILE *file = fopen(path.ToUTF8Reusable(), "wb");
+    FILE *file = _wfopen(path.chars, L"wb");
     if (!file) { DEBUGPRINT("error creating %s\n", path.ToUTF8Reusable()); return; }
-    fprintf(file, "%f,%f", size.x, size.y);
+    fwprintf(file, L"%f,%f", size.x, size.y);
     fclose(file);
 }
 void ReadCachedTileResolutions(tile_pool *pool)
