@@ -91,6 +91,8 @@ struct tile
         newTile.paths.fullpath = path.Copy();
         newTile.name = string::Create(CopyJustFilename(path.chars));
         newTile.modifiedTimeSinceLastEpoc = win32_GetModifiedTimeSinceEpoc(path);
+        // note getmodified time has to touch the files which means slow on cold hdd
+        // todo: consider moving elsewhere? special loop perhaps?
 
         // newTile.thumbpath = string::Create(CopyItemPathAndConvertToThumbPath(path.chars));
 
@@ -167,23 +169,27 @@ void CreateCachedResolution(string path, v2 size) {
     fwprintf(file, L"%f,%f", size.x, size.y);
     fclose(file);
 }
-void ReadCachedTileResolutions(tile_pool *pool)
-{
-    for (int i = 0; i < pool->count; i++) {
-        tile& t = pool->pool[i];
 
-        if (GetCachedResolutionIfPossible(t.paths.metadatapath, &t.resolution)) {
-            // successfully loaded cached resolution
-            continue;
-        } else {
-            // don't try to read resolution from file here,
-            // we now do in during loading (background)
-            // to keep this function fast (ran in 1 frame)
-            t.resolution = {10,10};
-        }
+//inline now
+// void ReadCachedTileResolutions(tile_pool *pool)
+// {
+//     for (int i = 0; i < pool->count; i++) {
+//         loading_reusable_count = i;
 
-    }
-}
+//         tile& t = pool->pool[i];
+
+//         if (GetCachedResolutionIfPossible(t.paths.metadatapath, &t.resolution)) {
+//             // successfully loaded cached resolution
+//             continue;
+//         } else {
+//             // don't try to read resolution from file here,
+//             // we now do in during loading (background)
+//             // to keep this function fast (ran in 1 frame)
+//             t.resolution = {10,10};
+//         }
+
+//     }
+// }
 
 
 // todo: audit the usage of limits, do we need a max?

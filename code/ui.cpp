@@ -21,6 +21,11 @@ void ui_text(char *text, float value, int x, int y) {
     ui_text(ui_text_reusable_buffer, x, y);
 }
 
+void ui_text(char *text, float f1, float f2, int x, int y) {
+    sprintf(ui_text_reusable_buffer, text, f1, f2);
+    ui_text(ui_text_reusable_buffer, x, y);
+}
+
 
 
 

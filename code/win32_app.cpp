@@ -69,7 +69,6 @@ bool running = true;
 bool loading = true;
 bool need_init = true;
 
-#include "background.cpp"
 
 
 int master_scroll_delta = 0;
@@ -77,41 +76,18 @@ int master_ctrl_scroll_delta = 0;
 
 float master_desired_tile_width = 200;
 
+#include "background.cpp"
+
 
 // done once after startup loading is done
 void init_app(item_pool all_items, int cw, int ch) {
 
-    // init tiles
-    {
-        tiles = tile_pool::empty();
-        for (int i = 0; i < all_items.count; i++) {
-            // tiles.add(tile::CreateFromFile(all_items[i].fullpath));
-            tiles.add(tile::CreateFromItem(all_items[i]));
-        }
-        // AddRandomColorToTilePool
-        {
-            for (int i = 0; i < tiles.count; i++) {
-                u32 col = rand() & 0xff;
-                col |= (rand() & 0xff) << 8;
-                col |= (rand() & 0xff) << 16;
-                col |= (rand() & 0xff) << 24;
-                tiles[i].rand_color = col;//rand();
-            }
-        }
-        // SortTilePoolByDate(&tiles);
-
-        // should be fast now that we're
-        // loading the metadata files for resolution
-        // (created in background during startup loading now)
-        ReadCachedTileResolutions(&tiles);
-        ArrangeTilesInOrder(&tiles, master_desired_tile_width, cw); // requires resolutions to be set
-    }
-
+    // SortTilePoolByDate(&tiles);
+    ArrangeTilesInOrder(&tiles, master_desired_tile_width, cw); // requires resolutions to be set
 
     // constant-churning loop to load items on screen, and unlod those off the screen
     LaunchBackgroundLoadingLoop();
     LaunchBackgroundUnloadingLoop();
-
 }
 
 void load_tick(item_pool all_items, int cw, int ch) {
@@ -122,16 +98,20 @@ void load_tick(item_pool all_items, int cw, int ch) {
 
     int line = -1;
 
-    ui_text("media files: %f", all_items.count, cw/2, ch/2 + UI_TEXT_SIZE*line++);
+    ui_text("media files: %.0f", all_items.count, cw/2, ch/2 + UI_TEXT_SIZE*line++);
     // ui_text("thumb files: %f", thumb_files.count, cw/2, ch/2 + UI_TEXT_SIZE*line++);
     // ui_text("metadata files: %f", thumb_files.count, cw/2, ch/2 + UI_TEXT_SIZE*line++);
 
     line++;
-    ui_text("items_without_matching_thumbs: %f", item_indices_without_thumbs.count, cw/2, ch/2 + UI_TEXT_SIZE*line++);
+    ui_text("items_without_matching_thumbs: %.0f", item_indices_without_thumbs.count, cw/2, ch/2 + UI_TEXT_SIZE*line++);
     // ui_text("thumbs_without_matching_item: %f", thumbs_without_matching_item.count, cw/2, ch/2 + UI_TEXT_SIZE*line++);
 
     line++;
-    ui_text("items_without_matching_metadata: %f", item_indices_without_metadata.count, cw/2, ch/2 + UI_TEXT_SIZE*line++);
+    ui_text("items_without_matching_metadata: %.0f", item_indices_without_metadata.count, cw/2, ch/2 + UI_TEXT_SIZE*line++);
+
+    line++;
+    ui_text(loading_status_msg, cw/2, ch/2 + UI_TEXT_SIZE*line++);
+    ui_text("files: %.0f of %.0f", loading_reusable_count, loading_reusable_max, cw/2, ch/2 + UI_TEXT_SIZE*line++);
 
     opengl_swap();
 
