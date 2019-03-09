@@ -593,6 +593,7 @@ struct ffmpeg_media {
             string::Create(L"image2"),
             string::Create(L"png_pipe"),
             string::Create(L"bmp_pipe"),
+            string::Create(L"jpeg_pipe"),
             // todo: add way to detect missing formats (e.g. check if getframe is never changing or something)
         };
         int length_of_formats = sizeof(definitely_static_image_formats)/sizeof(definitely_static_image_formats[0]);

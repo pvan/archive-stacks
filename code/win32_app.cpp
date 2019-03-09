@@ -69,14 +69,14 @@ bool running = true;
 bool loading = true;
 bool need_init = true;
 
+#include "background.cpp"
+
 
 
 int master_scroll_delta = 0;
 int master_ctrl_scroll_delta = 0;
 
 float master_desired_tile_width = 200;
-
-#include "background.cpp"
 
 
 // done once after startup loading is done
