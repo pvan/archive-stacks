@@ -21,7 +21,7 @@ void CreateCachedMetadataFile(string origpath, string thumbpath, string metapath
 int_pool item_indices_without_thumbs;
 int_pool item_indices_without_metadata;
 
-DWORD WINAPI RunBackgroundThumbnailThread( LPVOID lpParam ) {
+DWORD WINAPI RunBackgroundStartupThread( LPVOID lpParam ) {
 
     // read paths
     for (int i = 0; i < items.count; i++) {
@@ -92,8 +92,8 @@ DWORD WINAPI RunBackgroundThumbnailThread( LPVOID lpParam ) {
     loading = false;
     return 0;
 }
-void LaunchBackgroundThumbnailLoop() {
-    CreateThread(0, 0, RunBackgroundThumbnailThread, 0, 0, 0);
+void LaunchBackgroundStartupLoop() {
+    CreateThread(0, 0, RunBackgroundStartupThread, 0, 0, 0);
 }
 
 

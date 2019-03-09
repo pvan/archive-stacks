@@ -16,8 +16,6 @@ void DEBUGPRINT(char *s, int i) { sprintf(debugprintbuffer, s, i); OutputDebugSt
 void DEBUGPRINT(char *s, char *s2) { sprintf(debugprintbuffer, s, s2); OutputDebugString(debugprintbuffer); }
 void DEBUGPRINT(char *s, float f) { sprintf(debugprintbuffer, s, f); OutputDebugString(debugprintbuffer); }
 void DEBUGPRINT(char *s, float f1, float f2) { sprintf(debugprintbuffer, s, f1, f2); OutputDebugString(debugprintbuffer); }
-// wc debugprintbufferW[256];
-// void DEBUGPRINT(wc *s) { swprintf(debugprintbufferW, L"%s\n", s); OutputDebugStringW(debugprintbufferW); }
 
 #include "v2.cpp"
 #include "rect.cpp"
@@ -79,6 +77,8 @@ int master_ctrl_scroll_delta = 0;
 
 float master_desired_tile_width = 200;
 
+
+// done once after startup loading is done
 void init_app(item_pool all_items, int cw, int ch) {
 
     // init tiles
@@ -99,10 +99,13 @@ void init_app(item_pool all_items, int cw, int ch) {
             }
         }
         // SortTilePoolByDate(&tiles);
-        ReadCachedTileResolutions(&tiles); // should be loading cached files that are created in background while loading now
+
+        // should be fast now that we're
+        // loading the metadata files for resolution
+        // (created in background during startup loading now)
+        ReadCachedTileResolutions(&tiles);
         ArrangeTilesInOrder(&tiles, master_desired_tile_width, cw); // requires resolutions to be set
     }
-
 
 
     // constant-churning loop to load items on screen, and unlod those off the screen
@@ -243,8 +246,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 
 
-    LaunchBackgroundThumbnailLoop();
-    // LaunchBackgroundUnloadingLoop();
+    LaunchBackgroundStartupLoop();
 
 
     while(running)
@@ -294,12 +296,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 
 
-
+        // runs until background startup loading is done
         if (loading) {
             load_tick(items, cw, ch);
             continue;
         }
 
+        // ran once when startup loading is done
         if (need_init) {
             init_app(items, cw, ch);
             need_init = false;
