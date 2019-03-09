@@ -90,6 +90,7 @@ void init_app(item_pool all_items, int cw, int ch) {
     LaunchBackgroundUnloadingLoop();
 }
 
+// done every frame while loading during startup
 void load_tick(item_pool all_items, int cw, int ch) {
 
     // ui_progressbar(cw/2, ch2)
@@ -339,6 +340,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         }
 
 
+
+
         // render
         opengl_clear();
 
@@ -372,6 +375,22 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             }
 
         }
+
+
+        // tag menu
+        static bool tag_menu_open = false;
+        {
+            if (!tag_menu_open) {
+                if (ui_button("show tags", cw/2, UI_TEXT_SIZE/2, keysDown)) {
+                    tag_menu_open = !tag_menu_open;
+                }
+            } else {
+                if (ui_button("hide tags", cw/2, ch/2, keysDown)) {
+                    tag_menu_open = !tag_menu_open;
+                }
+            }
+        }
+
 
         // debug display metrics
         static bool show_debug_console = true;
