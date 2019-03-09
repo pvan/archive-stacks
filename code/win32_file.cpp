@@ -146,3 +146,113 @@ void DebugPrintTime(u64 time_since_epoch)
 
 
 
+//------------------
+
+
+
+// //
+// // copied in from prev and maybe not used
+// // |
+// // v
+// //
+
+void Win32ReadFileBytesIntoNewMemoryW(wc *path, void **memory, int *bytes)
+{
+    HANDLE file_handle = CreateFileW(path, GENERIC_READ, FILE_SHARE_READ, 0, OPEN_EXISTING, 0, 0);
+    assert(file_handle != INVALID_HANDLE_VALUE);
+
+    LARGE_INTEGER file_size;
+    if (GetFileSizeEx(file_handle, &file_size)) {
+        int file_size_bytes = (int)file_size.QuadPart;
+        if (file_size_bytes) {
+            *memory = VirtualAlloc(0, file_size_bytes, MEM_COMMIT|MEM_RESERVE, PAGE_READWRITE);
+            if (*memory) {
+                DWORD bytes_read;
+                if (ReadFile(file_handle, *memory, file_size_bytes, &bytes_read, 0) && file_size_bytes == bytes_read) {
+                    *bytes = file_size_bytes;
+                } else {
+                    // couldn't read file
+                    VirtualFree(*memory, 0, MEM_RELEASE);
+                    *bytes = 0;
+                    assert(false);
+                }
+            } else {
+                // no mem
+                assert(false);
+            }
+        } else {
+            // 0 file size, file probably exists but is empty
+            *bytes = 0;
+        }
+    } else {
+        // no file size
+        assert(false);
+    }
+    CloseHandle(file_handle);
+}
+
+// void Win32ReadFileBytesIntoNewMemoryA(char *path, void **memory, int *bytes)
+// {
+//     HANDLE file_handle = CreateFileA(path, GENERIC_READ, FILE_SHARE_READ, 0, OPEN_EXISTING, 0, 0);
+//     assert(file_handle != INVALID_HANDLE_VALUE);
+
+//     LARGE_INTEGER file_size;
+//     if (GetFileSizeEx(file_handle, &file_size)) {
+//         int file_size_bytes = (int)file_size.QuadPart;
+//         if (file_size_bytes) {
+//             *memory = VirtualAlloc(0, file_size_bytes, MEM_COMMIT|MEM_RESERVE, PAGE_READWRITE);
+//             if (*memory) {
+//                 DWORD bytes_read;
+//                 if (ReadFile(file_handle, *memory, file_size_bytes, &bytes_read, 0) && file_size_bytes == bytes_read) {
+//                     *bytes = file_size_bytes;
+//                 } else {
+//                     // couldn't read file
+//                     VirtualFree(*memory, 0, MEM_RELEASE);
+//                     *bytes = 0;
+//                     assert(false);
+//                 }
+//             } else {
+//                 // no mem
+//                 assert(false);
+//             }
+//         } else {
+//             // 0 file size, file probably exists but is empty
+//             *bytes = 0;
+//         }
+//     } else {
+//         // no file size
+//         assert(false);
+//     }
+//     CloseHandle(file_handle);
+// }
+
+// void Win32WriteBytesToFileA(char *path, void *memory, int bytes) {
+//     HANDLE file_handle = CreateFileA(path, GENERIC_WRITE, FILE_SHARE_WRITE, 0, CREATE_ALWAYS, 0, 0);
+//     assert(file_handle != INVALID_HANDLE_VALUE);
+//     if (bytes > 0) {
+//         DWORD bytes_written;
+//         if (WriteFile(file_handle, memory, bytes, &bytes_written, 0) && bytes == bytes_written) {
+//             // success
+//         }
+//     } else {
+//         // not passed any mem to write
+//     }
+//     CloseHandle(file_handle);
+// }
+
+// void Win32AppendBytesToFileA(char *path, void *memory, int bytes) {
+//     HANDLE file_handle = CreateFileA(path, GENERIC_WRITE, FILE_SHARE_WRITE, 0, OPEN_ALWAYS, 0, 0);
+//     assert(file_handle != INVALID_HANDLE_VALUE);
+//     if (bytes > 0) {
+//         SetFilePointer(file_handle, 0, NULL, FILE_END); // move write cursor to end of file
+//         DWORD bytes_written;
+//         if (WriteFile(file_handle, memory, bytes, &bytes_written, 0) && bytes == bytes_written) {
+//             // success
+//         }
+//     } else {
+//         // no mem to write
+//     }
+//     CloseHandle(file_handle);
+// }
+
+

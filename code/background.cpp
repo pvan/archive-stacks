@@ -164,6 +164,35 @@ DWORD WINAPI RunBackgroundStartupThread( LPVOID lpParam ) {
 
             }
         }
+
+
+        // read cached tag list from metadata file (combine with reading cached resolution?)
+        {
+            loading_status_msg = "Reading item tags...";
+
+            // first read list of master tags
+            tag_list = ReadTagListFromFileOrSomethingUsableOtherwise(master_path);
+
+            for (int i = 0; i < items.count; i++) {
+                loading_reusable_count = i;
+                loading_reusable_max = items.count;
+
+                if (PopulateTagsFromCachedFileIfPossible(&items[i])) {
+                    DEBUGPRINT("cached tags read for %s\n", tiles[i].name.ToUTF8Reusable());
+                } else {
+                    // fallback to directory orig file is in
+                    if (PopulateTagFromPath(&items[i])) {
+                        DEBUGPRINT("read tag from directory for %s\n", tiles[i].name.ToUTF8Reusable());
+                    } else {
+                        DEBUGPRINT("unable to read tag from directory for %s\n", tiles[i].name.ToUTF8Reusable());
+                        assert(false);
+                    }
+                }
+            }
+        }
+
+
+
     }
 
     loading_status_msg = "Done loading!";

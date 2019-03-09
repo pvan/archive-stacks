@@ -69,6 +69,8 @@ bool running = true;
 bool loading = true;
 bool need_init = true;
 
+string master_path;
+
 #include "background.cpp"
 
 
@@ -213,7 +215,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 
 
-    string master_path = string::Create(L"E:\\inspiration test folder");
+    master_path = string::Create(L"E:\\inspiration test folder");
 
     // create item list with fullpath populated
     // just adapt old method for now
@@ -452,6 +454,19 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                     free(directory);
 
                     HUDPRINT("tile size: %f, %f", tiles[i].size.w, tiles[i].size.h);
+
+                    // i *thinl* items and tiles share a common index??
+                    // HUDPRINT("item[i] path: %s", items[i].fullpath.ToUTF8Reusable());
+                    if (items[i].tags.count>0) {
+                        int firsttagI = items[i].tags[0];
+                        if (tag_list.count>0) {
+                            HUDPRINT("tag0: %s", tag_list[firsttagI].ToUTF8Reusable());
+                        } else {
+                            HUDPRINT("tag0: [no master list?!]");
+                        }
+                    } else {
+                        HUDPRINT("tag0: none");
+                    }
 
 
             //     }

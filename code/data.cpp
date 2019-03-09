@@ -112,6 +112,60 @@ string_pool ItemsInFirstPoolButNotSecond(string_pool p1, string_pool p2) {
 
 
 
+
+
+// todo: should be list not pool
+// master tag list
+// each item has list of indices into this array
+string_pool tag_list;
+
+
+string_pool ReadTagListFromFileOrSomethingUsableOtherwise(string master_path) {
+    //char *path = DEFAULT_PATH"~tags\\~taglist.txt";
+
+    // string path = master_path.CopyAndAppend(L"~taglist.txt");
+    // if (!win32_PathExists(path.chars)) return;
+    // // wchar version
+    // FILE *file = _wfopen(path.chars, L"rb");
+    // if (!file) { DEBUGPRINT("error reading %s\n", path.ToUTF8Reusable()); return; }
+    // string
+    // while (fwscanf(file, L"", ) {
+    //     tag_list
+    // }
+    // fwscanf(file, L"%f,%f", &result->x, &result->y);
+    // fclose(file);
+
+
+    string_pool result = string_pool::empty();
+    result.add(string::Create(L"untagged"));  // always have this entry as index 0?? todo: decide
+
+    wc *path = master_path.CopyAndAppend(L"~taglist.txt").chars;
+
+    if (!win32_PathExists(path)) return result;
+
+    void *fileMem;
+    int fileSize;
+    Win32ReadFileBytesIntoNewMemoryW(path, &fileMem, &fileSize);
+
+    char *fileChars = (char*)fileMem;
+    int fileCharCount = fileSize / sizeof(char); // the same, but just to be sure
+
+    int chars_written = 0;
+    while (chars_written < fileCharCount) {
+        char *thisTag = fileChars + chars_written;
+        string thisTagString = string::Create(thisTag);
+        if (!result.has(thisTagString)) {
+            result.add(thisTagString);
+        }
+        free(thisTagString.chars);
+        chars_written += (strlen(thisTag) + 1); // skip ahead to the next, remember to skip past the \0 as well
+    }
+    return result;
+}
+
+
+
+
 struct item {
     string fullpath;
     string thumbpath;
@@ -122,11 +176,57 @@ struct item {
     bool operator==(item o) { return fullpath==o.fullpath; } // for now just check fullpath
 
     string justname() { wc *result = CopyJustFilename(fullpath.chars); return string::Create(result); }
+
+    // indices into the pool tag_list tood: should be list not pool
+    int_pool tags;
 };
 
 DEFINE_TYPE_POOL(item);
 
 item_pool items;
+
+
+// todo: combine with reading resolution into one read/write_metadata function
+bool PopulateTagsFromCachedFileIfPossible(item *it) {
+
+    string path = it->metadatapath;
+
+    if (!win32_PathExists(path)) return false;
+
+    // wchar version
+    FILE *file = _wfopen(path.chars, L"rb");
+    if (!file) {  DEBUGPRINT("error reading %s\n", path.ToUTF8Reusable()); return false; }
+    float notused;
+    // int result = fwscanf(file, L"%f,%f", &notused, &notused); // skip resolution
+
+    while (true) {
+        char ch = fgetc(file);
+        if (ch == EOF) { fclose(file); return false; }
+        if (ch == '\n') break; // read until first new line
+    }
+
+    // if (feof(file)) return false;
+    int next_index = 0;
+    // if (!feof(file)) {
+        fwscanf(file, L"%i\n", &next_index);
+    //     if (feof(file)) return false;
+        it->tags.add(next_index);
+    // }
+    fclose(file);
+    return true;
+}
+
+bool PopulateTagFromPath(item *it) {
+    wc *directory = CopyJustParentDirectoryName(it->fullpath.chars);
+    if (!directory) return false; //todo: assert these instead?
+    if (directory[0] == 0) return false;
+    string dir = string::Create(directory);
+    if (!tag_list.has(dir)) tag_list.add(dir);
+    int index = tag_list.index_of(dir);
+    if (index == -1) return false;
+    it->tags.add(index);
+    return true;
+}
 
 // // done async in loading thread now
 // // consider: pass pool into this or keep items global??
@@ -140,3 +240,6 @@ item_pool items;
 //     }
 // }
 
+
+
+//struct tag {

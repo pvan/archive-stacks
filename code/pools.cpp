@@ -6,6 +6,12 @@
     thetype *pool; \
     int count; \
     int alloc; \
+    int index_of(thetype possiblyExistingItem) { \
+        for (int i = 0; i < count; i++) { \
+            if (pool[i] == possiblyExistingItem) return i; \
+        } \
+        return -1; /*better way to error?*/ \
+    } \
     bool has(thetype possiblyExistingItem) { \
         for (int i = 0; i < count; i++) { \
             if (pool[i] == possiblyExistingItem) return true; \
