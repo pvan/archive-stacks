@@ -9,24 +9,36 @@ opengl_quad ui_reusable_quad;
 
 struct ui_rect {int x, y, w, h;};
 
-ui_rect ui_text(char *text, int x, int y) {
+
+ui_rect get_text_size(char *text) {
+    bitmap img = ttf_create_bitmap(text, UI_TEXT_SIZE, 255, true, true, 200);
+    ui_rect result = {0,0,img.w,img.h};
+    free(img.data);
+    return result;
+}
+
+// note we return TL pos but take as input the center
+// todo: clean up this api, add v/h centering/L/R options
+ui_rect ui_text(char *text, int x, int y, bool hCenter, bool vCenter) {
     bitmap img = ttf_create_bitmap(text, UI_TEXT_SIZE, 255, true, true, 200);
     if (!ui_reusable_quad.created) ui_reusable_quad.create(0,0,img.w,img.h);
     ui_reusable_quad.set_texture(img.data, img.w, img.h);
-    ui_reusable_quad.set_verts(x-img.w/2, y-img.h/2, img.w, img.h);
+    if (hCenter) x-= img.w/2;
+    if (vCenter) y-= img.h/2;
+    ui_reusable_quad.set_verts(x, y, img.w, img.h);
     ui_reusable_quad.render();
     free(img.data);
-    return {x-img.w/2, y-img.h/2, img.w, img.h};
+    return {x, y, img.w, img.h};
 }
 
-ui_rect ui_text(char *text, float value, int x, int y) {
+ui_rect ui_text(char *text, float value, int x, int y, bool hCenter = true, bool vCenter = true) {
     sprintf(ui_text_reusable_buffer, text, value);
-    return ui_text(ui_text_reusable_buffer, x, y);
+    return ui_text(ui_text_reusable_buffer, x, y, hCenter, vCenter);
 }
 
-ui_rect ui_text(char *text, float f1, float f2, int x, int y) {
+ui_rect ui_text(char *text, float f1, float f2, int x, int y, bool hCenter = true, bool vCenter = true) {
     sprintf(ui_text_reusable_buffer, text, f1, f2);
-    return ui_text(ui_text_reusable_buffer, x, y);
+    return ui_text(ui_text_reusable_buffer, x, y, hCenter, vCenter);
 }
 
 
@@ -42,8 +54,9 @@ bool ui_mouse_over_rect(int mx, int my, ui_rect rect) {
     return mx > rect.x && mx < rect.x+rect.w && my > rect.y && my < rect.y+rect.h;
 }
 
-bool ui_button(char *text, int x, int y, Input i) {
-    ui_rect button_rect = ui_text(text, x, y);
+bool ui_button(char *text, int x, int y, Input i, bool hCenter = true, bool vCenter = true) {
+    ui_rect button_rect = ui_text(text, x, y, hCenter, vCenter);
+    // if (out_rect) *out_rect = button_rect;
     if (ui_mouse_over_rect(i.mouseX, i.mouseY, button_rect)) {
         ui_highlight(button_rect);
         if (i.mouseL) {
@@ -52,6 +65,12 @@ bool ui_button(char *text, int x, int y, Input i) {
     }
     return false;
 }
+
+// // todo: add proper h/v centering options to all api here
+// bool ui_button_TL(char *text, int x, int y, Input i, ui_rect *out_rect = 0) {
+//     ui_rect temp = ui_text(text, x, y);
+//     return ui_button(text, x+temp.w/2, y+temp.h/2, i, out_rect);
+// }
 
 
 

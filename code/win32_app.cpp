@@ -113,8 +113,8 @@ void load_tick(item_pool all_items, int cw, int ch) {
     ui_text("items_without_matching_metadata: %.0f", item_indices_without_metadata.count, cw/2, ch/2 + UI_TEXT_SIZE*line++);
 
     line++;
-    ui_text(loading_status_msg, cw/2, ch/2 + UI_TEXT_SIZE*line++);
-    ui_text("files: %.0f of %.0f", loading_reusable_count, loading_reusable_max, cw/2, ch/2 + UI_TEXT_SIZE*line++);
+    ui_text(loading_status_msg, cw/2, ch/2 + UI_TEXT_SIZE*line++, true,true);
+    ui_text("files: %.0f of %.0f", loading_reusable_count, loading_reusable_max, cw/2, ch/2 + UI_TEXT_SIZE*line++, true,true);
 
     opengl_swap();
 
@@ -387,7 +387,18 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                     tag_menu_open = !tag_menu_open;
                 }
             } else {
-                if (ui_button("hide tags", cw/2, ch/2, keysDown)) {
+
+                int x = 0;
+                int y = 0;
+                for (int i = 0; i < tag_list.count; i++) {
+                    ui_rect this_rect = get_text_size(tag_list[i].ToUTF8Reusable());
+                    if (x+this_rect.w > cw) { y+=this_rect.h; x=0; }
+                    ui_button(tag_list[i].ToUTF8Reusable(), x,y, keysDown, false,false);
+                    x += this_rect.w;
+                }
+                y += UI_TEXT_SIZE;
+
+                if (ui_button("hide tags", cw/2, y/*ch/2*/, keysDown, true,false)) {
                     tag_menu_open = !tag_menu_open;
                 }
             }
