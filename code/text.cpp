@@ -6,16 +6,74 @@
 
 stbtt_fontinfo ttfont;
 
+
+
+
+
+u8 *ttf_file_buffer = 0;
+
+
+stbtt_bakedchar cdata[96]; // ASCII 32..126 is 95 glyphs
+
+
+// return bitmap with baked chars on it
+bitmap ttf_bake(float pixel_height)
+{
+    assert(ttf_file_buffer);
+
+    int first_char = 32;
+    int num_chars = 96;
+
+    int bitmapW = 512;
+    int bitmapH = 512;
+    u8 *gray_bitmap = (u8*)malloc(bitmapW * bitmapH);
+    ZeroMemory(gray_bitmap, bitmapW * bitmapH);
+
+    // no guarantee this fits, esp with variable pixel_height
+    stbtt_BakeFontBitmap(ttf_file_buffer, 0,
+                         pixel_height,
+                         gray_bitmap, bitmapW, bitmapH,
+                         first_char, num_chars,
+                         cdata);
+
+
+
+    u8 *color_bitmap = (u8*)malloc(bitmapW * bitmapH * 4);
+    // for (int px = 0; px < bitmapW; px++)
+    for (int px = 0; px < bitmapW; px++)
+    {
+        for (int py = 0; py < bitmapH; py++)
+        {
+            u8 *r = color_bitmap + ((py*bitmapW)+px)*4 + 0;
+            u8 *g = color_bitmap + ((py*bitmapW)+px)*4 + 1;
+            u8 *b = color_bitmap + ((py*bitmapW)+px)*4 + 2;
+            u8 *a = color_bitmap + ((py*bitmapW)+px)*4 + 3;
+
+            int sx = px;// + first_non_blank_column;
+            *r = *(gray_bitmap + ((py*bitmapW)+sx));
+            *g = *(gray_bitmap + ((py*bitmapW)+sx));
+            *b = *(gray_bitmap + ((py*bitmapW)+sx));
+            // *a = *(gray_bitmap);// + ((py*sourceW)+sx));
+            // if (bgA != 0) *a = bgA;
+            *a = 255;
+        }
+    }
+    free(gray_bitmap);
+
+    return {(u32*)color_bitmap, bitmapW, bitmapH};
+}
+
+
 void ttf_init()
 {
-    u8 *file_buffer = (u8*)malloc(1<<20);
-    fread(file_buffer, 1, 1<<20, fopen("c:/windows/fonts/segoeui.ttf", "rb"));
+    ttf_file_buffer = (u8*)malloc(1<<20);
+    fread(ttf_file_buffer, 1, 1<<20, fopen("c:/windows/fonts/segoeui.ttf", "rb"));
 
-    if (!stbtt_InitFont(&ttfont, file_buffer, 0))
+    if (!stbtt_InitFont(&ttfont, ttf_file_buffer, 0))
     {
         MessageBox(0, "stbtt init font failed", 0,0);
     }
-    // free(file_buffer);  // looks like we need to keep this around?
+    // free(ttf_file_buffer);  // looks like we need to keep this around?
 }
 
 // todo: return height as well

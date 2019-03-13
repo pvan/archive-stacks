@@ -16,6 +16,14 @@ struct bitmap
         newBitmap.h = h;
         return newBitmap;
     }
+
+    static bitmap AllocateNew(int nw, int nh) {
+        bitmap newBitmap;
+        newBitmap.data = (u32*)malloc(nw*nh*sizeof(u32));
+        newBitmap.w = nw;
+        newBitmap.h = nh;
+        return newBitmap;
+    }
 };
 
 

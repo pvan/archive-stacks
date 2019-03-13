@@ -263,6 +263,21 @@ struct opengl_quad {
         glBindBuffer(GL_ARRAY_BUFFER, vbo);
         glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STATIC_DRAW);
     }
+    void set_verts_uvs(float x, float y, float w, float h,
+                       float u0, float u1, float v0, float v1) {
+        cached_w = w;
+        cached_h = h;
+        float verts[] = {
+            // pos   // col   // uv
+            x,y,     1,1,1,   u0, v0,
+            x,y+h,   1,1,1,   u0, v1,
+            x+w,y,   1,1,1,   u1, v0,
+            x+w,y+h, 1,1,1,   u1, v1,
+        };
+        glBindVertexArray(vao);
+        glBindBuffer(GL_ARRAY_BUFFER, vbo);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STATIC_DRAW);
+    }
 
     void create_texture() {
         // create texture
