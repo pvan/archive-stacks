@@ -415,32 +415,32 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         if (keysDown.tilde) show_debug_console = !show_debug_console;
         if (show_debug_console)
         {
-            HUDPRINTRESET();
+            UI_PRINTRESET();
 
             static int debug_pip_count = 0;
             debug_pip_count = (debug_pip_count+1) % 32;
             char debug_pip_string[32 +1/*null terminator*/] = {0};
             for (int i = 0; i < 32; i++) { debug_pip_string[i] = '.'; }
             debug_pip_string[debug_pip_count] = ':';
-            HUDPRINT(debug_pip_string);
+            UI_PRINT(debug_pip_string);
 
-            HUDPRINT("dt: %f", actual_dt);
+            UI_PRINT("dt: %f", actual_dt);
 
-            HUDPRINT("max dt: %f", metric_max_dt);
+            UI_PRINT("max dt: %f", metric_max_dt);
 
-            HUDPRINT("ms to first frame: %f", metric_time_to_first_frame);
+            UI_PRINT("ms to first frame: %f", metric_time_to_first_frame);
 
             int metric_media_loaded = 0;
             for (int i = 0; i < tiles.count; i++) {
                 if (tiles[i].media.loaded) metric_media_loaded++;
             }
-            HUDPRINT("media loaded: %i", metric_media_loaded);
+            UI_PRINT("media loaded: %i", metric_media_loaded);
 
-            HUDPRINT("tiles: %i", tiles.count);
-            HUDPRINT("items: %i", items.count);
+            UI_PRINT("tiles: %i", tiles.count);
+            UI_PRINT("items: %i", items.count);
 
 
-            // HUDPRINT("amt off: %i", state_amt_off_anchor);
+            // UI_PRINT("amt off: %i", state_amt_off_anchor);
 
 
             // for (int i = 0; i < tiles.count; i++) {
@@ -449,39 +449,39 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
                     // can just used our value calc'd above now:
                     int i = tile_index_mouse_was_on;
-                    HUDPRINT("tile_index_mouse_was_on: %i", tile_index_mouse_was_on);
+                    UI_PRINT("tile_index_mouse_was_on: %i", tile_index_mouse_was_on);
 
-                    HUDPRINT("name: %s", tiles[i].name.ToUTF8());
-
-                    if (tiles[i].media.vfc && tiles[i].media.vfc->iformat)
-                        HUDPRINT("format name: %s", (char*)tiles[i].media.vfc->iformat->name);
-
-                    HUDPRINT("fps: %f", (float)tiles[i].media.fps);
-
-                    // HUDPRINT("frames: %f", (float)tiles[i].media.durationSeconds);
-                    // HUDPRINT("frames: %f", (float)tiles[i].media.totalFrameCount);
+                    UI_PRINT("name: %s", tiles[i].name.ToUTF8());
 
                     if (tiles[i].media.vfc && tiles[i].media.vfc->iformat)
-                        HUDPRINT(tiles[i].media.IsStaticImageBestGuess() ? "image" : "video");
+                        UI_PRINT("format name: %s", (char*)tiles[i].media.vfc->iformat->name);
+
+                    UI_PRINT("fps: %f", (float)tiles[i].media.fps);
+
+                    // UI_PRINT("frames: %f", (float)tiles[i].media.durationSeconds);
+                    // UI_PRINT("frames: %f", (float)tiles[i].media.totalFrameCount);
+
+                    if (tiles[i].media.vfc && tiles[i].media.vfc->iformat)
+                        UI_PRINT(tiles[i].media.IsStaticImageBestGuess() ? "image" : "video");
 
                     wc *directory = CopyJustParentDirectoryName(tiles[i].paths.fullpath.chars);
                     string temp = string::Create(directory);
-                    HUDPRINT("folder: %s", temp.ToUTF8Reusable());
+                    UI_PRINT("folder: %s", temp.ToUTF8Reusable());
                     free(directory);
 
-                    HUDPRINT("tile size: %f, %f", tiles[i].size.w, tiles[i].size.h);
+                    UI_PRINT("tile size: %f, %f", tiles[i].size.w, tiles[i].size.h);
 
                     // i *thinl* items and tiles share a common index??
-                    // HUDPRINT("item[i] path: %s", items[i].fullpath.ToUTF8Reusable());
+                    // UI_PRINT("item[i] path: %s", items[i].fullpath.ToUTF8Reusable());
                     if (items[i].tags.count>0) {
                         int firsttagI = items[i].tags[0];
                         if (tag_list.count>0) {
-                            HUDPRINT("tag0: %s", tag_list[firsttagI].ToUTF8Reusable());
+                            UI_PRINT("tag0: %s", tag_list[firsttagI].ToUTF8Reusable());
                         } else {
-                            HUDPRINT("tag0: [no master list?!]");
+                            UI_PRINT("tag0: [no master list?!]");
                         }
                     } else {
-                        HUDPRINT("tag0: none");
+                        UI_PRINT("tag0: none");
                     }
 
 
