@@ -54,7 +54,7 @@ const int UI_BOTTOM = 4;
 
 // hpos and vpos specify whether x,y are TL, top/center, center/center, or what
 // note we return rect with TL pos but take as input whatever (as specified by v/h pos)
-ui_rect ui_text(char *text, int x, int y, int hpos=UI_LEFT, int vpos=UI_TOP, bool render = true) {
+ui_rect ui_text(char *text, int x, int y, int hpos, int vpos, bool render = true) {
 
     // without any changes, bb will be TL
     ui_rect bb = ttf_render_text(text, (float)x, (float)y, ui_font_atlas, &ui_font_quad, false);
@@ -89,12 +89,20 @@ ui_rect ui_text(char *text, int x, int y, int hpos=UI_LEFT, int vpos=UI_TOP, boo
 }
 
 
-ui_rect ui_text(char *text, float value, int x, int y, int hpos=UI_LEFT, int vpos=UI_TOP) {
+ui_rect ui_texti(char *text, int value, int x, int y, int hpos, int vpos) {
     sprintf(ui_text_reusable_buffer, text, value);
     return ui_text(ui_text_reusable_buffer, x, y, hpos, vpos);
 }
+ui_rect ui_texti(char *text, int v1, int v2, int x, int y, int hpos, int vpos) {
+    sprintf(ui_text_reusable_buffer, text, v1, v2);
+    return ui_text(ui_text_reusable_buffer, x, y, hpos, vpos);
+}
 
-ui_rect ui_text(char *text, float f1, float f2, int x, int y, int hpos=UI_LEFT, int vpos=UI_TOP) {
+ui_rect ui_textf(char *text, float value, int x, int y, int hpos, int vpos) {
+    sprintf(ui_text_reusable_buffer, text, value);
+    return ui_text(ui_text_reusable_buffer, x, y, hpos, vpos);
+}
+ui_rect ui_textf(char *text, float f1, float f2, int x, int y, int hpos, int vpos) {
     sprintf(ui_text_reusable_buffer, text, f1, f2);
     return ui_text(ui_text_reusable_buffer, x, y, hpos, vpos);
 }
@@ -105,7 +113,7 @@ bool ui_mouse_over_rect(int mx, int my, ui_rect rect) {
     return mx > rect.x && mx < rect.x+rect.w && my > rect.y && my < rect.y+rect.h;
 }
 
-bool ui_button(char *text, int x, int y, Input i, int hpos=UI_LEFT, int vpos=UI_TOP) {
+bool ui_button(char *text, int x, int y, Input i, int hpos, int vpos) {
     ui_rect button_rect = ui_text(text, x, y, hpos, vpos);
     // if (out_rect) *out_rect = button_rect;
     if (ui_mouse_over_rect(i.mouseX, i.mouseY, button_rect)) {
@@ -126,7 +134,7 @@ bool ui_button(char *text, int x, int y, Input i, int hpos=UI_LEFT, int vpos=UI_
 char ui_log_reuseable_mem[256];
 int ui_log_count;
 void UI_PRINT(char *s) {
-    ui_text(s, 0, ui_log_count*UI_TEXT_SIZE);
+    ui_text(s, 0, ui_log_count*UI_TEXT_SIZE, UI_LEFT,UI_TOP);
     ui_log_count++;
 }
 void UI_PRINT(u64 i)               { sprintf(ui_log_reuseable_mem, "%lli", i); UI_PRINT(ui_log_reuseable_mem); }

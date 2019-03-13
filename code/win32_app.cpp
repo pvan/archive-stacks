@@ -101,20 +101,17 @@ void load_tick(item_pool all_items, int cw, int ch) {
 
     int line = -1;
 
-    ui_text("media files: %.0f", all_items.count, cw/2, ch/2 + UI_TEXT_SIZE*line++);
-    // ui_text("thumb files: %f", thumb_files.count, cw/2, ch/2 + UI_TEXT_SIZE*line++);
-    // ui_text("metadata files: %f", thumb_files.count, cw/2, ch/2 + UI_TEXT_SIZE*line++);
+    ui_texti("media files: %i", all_items.count, cw/2, ch/2 + UI_TEXT_SIZE*line++, UI_CENTER,UI_CENTER);
 
     line++;
-    ui_text("items_without_matching_thumbs: %.0f", item_indices_without_thumbs.count, cw/2, ch/2 + UI_TEXT_SIZE*line++);
-    // ui_text("thumbs_without_matching_item: %f", thumbs_without_matching_item.count, cw/2, ch/2 + UI_TEXT_SIZE*line++);
+    ui_texti("items_without_matching_thumbs: %i", item_indices_without_thumbs.count, cw/2, ch/2 + UI_TEXT_SIZE*line++, UI_CENTER,UI_CENTER);
 
     line++;
-    ui_text("items_without_matching_metadata: %.0f", item_indices_without_metadata.count, cw/2, ch/2 + UI_TEXT_SIZE*line++);
+    ui_texti("items_without_matching_metadata: %i", item_indices_without_metadata.count, cw/2, ch/2 + UI_TEXT_SIZE*line++, UI_CENTER,UI_CENTER);
 
     line++;
-    ui_text(loading_status_msg, cw/2, ch/2 + UI_TEXT_SIZE*line++);
-    ui_text("files: %.0f of %.0f", loading_reusable_count, loading_reusable_max, cw/2, ch/2 + UI_TEXT_SIZE*line++);
+    ui_text(loading_status_msg, cw/2, ch/2 + UI_TEXT_SIZE*line++, UI_CENTER,UI_CENTER);
+    ui_texti("files: %i of %i", loading_reusable_count, loading_reusable_max, cw/2, ch/2 + UI_TEXT_SIZE*line++, UI_CENTER,UI_CENTER);
 
     opengl_swap();
 
