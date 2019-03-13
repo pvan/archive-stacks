@@ -15,8 +15,19 @@ u8 *ttf_file_buffer = 0;
 
 stbtt_bakedchar cdata[96]; // ASCII 32..126 is 95 glyphs
 
+// should just cache this
+int find_largest_baked_ascent(/*float pixel_size*/) {
+    // float scale = stbtt_ScaleForPixelHeight(&ttfont, pixel_size);
+    int smallest_y = 10000;
+    for (int i = 0; i < 96; i++) {
+        // yoff appears to be basically what the y0 from stbtt_GetBakedQuad becomes
+        if (cdata[i].yoff < smallest_y) smallest_y = cdata[i].yoff;
+    }
+    return -smallest_y; // y0s are negative, return the largest as a distance basically
+}
 
-struct ttf_rect {float x, y, w, h;};
+
+struct ttf_rect {int x, y, w, h;};
 
 // todo: batch verts into one buffer
 // returns bounding box of rendered text
@@ -35,6 +46,9 @@ ttf_rect ttf_render_text(char *text, float screenX, float screenY,
     float right_most_x = 0;
     float largest_y = 0;
     float smallest_y = 10000;
+
+
+    // float scale = stbtt_ScaleForPixelHeight(&ttfont, );
 
     // maybe affected by stbtt_GetBakedQuad? not sure
     float tx = screenX;
@@ -71,8 +85,21 @@ ttf_rect ttf_render_text(char *text, float screenX, float screenY,
     bb.w = right_most_x-left_most_x;
     bb.y = smallest_y;
     bb.h = largest_y-smallest_y;
-    return bb;
-    // return (int)ceil(right_most_x-left_most_x);
+
+    //add some margin to the resultbb
+    int margin = 2;
+    bb.x -= margin;
+    bb.y -= margin;
+    bb.w += margin*2;
+    bb.h += margin; // don't bother with the bottom margin (just compensate for x-=)
+
+    // return bb;
+    return {
+        (int)floor(bb.x),
+        (int)floor(bb.y),
+        (int)ceil(bb.w),
+        (int)ceil(bb.h)
+    };
 }
 
 
@@ -128,6 +155,7 @@ void ttf_init()
 {
     ttf_file_buffer = (u8*)malloc(1<<20);
     fread(ttf_file_buffer, 1, 1<<20, fopen("c:/windows/fonts/segoeui.ttf", "rb"));
+    // fread(ttf_file_buffer, 1, 1<<20, fopen("c:/windows/fonts/arial.ttf", "rb"));
 
     if (!stbtt_InitFont(&ttfont, ttf_file_buffer, 0))
     {

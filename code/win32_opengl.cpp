@@ -109,10 +109,12 @@ bool OPENGL_DEBUG_MESSAGES = true;
 
 void APIENTRY opengl_message_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length,
                                         const GLchar* message, const void* userParam) {
-    char msg[1024];
-    sprintf(msg, "GL CALLBACK: %s type = 0x%x, severity = 0x%x, message = %s\n",
-            type == GL_DEBUG_TYPE_ERROR ? "** GL ERROR **" : "", type, severity, message);
-    if (OPENGL_DEBUG_MESSAGES) OutputDebugString(msg);
+    if (severity != 0x826b) { // ignore notifications
+        char msg[1024];
+        sprintf(msg, "GL CALLBACK: %s type = 0x%x, severity = 0x%x, message = %s\n",
+                type == GL_DEBUG_TYPE_ERROR ? "** GL ERROR **" : "", type, severity, message);
+        if (OPENGL_DEBUG_MESSAGES) OutputDebugString(msg);
+    }
 }
 
 void opengl_init(HDC hdc)

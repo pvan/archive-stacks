@@ -387,7 +387,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         static bool tag_menu_open = false;
         {
             if (!tag_menu_open) {
-                if (ui_button("show tags", cw/2, UI_TEXT_SIZE/2, keysDown)) {
+                if (ui_button("show tags", cw/2, 0, keysDown, UI_CENTER,UI_TOP)) {
                     tag_menu_open = !tag_menu_open;
                 }
             } else {
@@ -395,14 +395,15 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                 int x = 0;
                 int y = 0;
                 for (int i = 0; i < tag_list.count; i++) {
+                    // ui_rect this_rect = get_text_size(tag_list[i].ToUTF8Reusable());
                     ui_rect this_rect = get_text_size(tag_list[i].ToUTF8Reusable());
                     if (x+this_rect.w > cw) { y+=this_rect.h; x=0; }
-                    ui_button(tag_list[i].ToUTF8Reusable(), x,y, keysDown/*, LEFT,TOP*/);
+                    ui_button(tag_list[i].ToUTF8Reusable(), x,y, keysDown, UI_LEFT,UI_TOP);
                     x += this_rect.w;
                 }
                 y += UI_TEXT_SIZE;
 
-                if (ui_button("hide tags", cw/2, y/*ch/2*/, keysDown/*, CENTER,TOP*/)) {
+                if (ui_button("hide tags", cw/2, y/*ch/2*/, keysDown, UI_CENTER,UI_TOP)) {
                     tag_menu_open = !tag_menu_open;
                 }
             }
