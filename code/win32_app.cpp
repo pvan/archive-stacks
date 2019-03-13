@@ -389,42 +389,18 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                 }
             } else {
 
-                // int x = 0;
+                int x = 0;
                 int y = 0;
-                // for (int i = 0; i < tag_list.count; i++) {
-                //     ui_rect this_rect = get_text_size(tag_list[i].ToUTF8Reusable());
-                //     if (x+this_rect.w > cw) { y+=this_rect.h; x=0; }
-                //     ui_button(tag_list[i].ToUTF8Reusable(), x,y, keysDown, false,false);
-                //     x += this_rect.w;
-                // }
-                // y += UI_TEXT_SIZE;
-
-
-                // pass font atlas to gpu
-                static opengl_quad tempquad;
-                if (!tempquad.created) tempquad.create(0,0,baked_font.w, baked_font.h);
-                if (!tempquad.texture_created) tempquad.set_texture(baked_font.data, baked_font.w, baked_font.h);
-                // tempquad.set_verts(0, 0, baked_font.w, baked_font.h);
-                // tempquad.render(1);
-
-                // text text display
-                char *textall = "hellooo rowbot";
-                char *text = textall;
-                float tx = 32;
-                float ty = 32;
-                while (*text) {
-                    if (*text >= 32 && *text < 128) {
-                        stbtt_aligned_quad q;
-                        stbtt_GetBakedQuad(cdata, 512,512, *text-32, &tx,&ty,&q,1);//1=opengl & d3d10+,0=d3d9
-                        // DEBUGPRINT("u0: %f  u1: %f \n", q.s0, q.s1);
-                        // DEBUGPRINT("v0: %f  v1: %f \n", q.t0, q.t1);
-                        tempquad.set_verts_uvs(q.x0, q.y0, q.x1-q.x0, q.y1-q.y0,
-                                               q.s0, q.s1, q.t0, q.t1);
-                        tempquad.render(1);
-                    }
-                    ++text;
+                for (int i = 0; i < tag_list.count; i++) {
+                    ui_rect this_rect = get_text_size(tag_list[i].ToUTF8Reusable());
+                    if (x+this_rect.w > cw) { y+=this_rect.h; x=0; }
+                    ui_button(tag_list[i].ToUTF8Reusable(), x,y, keysDown, false,false);
+                    x += this_rect.w;
                 }
+                y += UI_TEXT_SIZE;
 
+                static opengl_quad tempquad;
+                ttf_render_text("hellar rarbot", 32, 32, baked_font, &tempquad);
 
                 if (ui_button("hide tags", cw/2, y/*ch/2*/, keysDown, true,false)) {
                     tag_menu_open = !tag_menu_open;

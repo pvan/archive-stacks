@@ -16,6 +16,38 @@ u8 *ttf_file_buffer = 0;
 stbtt_bakedchar cdata[96]; // ASCII 32..126 is 95 glyphs
 
 
+// todo: batch verts into one buffer
+void ttf_render_text(char *text, float screenX, float screenY,
+                     bitmap baked_font, opengl_quad *render_quad) {
+
+    // pass font atlas to gpu if not already
+    // static opengl_quad tempquad;
+    if (!render_quad->created) render_quad->create(0,0,baked_font.w, baked_font.h);
+    if (!render_quad->texture_created) render_quad->set_texture(baked_font.data, baked_font.w, baked_font.h);
+    // tempquad.set_verts(0, 0, baked_font.w, baked_font.h);
+    // tempquad.render(1);
+
+    // text text display
+    // char *textall = "hellooo rowbot";
+    // char *text = textall;
+    float tx = screenX;
+    float ty = screenY;
+    while (*text) {
+        if (*text >= 32 && *text < 128) {
+            stbtt_aligned_quad q;
+            stbtt_GetBakedQuad(cdata, 512,512, *text-32, &tx,&ty,&q,1);//1=opengl & d3d10+,0=d3d9
+            // DEBUGPRINT("u0: %f  u1: %f \n", q.s0, q.s1);
+            // DEBUGPRINT("v0: %f  v1: %f \n", q.t0, q.t1);
+            render_quad->set_verts_uvs(q.x0, q.y0, q.x1-q.x0, q.y1-q.y0,
+                                   q.s0, q.s1, q.t0, q.t1);
+            render_quad->render(1);
+        }
+        ++text;
+    }
+
+}
+
+
 // return bitmap with baked chars on it
 bitmap ttf_bake(float pixel_height)
 {
