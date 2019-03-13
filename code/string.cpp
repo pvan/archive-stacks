@@ -1,5 +1,13 @@
 
 
+
+
+// todo: this needs a major overhaul
+// I like the utf8 everywhere manifesto
+// basically store everythign as utf8 internally
+// wrappers for windows functions that take wide chars
+
+
 // todo: we should probably check every sprintf, wcscat, memcpy, etc for space/bounds here
 
 
@@ -65,7 +73,8 @@ struct string
 
 
     static bool Equals(wchar_t *s1, wchar_t *s2) {
-        return wcscmp(s1, s2) == 0;
+        int result = wcscmp(s1, s2);
+        return result == 0;
     }
 
     static string Create(wchar_t *source) {

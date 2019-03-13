@@ -23,7 +23,7 @@ int find_largest_baked_ascent(/*float pixel_size*/) {
         // yoff appears to be basically what the y0 from stbtt_GetBakedQuad becomes
         if (cdata[i].yoff < smallest_y) smallest_y = cdata[i].yoff;
     }
-    return -smallest_y; // y0s are negative, return the largest as a distance basically
+    return -smallest_y; // y0s are negative, return the farthest as a distance basically
 }
 
 

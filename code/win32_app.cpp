@@ -36,8 +36,6 @@ void DEBUGPRINT(char *s, float f1, float f2) { sprintf(debugprintbuffer, s, f1, 
 #include "../lib/stb_image_write.h"
 
 #include "ffmpeg.cpp"
-#include "data.cpp"
-#include "tile.cpp"
 #include "text.cpp"
 #include "ui.cpp"
 
@@ -71,6 +69,8 @@ bool need_init = true;
 
 string master_path;
 
+#include "data.cpp"
+#include "tile.cpp"
 #include "background.cpp"
 
 

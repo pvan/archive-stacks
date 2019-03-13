@@ -1,4 +1,19 @@
 
+
+
+// todo:
+// need to restructure this a bit
+// need more than just one kind of collection
+// collections could be...
+// 1. ordered or un-ordered (say, "list" and "pool" -- the only reason to un-order is easy removal)
+// 2. allow duplicates or not (i think we don't care about dups atm.. allow them in all cases)
+// 3. copy by ref or value when adding items? (generic way to handle both?)
+// definitely need both kinds of option 1 and both of option 3 couldn't hurt
+//
+// at the very least, as-is, it's going to be easy to make use-after-free errors (see 3.)
+// and accidently re-order when we didn't want to (see 1.)
+
+
 // can have duplicates
 // we call it a "pool" since things will get re-ordered when removing
 #define DEFINE_TYPE_POOL(thetype) struct thetype##_pool \

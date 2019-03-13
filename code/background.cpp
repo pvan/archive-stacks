@@ -21,15 +21,7 @@ void CreateCachedMetadataFile(string origpath, string thumbpath, string metapath
 int_pool item_indices_without_thumbs;
 int_pool item_indices_without_metadata;
 
-// int loading_status = 0;
-// char *loading_status_msgs[] = {
-//     "Starting...",
-//     "Reading paths...",
-//     "Creating work queue...",
-//     "Creating thumbnails...",
-//     "Creating metadata cache...",
-//     "Creating tiles...",
-//     "Done loading..."};
+
 char *loading_status_msg = "Starting...";
 int loading_reusable_count = 0;
 int loading_reusable_max = 0;
@@ -173,6 +165,13 @@ DWORD WINAPI RunBackgroundStartupThread( LPVOID lpParam ) {
             // first read list of master tags
             tag_list = ReadTagListFromFileOrSomethingUsableOtherwise(master_path);
 
+            // DEBUGPRINT("should be....");
+            // for (int i = 0 ; i < tag_list.count; i++) {
+            //     DEBUGPRINT(tag_list[i].ToUTF8Reusable());
+            // }
+            // DEBUGPRINT("total %i\n", tag_list.count);
+
+
             for (int i = 0; i < items.count; i++) {
                 loading_reusable_count = i;
                 loading_reusable_max = items.count;
@@ -182,13 +181,15 @@ DWORD WINAPI RunBackgroundStartupThread( LPVOID lpParam ) {
                 } else {
                     // fallback to directory orig file is in
                     if (PopulateTagFromPath(&items[i])) {
-                        DEBUGPRINT("read tag from directory for %s\n", tiles[i].name.ToUTF8Reusable());
+                        // DEBUGPRINT("read tag from directory for %s\n", tiles[i].name.ToUTF8Reusable());
                     } else {
                         DEBUGPRINT("unable to read tag from directory for %s\n", tiles[i].name.ToUTF8Reusable());
                         assert(false);
                     }
                 }
             }
+
+            SaveTagList();
         }
 
 

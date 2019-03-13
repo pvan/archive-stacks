@@ -191,6 +191,38 @@ void Win32ReadFileBytesIntoNewMemoryW(wc *path, void **memory, int *bytes)
     CloseHandle(file_handle);
 }
 
+void Win32WriteBytesToFileW(wc *path, void *memory, int bytes) {
+    HANDLE file_handle = CreateFileW(path, GENERIC_WRITE, FILE_SHARE_WRITE, 0, CREATE_ALWAYS, 0, 0);
+    assert(file_handle != INVALID_HANDLE_VALUE);
+    if (bytes > 0) {
+        DWORD bytes_written;
+        if (WriteFile(file_handle, memory, bytes, &bytes_written, 0) && bytes == bytes_written) {
+            // success
+        }
+    } else {
+        // not passed any mem to write
+    }
+    CloseHandle(file_handle);
+}
+
+void Win32AppendBytesToFileW(wc *path, void *memory, int bytes) {
+    HANDLE file_handle = CreateFileW(path, GENERIC_WRITE, FILE_SHARE_WRITE, 0, OPEN_ALWAYS, 0, 0);
+    assert(file_handle != INVALID_HANDLE_VALUE);
+    if (bytes > 0) {
+        SetFilePointer(file_handle, 0, NULL, FILE_END); // move write cursor to end of file
+        DWORD bytes_written;
+        if (WriteFile(file_handle, memory, bytes, &bytes_written, 0) && bytes == bytes_written) {
+            // success
+        }
+    } else {
+        // no mem to write
+    }
+    CloseHandle(file_handle);
+}
+
+
+
+
 // void Win32ReadFileBytesIntoNewMemoryA(char *path, void **memory, int *bytes)
 // {
 //     HANDLE file_handle = CreateFileA(path, GENERIC_READ, FILE_SHARE_READ, 0, OPEN_EXISTING, 0, 0);

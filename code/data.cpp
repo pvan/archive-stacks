@@ -119,6 +119,32 @@ string_pool ItemsInFirstPoolButNotSecond(string_pool p1, string_pool p2) {
 // each item has list of indices into this array
 string_pool tag_list;
 
+void SaveTagList() {
+    wc *path = master_path.CopyAndAppend(L"/~taglist.txt").chars;
+
+    // create new blank file first
+    if (tag_list.count > 0)
+        Win32WriteBytesToFileW(path, tag_list[0].ToUTF8Reusable(), strlen(tag_list[0].ToUTF8Reusable()) + 1); // include the null-terminator
+
+    // then append
+    for (int i = 1; i < tag_list.count; i++) {
+        Win32AppendBytesToFileW(path, tag_list[i].ToUTF8Reusable(), strlen(tag_list[i].ToUTF8Reusable()) + 1); // include the null-terminator
+    }
+
+    for (int i = 0 ; i < tag_list.count; i++) {
+        DEBUGPRINT(tag_list[i].ToUTF8Reusable());
+    }
+    DEBUGPRINT("saved %i\n", tag_list.count);
+}
+void AddNewTag(string tag) {
+    assert(!tag_list.has(tag));
+    tag_list.add(tag);
+}
+void AddNewTagAndSave(string tag) {
+    AddNewTag(tag);
+    SaveTagList();
+}
+
 
 string_pool ReadTagListFromFileOrSomethingUsableOtherwise(string master_path) {
     //char *path = DEFAULT_PATH"~tags\\~taglist.txt";
@@ -137,11 +163,14 @@ string_pool ReadTagListFromFileOrSomethingUsableOtherwise(string master_path) {
 
 
     string_pool result = string_pool::empty();
-    result.add(string::Create(L"untagged"));  // always have this entry as index 0?? todo: decide
+    // result.add(string::Create(L"untagged"));  // always have this entry as index 0?? todo: decide
 
-    wc *path = master_path.CopyAndAppend(L"~taglist.txt").chars;
+    wc *path = master_path.CopyAndAppend(L"/~taglist.txt").chars;
 
-    if (!win32_PathExists(path)) return result;
+    if (!win32_PathExists(path)) {
+        result.add(string::Create(L"untagged"));  // always have this entry as index 0?? todo: decide
+        return result;
+    }
 
     void *fileMem;
     int fileSize;
@@ -156,10 +185,15 @@ string_pool ReadTagListFromFileOrSomethingUsableOtherwise(string master_path) {
         string thisTagString = string::Create(thisTag);
         if (!result.has(thisTagString)) {
             result.add(thisTagString);
+            // DEBUGPRINT("added %s\n", thisTagString.ToUTF8Reusable());
+        } else {
+            DEBUGPRINT("WARNING: %s was in taglist more than once!\n", thisTagString.ToUTF8Reusable());
         }
-        free(thisTagString.chars);
+        // todo: prickly use-after-free bug potential in string_pool, should check all string_pool and just refactor pools in general
+        // free(thisTagString.chars); // don't free! string_pool will use this address
         chars_written += (strlen(thisTag) + 1); // skip ahead to the next, remember to skip past the \0 as well
     }
+
     return result;
 }
 
@@ -216,15 +250,33 @@ bool PopulateTagsFromCachedFileIfPossible(item *it) {
     return true;
 }
 
+static string laststr = string::Create(L"empty");
 bool PopulateTagFromPath(item *it) {
     wc *directory = CopyJustParentDirectoryName(it->fullpath.chars);
-    if (!directory) return false; //todo: assert these instead?
-    if (directory[0] == 0) return false;
+    assert(directory);
+    assert(directory[0]);
+    // if (!directory) return false; //todo: assert these instead?
+    // if (directory[0] == 0) return false;
     string dir = string::Create(directory);
-    if (!tag_list.has(dir)) tag_list.add(dir);
+
+    if (laststr != dir) {
+        laststr = dir.Copy();
+    }
+
+    if (!tag_list.has(dir)) {
+        // DEBUGPRINT("\n\nok so you're telling me tag_list doesn't have %s\n", dir.ToUTF8Reusable());
+        // DEBUGPRINT("and here's the list:");
+        // for (int i = 0; i < tag_list.count; i++) {
+        //     DEBUGPRINT(" %s, ", tag_list[i].ToUTF8Reusable());
+        // }
+        AddNewTag(dir);
+    }
     int index = tag_list.index_of(dir);
     if (index == -1) return false;
     it->tags.add(index);
+    // if (tag_list.count != lastcount) {
+    //     DEBUGPRINT("change"); }
+    // lastcount = tag_list.count;
     return true;
 }
 
