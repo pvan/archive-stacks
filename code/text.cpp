@@ -86,12 +86,12 @@ ttf_rect ttf_render_text(char *text, float screenX, float screenY,
     bb.y = smallest_y;
     bb.h = largest_y-smallest_y;
 
-    //add some margin to the resultbb
-    int margin = 2;
-    bb.x -= margin;
-    bb.y -= margin;
-    bb.w += margin*2;
-    bb.h += margin; // don't bother with the bottom margin (just compensate for x-=)
+    // //add some margin to the resultbb
+    // int margin = 2;
+    // bb.x -= margin;
+    // bb.y -= margin;
+    // bb.w += margin*2;
+    // bb.h += margin; // don't bother with the bottom margin (just compensate for x-=)
 
     // return bb;
     return {

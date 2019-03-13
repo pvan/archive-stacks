@@ -396,12 +396,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                 int y = 0;
                 for (int i = 0; i < tag_list.count; i++) {
                     // ui_rect this_rect = get_text_size(tag_list[i].ToUTF8Reusable());
-                    ui_rect this_rect = get_text_size(tag_list[i].ToUTF8Reusable());
+                    ui_rect this_rect = ui_text(tag_list[i].ToUTF8Reusable(), x,y, UI_LEFT,UI_TOP, false);
                     if (x+this_rect.w > cw) { y+=this_rect.h; x=0; }
                     ui_button(tag_list[i].ToUTF8Reusable(), x,y, keysDown, UI_LEFT,UI_TOP);
                     x += this_rect.w;
+                    if (i == tag_list.count-1) y += this_rect.h; // \n for hide tag button
                 }
-                y += UI_TEXT_SIZE;
 
                 if (ui_button("hide tags", cw/2, y/*ch/2*/, keysDown, UI_CENTER,UI_TOP)) {
                     tag_menu_open = !tag_menu_open;
