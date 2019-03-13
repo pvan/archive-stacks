@@ -16,20 +16,27 @@ u8 *ttf_file_buffer = 0;
 stbtt_bakedchar cdata[96]; // ASCII 32..126 is 95 glyphs
 
 
+struct ttf_rect {float x, y, w, h;};
+
 // todo: batch verts into one buffer
-void ttf_render_text(char *text, float screenX, float screenY,
-                     bitmap baked_font, opengl_quad *render_quad) {
+// returns bounding box of rendered text
+// pass render = false to just get the bb without rendering anything
+ttf_rect ttf_render_text(char *text, float screenX, float screenY,
+                     bitmap baked_font, opengl_quad *render_quad,
+                     bool render = true) {
 
     // pass font atlas to gpu if not already
-    // static opengl_quad tempquad;
     if (!render_quad->created) render_quad->create(0,0,baked_font.w, baked_font.h);
     if (!render_quad->texture_created) render_quad->set_texture(baked_font.data, baked_font.w, baked_font.h);
-    // tempquad.set_verts(0, 0, baked_font.w, baked_font.h);
-    // tempquad.render(1);
 
-    // text text display
-    // char *textall = "hellooo rowbot";
-    // char *text = textall;
+    // to find bb
+    bool set_left_most_x = false;
+    float left_most_x = 0;
+    float right_most_x = 0;
+    float largest_y = 0;
+    float smallest_y = 10000;
+
+    // maybe affected by stbtt_GetBakedQuad? not sure
     float tx = screenX;
     float ty = screenY;
     while (*text) {
@@ -38,13 +45,34 @@ void ttf_render_text(char *text, float screenX, float screenY,
             stbtt_GetBakedQuad(cdata, 512,512, *text-32, &tx,&ty,&q,1);//1=opengl & d3d10+,0=d3d9
             // DEBUGPRINT("u0: %f  u1: %f \n", q.s0, q.s1);
             // DEBUGPRINT("v0: %f  v1: %f \n", q.t0, q.t1);
-            render_quad->set_verts_uvs(q.x0, q.y0, q.x1-q.x0, q.y1-q.y0,
-                                   q.s0, q.s1, q.t0, q.t1);
-            render_quad->render(1);
+            if (render) {
+                render_quad->set_verts_uvs(q.x0, q.y0, q.x1-q.x0, q.y1-q.y0,
+                                       q.s0, q.s1, q.t0, q.t1);
+                render_quad->render(1);
+            }
+
+            // x bounding box
+            if (!set_left_most_x) {
+                set_left_most_x = true;
+                left_most_x = q.x0;
+            }
+            right_most_x = q.x1;
+
+            // y bounding box
+            if (q.y0 > largest_y) largest_y = q.y0;
+            if (q.y1 > largest_y) largest_y = q.y1;
+            if (q.y0 < smallest_y) smallest_y = q.y0;
+            if (q.y1 < smallest_y) smallest_y = q.y1;
         }
         ++text;
     }
-
+    ttf_rect bb;
+    bb.x = left_most_x;
+    bb.w = right_most_x-left_most_x;
+    bb.y = smallest_y;
+    bb.h = largest_y-smallest_y;
+    return bb;
+    // return (int)ceil(right_most_x-left_most_x);
 }
 
 

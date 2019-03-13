@@ -113,8 +113,8 @@ void load_tick(item_pool all_items, int cw, int ch) {
     ui_text("items_without_matching_metadata: %.0f", item_indices_without_metadata.count, cw/2, ch/2 + UI_TEXT_SIZE*line++);
 
     line++;
-    ui_text(loading_status_msg, cw/2, ch/2 + UI_TEXT_SIZE*line++, true,true);
-    ui_text("files: %.0f of %.0f", loading_reusable_count, loading_reusable_max, cw/2, ch/2 + UI_TEXT_SIZE*line++, true,true);
+    ui_text(loading_status_msg, cw/2, ch/2 + UI_TEXT_SIZE*line++);
+    ui_text("files: %.0f of %.0f", loading_reusable_count, loading_reusable_max, cw/2, ch/2 + UI_TEXT_SIZE*line++);
 
     opengl_swap();
 
@@ -210,6 +210,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     ttf_init();
     bitmap baked_font = ttf_bake(UI_TEXT_SIZE);
+
+    ui_init(baked_font);
+
 
     opengl_quad quad;
     quad.create(0,0,300,200);
@@ -394,15 +397,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                 for (int i = 0; i < tag_list.count; i++) {
                     ui_rect this_rect = get_text_size(tag_list[i].ToUTF8Reusable());
                     if (x+this_rect.w > cw) { y+=this_rect.h; x=0; }
-                    ui_button(tag_list[i].ToUTF8Reusable(), x,y, keysDown, false,false);
+                    ui_button(tag_list[i].ToUTF8Reusable(), x,y, keysDown/*, LEFT,TOP*/);
                     x += this_rect.w;
                 }
                 y += UI_TEXT_SIZE;
 
-                static opengl_quad tempquad;
-                ttf_render_text("hellar rarbot", 32, 32, baked_font, &tempquad);
-
-                if (ui_button("hide tags", cw/2, y/*ch/2*/, keysDown, true,false)) {
+                if (ui_button("hide tags", cw/2, y/*ch/2*/, keysDown/*, CENTER,TOP*/)) {
                     tag_menu_open = !tag_menu_open;
                 }
             }
