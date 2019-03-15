@@ -141,7 +141,7 @@ DWORD WINAPI RunBackgroundStartupThread( LPVOID lpParam ) {
 
                 // if (GetCachedResolutionIfPossible(t.paths.metadatapath, &t.resolution)) {
                 if (GetCachedResolutionIfPossible(items[i].metadatapath, &t.resolution)) {
-                    DEBUGPRINT("read res: %f, %f\n", t.resolution.x, t.resolution.y);
+                    // DEBUGPRINT("read res: %f, %f\n", t.resolution.x, t.resolution.y);
                     // successfully loaded cached resolution
                     continue;
                 } else {

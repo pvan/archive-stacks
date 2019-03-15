@@ -103,7 +103,17 @@ void SaveMetadataFile()
 
             assert(tiles[i].resolution.x == (int)tiles[i].resolution.x); // for now i just want to know if any resolutions are't whole numbers
             assert(tiles[i].resolution.y == (int)tiles[i].resolution.y);
-            fwprintf(file, L"%i,%i,%s\n", (int)tiles[i].resolution.x, (int)tiles[i].resolution.y, justsubpath);
+
+            fwprintf(file, L"%i,%i,%s", (int)tiles[i].resolution.x, (int)tiles[i].resolution.y, justsubpath);
+
+            // note we add our own \0 after string for easier parsing later
+            fwprintf(file, L"%c", L'\0');
+
+            for (int j = 0; j < items[i].tags.count; j++) {
+                fwprintf(file, L"%i ", items[i].tags[j]);
+            }
+
+            fwprintf(file, L"\n");
 
         }
     }
