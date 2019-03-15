@@ -142,22 +142,77 @@ DWORD WINAPI RunBackgroundStartupThread( LPVOID lpParam ) {
             // also create resolution list, to match length of items
             InitResolutionsListToMatchItemList(&items);
 
-            LoadMasterDataFileAndPopulateResolutionsAndTags(&items,
-                                                            &item_resolutions,
-                                                            &item_resolutions_valid,
+            LoadMasterDataFileAndPopulateResolutionsAndTags(
+                                                            // &items,
+                                                            // &item_resolutions,
+                                                            // &item_resolutions_valid,
                                                             &loading_reusable_count);
         }
+
+
+        int items_found_in_cache = 0;
+        int resolutions_read = 0;
+        int tags_read = 0;
+        for (int i = 0; i < items.count; i++) {
+            if (items[i].found_in_cache) items_found_in_cache++;
+            if (item_resolutions_valid[i]) resolutions_read++;
+            if (items[i].tags.count > 0) tags_read += items[i].tags.count;
+        }
+        DEBUGPRINT("--------");
+        DEBUGPRINT("actual items found %i\n", items.count);
+        DEBUGPRINT("items_found_in_cache %i\n", items_found_in_cache);
+        DEBUGPRINT("resolutions_read %i\n", resolutions_read);
+        DEBUGPRINT("tags_read %i\n", tags_read);
+        DEBUGPRINT("--------");
+
 
         // fill in resolutions for any items not in the cache
         {
             loading_status_msg = "Reading resolutions of items not cached yet...";
+
+            // this is entirely to just get a count of how many we need to do
+            int_pool unset_resolution_indices = int_pool::empty();
+            for (int i = 0; i < item_resolutions_valid.count; i++) {
+                if (!item_resolutions_valid[i]) {
+                    unset_resolution_indices.add(i);
+                }
+            }
+
+            loading_reusable_max = unset_resolution_indices.count;
+            for (int i = 0; i < unset_resolution_indices.count; i++) {
+                loading_reusable_count = i;
+                int item_index = unset_resolution_indices[i];
+                v2 res = ReadResolutionFromFile(items[item_index]);
+                item_resolutions[item_index] = res;
+            }
+
+            // method without needing to pre-figure which we need (wrong max progress)
+            // loading_reusable_max = items.count;
+            // for (int i = 0; i < items.count; i++) {
+            //     loading_reusable_count = i;
+            //     if (!item_resolutions_valid[i]) {
+            //         v2 res = ReadResolutionFromFile(items[i]);
+            //         item_resolutions[i] = res;
+            //     }
+            // }
+        }
+
+        // fill in tags for any items that didn't have tags cached
+        // basically just using directory name
+        // maybe set as untagged instead?
+        {
+            loading_status_msg = "Adding tags to items without any...";
             loading_reusable_max = items.count;
 
             for (int i = 0; i < items.count; i++) {
                 loading_reusable_count = i;
-                if (!item_resolutions_valid[i]) {
-                    v2 res = ReadResolutionFromFile(items[i]);
-                    item_resolutions[i] = res;
+                if (items[i].tags.count == 0) {
+                    if (PopulateTagFromPath(&items[i])) {
+                        // DEBUGPRINT("read tag from directory for %s\n", tiles[i].name.ToUTF8Reusable());
+                    } else {
+                        DEBUGPRINT("unable to read tag from directory for %s\n", tiles[i].name.ToUTF8Reusable());
+                        assert(false);
+                    }
                 }
             }
         }

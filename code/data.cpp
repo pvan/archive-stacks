@@ -214,7 +214,10 @@ struct item {
 
     wc *PointerToJustSubpath(string rootpath) { return PointerToFirstUniqueCharInSecondString(rootpath.chars, fullpath.chars); };
 
+    bool found_in_cache = false; // just metric for debugging
+
     // indices into the pool tag_list todo: should be list not pool
+    // todo: separate out of item struct? (would have to be array or pool of int_pools which might be weird)
     int_pool tags;
 };
 
@@ -301,6 +304,10 @@ bool PopulateTagFromPath(item *it) {
 
 
 
+// for now, a separate list
+// consider: combine with item struct?
+// -wouldn't need to init list of same length as items
+// -but i kind of like as separate for now
 v2_pool item_resolutions;
 bool_pool item_resolutions_valid; // could use -1,-1 or similar as code for this, but i like makign it explicit for now
 
@@ -391,7 +398,7 @@ void SaveMetadataFile()
 {
     wc *path = L"D:\\Users\\phil\\Desktop\\meta.txt";
 
-    FILE *file = _wfopen(path, L"w");
+    FILE *file = _wfopen(path, L"w, ccs=UTF-16LE");
     if (!file) {
         DEBUGPRINT("couldn't open master metadata file for writing");
         return;
@@ -408,7 +415,7 @@ void SaveMetadataFile()
         fwprintf(file, L"%s", justsubpath);
         fwprintf(file, L"%c", L'\0'); // note we add our own \0 after string for easier parsing later
         for (int j = 0; j < items[i].tags.count; j++) {
-            fwprintf(file, L"%i ", items[i].tags[j]);
+            fwprintf(file, L" %i", items[i].tags[j]);
         }
         fwprintf(file, L"\n");
     }
@@ -417,31 +424,37 @@ void SaveMetadataFile()
 // for reading strings one wchar at a time (used as a stretch buffer, basically)
 DEFINE_TYPE_POOL(wc);
 
-void LoadMasterDataFileAndPopulateResolutionsAndTags(item_pool *itemslocal,
-                                                     v2_pool *resolutions,
-                                                     bool_pool *res_are_valid,
+void LoadMasterDataFileAndPopulateResolutionsAndTags(
+                                                     // item_pool *itemslocal,
+                                                     // v2_pool *resolutions,
+                                                     // bool_pool *res_are_valid,
                                                      int *progress)
 {
     wc *path = L"D:\\Users\\phil\\Desktop\\meta.txt";
-
-    FILE *file = _wfopen(path, L"r");
-    if (!file) {
-        //DEBUGPRINT("couldn't open master metadata file for reading"); // probably doesn't exist
+    if (!win32_PathExists(path)) {
+        DEBUGPRINT("master metadata cache file doesn't exist");
         return;
     }
-    while (!EOF) { // not sure how this EOF macro works tbh
+
+    FILE *file = _wfopen(path, L"r, ccs=UTF-16LE");
+    if (!file) {
+        DEBUGPRINT("couldn't open master metadata file for reading"); // could not exist, checking exists above now
+        return;
+    }
+    int numread;
+    while (true) {
 
         // read resolution and save for later
         int x, y;
-        int numread = fwscanf(file, L"%i,%i,", &x, &y);
-        if (numread < 2)
-            break; // eof
+        numread = fwscanf(file, L"%i,%i,", &x, &y);
+        if (numread < 2) {DEBUGPRINT("1");goto fileclose;} // eof (or maybe badly formed file?)
 
         // read subpath
         wc_pool result_string = wc_pool::empty();
         wc nextchar;
         do {
-            fwscanf(file, L"%c", &nextchar);
+            numread = fwscanf(file, L"%c", &nextchar);
+            if (numread < 0) {DEBUGPRINT("2");goto fileclose;} // eof (or maybe badly formed file?)
             result_string.add(nextchar);
         } while (nextchar != L'\0');
         result_string.add(L'\0'); // add \0 to end of array, we're going to treat array as a string
@@ -450,8 +463,8 @@ void LoadMasterDataFileAndPopulateResolutionsAndTags(item_pool *itemslocal,
 
         // use subpath to find item index
         int this_item_i = -1;
-        for (int i = 0; i < itemslocal->count; i++) {
-            wc *justsubpath = itemslocal->pool[i].PointerToJustSubpath(master_path);
+        for (int i = 0; i < items.count; i++) {
+            wc *justsubpath = items[i].PointerToJustSubpath(master_path);
             if (wc_equals(justsubpath, subpath))
             {
                 this_item_i = i;
@@ -465,22 +478,42 @@ void LoadMasterDataFileAndPopulateResolutionsAndTags(item_pool *itemslocal,
         (*progress)++;
 
         // todo: could put this with its parsing code if we put subpath first in the file
-        resolutions->pool[this_item_i] = {(float)x, (float)y};
-        res_are_valid->pool[this_item_i] = true;
+        item_resolutions[this_item_i] = {(float)x, (float)y};
+        item_resolutions_valid[this_item_i] = true;
+        items[this_item_i].found_in_cache = true;
+
+        // int nextint;
+        // numread = fwscanf(file, L"%i \n", &nextint);
+        // if (numread < 0) {DEBUGPRINT("33");goto fileclose;} // eof (or maybe badly formed file?)
+
+        // numread = fwscanf(file, L"%c", &nextchar);
+        // if (numread < 0) {DEBUGPRINT("3");goto fileclose;} // eof (or maybe badly formed file?)
+
+        // if (numread != L'\n') {
+        //     int nextint;
+        //     numread = fwscanf(file, L"%i ", &nextint);
+        //     items[this_item_i].tags.add(nextint);
+        // }
+        // numread = fwscanf(file, L"\n");
+        // if (numread < 0) {DEBUGPRINT("4");goto fileclose;} // eof (or maybe badly formed file?)
 
         while (true) {
-            fwscanf(file, L"%c", &nextchar);
+            numread = fwscanf(file, L"%c", &nextchar);
+            if (numread < 0) goto fileclose; // eof (or maybe badly formed file?)
             if (nextchar == L'\n')
                 break; // done ready tag ints
 
             int nextint;
-            fwscanf(file, L"%i ", &nextint);
-            itemslocal->pool[this_item_i].tags.add(nextint);
+            numread = fwscanf(file, L"%i", &nextint);
+            if (numread < 0) goto fileclose; // eof (or maybe badly formed file?)
+            items[this_item_i].tags.add(nextint);
 
         }
-        fwscanf(file, L"\n");
 
-    } // eof
+    }
+
+    fileclose:
+    fclose(file);
 
 }
 

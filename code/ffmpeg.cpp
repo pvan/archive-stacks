@@ -159,7 +159,7 @@ v2 ffmpeg_GetResolution(string path)
     // if neither, this probably isn't a video file
     if (video_index == -1)
     {
-        PRINT("ffmpeg: No video streams in file.");
+        DEBUGPRINT("ffmpeg: No video streams in file. %s\n", path.ToUTF8Reusable());
         return {-1,-1};
     }
 
