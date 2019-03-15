@@ -210,8 +210,9 @@ struct item {
     bool operator==(item o) { return fullpath==o.fullpath; } // for now just check fullpath
 
     string justname() { wc *result = CopyJustFilename(fullpath.chars); return string::Create(result); }
+    string justsubpath() { wc *result = CopyJustFilename(fullpath.chars); return string::Create(result); }
 
-    // indices into the pool tag_list tood: should be list not pool
+    // indices into the pool tag_list todo: should be list not pool
     int_pool tags;
 };
 
@@ -295,3 +296,8 @@ bool PopulateTagFromPath(item *it) {
 
 
 //struct tag {
+
+
+
+
+

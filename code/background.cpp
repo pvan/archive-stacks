@@ -139,7 +139,8 @@ DWORD WINAPI RunBackgroundStartupThread( LPVOID lpParam ) {
 
                 tile& t = tiles.pool[i];
 
-                if (GetCachedResolutionIfPossible(t.paths.metadatapath, &t.resolution)) {
+                // if (GetCachedResolutionIfPossible(t.paths.metadatapath, &t.resolution)) {
+                if (GetCachedResolutionIfPossible(items[i].metadatapath, &t.resolution)) {
                     // successfully loaded cached resolution
                     continue;
                 } else {
@@ -149,7 +150,8 @@ DWORD WINAPI RunBackgroundStartupThread( LPVOID lpParam ) {
                     // but 2 - we are doing this async during loading as well now,
                     //         so we should be okay that it might take a while
                     // for now: don't try to load.. should we maybe even assert(false)?
-                    DEBUGPRINT("Couldn't load cached resolution from metadata for item: %s", t.paths.fullpath.ToUTF8Reusable());
+                    // DEBUGPRINT("Couldn't load cached resolution from metadata for item: %s", t.paths.fullpath.ToUTF8Reusable());
+                    DEBUGPRINT("Couldn't load cached resolution from metadata for item: %s", items[i].fullpath.ToUTF8Reusable());
                     t.resolution = {10,10};
                     assert(false);
                 }
@@ -193,7 +195,6 @@ DWORD WINAPI RunBackgroundStartupThread( LPVOID lpParam ) {
         }
 
 
-
     }
 
     loading_status_msg = "Done loading!";
@@ -212,7 +213,7 @@ DWORD WINAPI RunBackgroundLoadingThread( LPVOID lpParam ) {
             if (tiles[i].needs_loading) {
                 if (!tiles[i].is_media_loaded) {
                     // tiles[i].LoadMedia(tiles[i].fullpath);
-                    tiles[i].LoadMedia(tiles[i].paths.thumbpath);
+                    tiles[i].LoadMedia(items[i].thumbpath);
                     // DEBUGPRINT("loading: %s\n", tiles[i].thumbpath.ToUTF8Reusable());
                 }
             }

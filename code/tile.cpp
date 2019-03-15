@@ -11,8 +11,8 @@ struct tile
 
     // file data
     // string fullpath;
-    item paths;
-    string name;
+    item paths_just_for_comparing_tiles; // just used for == (for tile_pool)
+    string name; // just for printing i think
     u64 modifiedTimeSinceLastEpoc;
 
     // thumbnail data
@@ -88,7 +88,7 @@ struct tile
         // if (!win32_PathExists(path)) return newTile; // i feel like these are just the error down the line
         // if (win32_IsDirectory(path)) return newTile;
 
-        newTile.paths.fullpath = path.Copy();
+        newTile.paths_just_for_comparing_tiles.fullpath = path.Copy();
         newTile.name = string::Create(CopyJustFilename(path.chars));
         newTile.modifiedTimeSinceLastEpoc = win32_GetModifiedTimeSinceEpoc(path);
         // note getmodified time has to touch the files which means slow on cold hdd
@@ -101,12 +101,12 @@ struct tile
 
     static tile CreateFromItem(item it) {
         tile newTile = CreateFromFile(it.fullpath);
-        newTile.paths = it;
+        newTile.paths_just_for_comparing_tiles = it;
         return newTile;
     }
 
 
-    bool operator== (tile o) { return paths.fullpath==o.paths.fullpath; }
+    bool operator== (tile o) { return paths_just_for_comparing_tiles.fullpath==o.paths_just_for_comparing_tiles.fullpath; }
 
 
 };

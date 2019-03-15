@@ -119,6 +119,17 @@ struct string
 //
 // generic wchar* stuff
 
+
+// for trimming master path off paths
+wc *PointerToFirstUniqueCharInSecondString(wc *master_path, wc *fullpath) {
+    while (*master_path && *fullpath) {
+        if (*master_path != *fullpath) return fullpath;
+        master_path++;
+        fullpath++;
+    }
+    return fullpath; // could be pointer to fullpath's \0 (if fullpath is shorter than master)
+}
+
 // void ExpandAndAppend(wc **s1, wc *s2) {
 //     int len1 = wcslen(*s1);
 //     int len2 = wcslen(s2);

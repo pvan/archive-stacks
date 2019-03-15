@@ -75,6 +75,35 @@ string master_path;
 
 
 
+void SaveMetadataFile()
+{
+    wc *path = L"D:\\Users\\phil\\Desktop\\meta.txt";
+
+    FILE *file = _wfopen(path, L"w");
+
+    if (file) {
+        for (int i = 0; i < items.count; i++) {
+
+            // fputws(tiles[i].resolution.x);
+
+            // // items[i].fullpath
+            // // or
+            // // tiles[i].item.fullpath
+            // // ??
+
+            wc *justsubpath = PointerToFirstUniqueCharInSecondString(master_path.chars, items[i].fullpath.chars);
+            // fputws(justsubpath, file);
+            // fputws(L"\n", file);
+
+            fwprintf(file, L"%f,%f,%s\n", tiles[i].resolution.x, tiles[i].resolution.y, justsubpath);
+
+        }
+    }
+
+}
+
+
+
 int master_scroll_delta = 0;
 int master_ctrl_scroll_delta = 0;
 
@@ -90,6 +119,8 @@ void init_app(item_pool all_items, int cw, int ch) {
     // constant-churning loop to load items on screen, and unlod those off the screen
     LaunchBackgroundLoadingLoop();
     LaunchBackgroundUnloadingLoop();
+
+    SaveMetadataFile();
 }
 
 // done every frame while loading during startup
@@ -461,7 +492,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                     if (tiles[i].media.vfc && tiles[i].media.vfc->iformat)
                         UI_PRINT(tiles[i].media.IsStaticImageBestGuess() ? "image" : "video");
 
-                    wc *directory = CopyJustParentDirectoryName(tiles[i].paths.fullpath.chars);
+                    wc *directory = CopyJustParentDirectoryName(items[i].fullpath.chars);
                     string temp = string::Create(directory);
                     UI_PRINT("folder: %s", temp.ToUTF8Reusable());
                     free(directory);
