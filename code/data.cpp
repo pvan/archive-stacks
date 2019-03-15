@@ -299,5 +299,41 @@ bool PopulateTagFromPath(item *it) {
 
 
 
+v2_pool item_resolutions;
+
+
+
+
+
+void SaveMetadataFile()
+{
+    wc *path = L"D:\\Users\\phil\\Desktop\\meta.txt";
+
+    FILE *file = _wfopen(path, L"w");
+
+    if (file) {
+        for (int i = 0; i < items.count; i++) {
+
+            wc *justsubpath = PointerToFirstUniqueCharInSecondString(master_path.chars, items[i].fullpath.chars);
+
+            assert(item_resolutions[i].x == (int)item_resolutions[i].x); // for now i just want to know if any resolutions are't whole numbers
+            assert(item_resolutions[i].y == (int)item_resolutions[i].y);
+
+
+            fwprintf(file, L"%i,%i,%s", (int)item_resolutions[i].x, (int)item_resolutions[i].y, justsubpath);
+
+            // note we add our own \0 after string for easier parsing later
+            fwprintf(file, L"%c", L'\0');
+
+            for (int j = 0; j < items[i].tags.count; j++) {
+                fwprintf(file, L"%i ", items[i].tags[j]);
+            }
+
+            fwprintf(file, L"\n");
+
+        }
+    }
+
+}
 
 

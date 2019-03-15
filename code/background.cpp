@@ -137,10 +137,11 @@ DWORD WINAPI RunBackgroundStartupThread( LPVOID lpParam ) {
                 loading_reusable_count = i;
                 loading_reusable_max = tiles.count;
 
-                tile& t = tiles.pool[i];
+                item_resolutions.add({0,0});
+                v2& res = item_resolutions[i]; //tiles.pool[i];
 
                 // if (GetCachedResolutionIfPossible(t.paths.metadatapath, &t.resolution)) {
-                if (GetCachedResolutionIfPossible(items[i].metadatapath, &t.resolution)) {
+                if (GetCachedResolutionIfPossible(items[i].metadatapath, &res)) {
                     // DEBUGPRINT("read res: %f, %f\n", t.resolution.x, t.resolution.y);
                     // successfully loaded cached resolution
                     continue;
@@ -153,7 +154,7 @@ DWORD WINAPI RunBackgroundStartupThread( LPVOID lpParam ) {
                     // for now: don't try to load.. should we maybe even assert(false)?
                     // DEBUGPRINT("Couldn't load cached resolution from metadata for item: %s", t.paths.fullpath.ToUTF8Reusable());
                     DEBUGPRINT("Couldn't load cached resolution from metadata for item: %s", items[i].fullpath.ToUTF8Reusable());
-                    t.resolution = {7,7};
+                    res = {7,7};
                     assert(false);
                 }
 

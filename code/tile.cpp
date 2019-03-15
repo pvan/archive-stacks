@@ -20,7 +20,7 @@ struct tile
 
 
     // media data
-    v2 resolution;
+    // v2 resolution;
     ffmpeg_media media;
     bool needs_loading = false;
     bool needs_unloading = false;
@@ -233,13 +233,14 @@ int ArrangeTilesInOrder(tile_pool *pool, float desired_tile_width, int dest_widt
     // for (int j = 0; j < stubRectCount; j++) {
     for (int i = 0; i < pool->count; i++) {
         tile& thisTile = pool->pool[i];
+        v2& thisRes = item_resolutions[i];
 
         // todo: should be set to min of 10 from trying to find resolution originally
         // assert(thisTile.size.w >= 10 && thisTile.size.h >= 10);
-        if (thisTile.resolution.w < 10) thisTile.resolution.w = 10;
-        if (thisTile.resolution.h < 10) thisTile.resolution.h = 10;
+        if (thisRes.w < 10) thisRes.w = 10;
+        if (thisRes.h < 10) thisRes.h = 10;
 
-        float aspect_ratio = thisTile.resolution.w / thisTile.resolution.h;
+        float aspect_ratio = thisRes.w / thisRes.h;
 
         thisTile.size.w = realWidth;
         thisTile.size.h = realWidth / aspect_ratio;

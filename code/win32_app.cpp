@@ -75,52 +75,6 @@ string master_path;
 
 
 
-void SaveMetadataFile()
-{
-    wc *path = L"D:\\Users\\phil\\Desktop\\meta.txt";
-
-    FILE *file = _wfopen(path, L"w");
-
-    // DEBUGPRINT("----------------");
-    // for (int i = 0; i < tiles.count; i++) {
-    //     DEBUGPRINT("%f, %f \n", tiles[i].resolution.x, tiles[i].resolution.y);
-    // }
-
-    if (file) {
-        for (int i = 0; i < items.count; i++) {
-
-            // fputws(tiles[i].resolution.x);
-
-            // // items[i].fullpath
-            // // or
-            // // tiles[i].item.fullpath
-            // // ??
-
-            wc *justsubpath = PointerToFirstUniqueCharInSecondString(master_path.chars, items[i].fullpath.chars);
-            // fputws(justsubpath, file);
-            // fputws(L"\n", file);
-
-
-            assert(tiles[i].resolution.x == (int)tiles[i].resolution.x); // for now i just want to know if any resolutions are't whole numbers
-            assert(tiles[i].resolution.y == (int)tiles[i].resolution.y);
-
-            fwprintf(file, L"%i,%i,%s", (int)tiles[i].resolution.x, (int)tiles[i].resolution.y, justsubpath);
-
-            // note we add our own \0 after string for easier parsing later
-            fwprintf(file, L"%c", L'\0');
-
-            for (int j = 0; j < items[i].tags.count; j++) {
-                fwprintf(file, L"%i ", items[i].tags[j]);
-            }
-
-            fwprintf(file, L"\n");
-
-        }
-    }
-
-}
-
-
 
 int master_scroll_delta = 0;
 int master_ctrl_scroll_delta = 0;
