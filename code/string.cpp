@@ -120,6 +120,11 @@ struct string
 // generic wchar* stuff
 
 
+bool wc_equals(wc *s1, wc *s2) {
+    int result = wcscmp(s1, s2);
+    return result == 0;
+}
+
 // for trimming master path off paths
 wc *PointerToFirstUniqueCharInSecondString(wc *master_path, wc *fullpath) {
     while (*master_path && *fullpath) {

@@ -210,7 +210,9 @@ struct item {
     bool operator==(item o) { return fullpath==o.fullpath; } // for now just check fullpath
 
     string justname() { wc *result = CopyJustFilename(fullpath.chars); return string::Create(result); }
-    string justsubpath() { wc *result = CopyJustFilename(fullpath.chars); return string::Create(result); }
+    // string justsubpath() { wc *result = CopyJustFilename(fullpath.chars); return string::Create(result); }
+
+    wc *PointerToJustSubpath(string rootpath) { return PointerToFirstUniqueCharInSecondString(rootpath.chars, fullpath.chars); };
 
     // indices into the pool tag_list todo: should be list not pool
     int_pool tags;
@@ -300,6 +302,14 @@ bool PopulateTagFromPath(item *it) {
 
 
 v2_pool item_resolutions;
+bool_pool item_resolutions_valid; // could use -1,-1 or similar as code for this, but i like makign it explicit for now
+
+void InitResolutionsListToMatchItemList(item_pool *its) {
+    for (int i = 0; i < its->count; i++) {
+        item_resolutions.add({0,0});
+        item_resolutions_valid.add(false);
+    }
+}
 
 // pull resolution from separate metadata file (unique one for each item)
 bool GetCachedResolutionIfPossible(string path, v2 *result) {
@@ -349,35 +359,128 @@ void PopulateResolutionsFromSeparateFileCaches(item_pool *items, int *progress) 
 }
 
 
+// used to fallback to thumbnail, still do that? maybe even start with that? (faster?)
+v2 ReadResolutionFromFile(item it) {
+    v2 res = {0,0};
+    if (ffmpeg_can_open(it.fullpath)) {
+        res = ffmpeg_GetResolution(it.fullpath);
+    }
+    // fallback to using thumbnail resolution
+    // this is for case where the item is not an image (eg txt)
+    // so the thumbnail is soem placeholder image like image of the filename
+    // todo: change this in the future?
+    else if (ffmpeg_can_open(it.thumbpath)) {
+        res = ffmpeg_GetResolution(it.thumbpath);
+    }
+    // if can't get resoution from either, hmm...
+    // maybe the thumbnail doesn't exist yet?
+    // (we usually are / should be running this after creating all needed thumbs though)
+    else {
+        res = {12, 12};
+        assert(false); // for now, see if trigger
+    }
+    return res;
+}
+
+
+//
+// new method that saves all metadata into one file
+//
 
 void SaveMetadataFile()
 {
     wc *path = L"D:\\Users\\phil\\Desktop\\meta.txt";
 
     FILE *file = _wfopen(path, L"w");
+    if (!file) {
+        DEBUGPRINT("couldn't open master metadata file for writing");
+        return;
+    }
+    for (int i = 0; i < items.count; i++) {
 
-    if (file) {
-        for (int i = 0; i < items.count; i++) {
+        // wc *justsubpath = PointerToFirstUniqueCharInSecondString(master_path.chars, items[i].fullpath.chars);
+        wc *justsubpath = items[i].PointerToJustSubpath(master_path);
 
-            wc *justsubpath = PointerToFirstUniqueCharInSecondString(master_path.chars, items[i].fullpath.chars);
+        assert(item_resolutions[i].x == (int)item_resolutions[i].x); // for now i just want to know if any resolutions are't whole numbers
+        assert(item_resolutions[i].y == (int)item_resolutions[i].y);
 
-            assert(item_resolutions[i].x == (int)item_resolutions[i].x); // for now i just want to know if any resolutions are't whole numbers
-            assert(item_resolutions[i].y == (int)item_resolutions[i].y);
+        fwprintf(file, L"%i,%i,", (int)item_resolutions[i].x, (int)item_resolutions[i].y);
+        fwprintf(file, L"%s", justsubpath);
+        fwprintf(file, L"%c", L'\0'); // note we add our own \0 after string for easier parsing later
+        for (int j = 0; j < items[i].tags.count; j++) {
+            fwprintf(file, L"%i ", items[i].tags[j]);
+        }
+        fwprintf(file, L"\n");
+    }
+}
 
+// for reading strings one wchar at a time (used as a stretch buffer, basically)
+DEFINE_TYPE_POOL(wc);
 
-            fwprintf(file, L"%i,%i,%s", (int)item_resolutions[i].x, (int)item_resolutions[i].y, justsubpath);
+void LoadMasterDataFileAndPopulateResolutionsAndTags(item_pool *itemslocal,
+                                                     v2_pool *resolutions,
+                                                     bool_pool *res_are_valid,
+                                                     int *progress)
+{
+    wc *path = L"D:\\Users\\phil\\Desktop\\meta.txt";
 
-            // note we add our own \0 after string for easier parsing later
-            fwprintf(file, L"%c", L'\0');
+    FILE *file = _wfopen(path, L"r");
+    if (!file) {
+        //DEBUGPRINT("couldn't open master metadata file for reading"); // probably doesn't exist
+        return;
+    }
+    while (!EOF) { // not sure how this EOF macro works tbh
 
-            for (int j = 0; j < items[i].tags.count; j++) {
-                fwprintf(file, L"%i ", items[i].tags[j]);
+        // read resolution and save for later
+        int x, y;
+        int numread = fwscanf(file, L"%i,%i,", &x, &y);
+        if (numread < 2)
+            break; // eof
+
+        // read subpath
+        wc_pool result_string = wc_pool::empty();
+        wc nextchar;
+        do {
+            fwscanf(file, L"%c", &nextchar);
+            result_string.add(nextchar);
+        } while (nextchar != L'\0');
+        result_string.add(L'\0'); // add \0 to end of array, we're going to treat array as a string
+
+        wc *subpath = &result_string.pool[0]; // will only work if array ends in \0
+
+        // use subpath to find item index
+        int this_item_i = -1;
+        for (int i = 0; i < itemslocal->count; i++) {
+            wc *justsubpath = itemslocal->pool[i].PointerToJustSubpath(master_path);
+            if (wc_equals(justsubpath, subpath))
+            {
+                this_item_i = i;
+                break;
             }
+        }
+        if (this_item_i == -1) {
+            DEBUGPRINT("ERROR: subpath in metadata list not found in item list: %s\n", string::Create(subpath).ToUTF8Reusable());
+            assert(false);
+        }
+        (*progress)++;
 
-            fwprintf(file, L"\n");
+        // todo: could put this with its parsing code if we put subpath first in the file
+        resolutions->pool[this_item_i] = {(float)x, (float)y};
+        res_are_valid->pool[this_item_i] = true;
+
+        while (true) {
+            fwscanf(file, L"%c", &nextchar);
+            if (nextchar == L'\n')
+                break; // done ready tag ints
+
+            int nextint;
+            fwscanf(file, L"%i ", &nextint);
+            itemslocal->pool[this_item_i].tags.add(nextint);
 
         }
-    }
+        fwscanf(file, L"\n");
+
+    } // eof
 
 }
 

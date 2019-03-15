@@ -90,20 +90,20 @@ DWORD WINAPI RunBackgroundStartupThread( LPVOID lpParam ) {
         item_indices_without_thumbs.count--; // should add .pop()
     }
 
-    // create cached metadata files
-    // do metadata second because it uses thumbnails as a fallback
-    for (int i = item_indices_without_metadata.count-1; i >= 0; i--) {
-        loading_status_msg = "Creating metadata caches...";
-        loading_reusable_count = i;
-        loading_reusable_max = item_indices_without_metadata.count;
+    // // create cached metadata files
+    // // do metadata second because it uses thumbnails as a fallback
+    // for (int i = item_indices_without_metadata.count-1; i >= 0; i--) {
+    //     loading_status_msg = "Creating metadata caches...";
+    //     loading_reusable_count = i;
+    //     loading_reusable_max = item_indices_without_metadata.count;
 
-        string fullpath = items[item_indices_without_metadata[i]].fullpath;
-        string thumbpath = items[item_indices_without_metadata[i]].thumbpath;
-        string metadatapath = items[item_indices_without_metadata[i]].metadatapath;
-        DEBUGPRINT("creating metadata file for %s\n", fullpath.ToUTF8Reusable());
-        CreateCachedMetadataFile(fullpath, thumbpath, metadatapath);
-        item_indices_without_metadata.count--; // should add .pop()
-    }
+    //     string fullpath = items[item_indices_without_metadata[i]].fullpath;
+    //     string thumbpath = items[item_indices_without_metadata[i]].thumbpath;
+    //     string metadatapath = items[item_indices_without_metadata[i]].metadatapath;
+    //     DEBUGPRINT("creating metadata file for %s\n", fullpath.ToUTF8Reusable());
+    //     CreateCachedMetadataFile(fullpath, thumbpath, metadatapath);
+    //     item_indices_without_metadata.count--; // should add .pop()
+    // }
 
 
     // init tiles
@@ -130,39 +130,71 @@ DWORD WINAPI RunBackgroundStartupThread( LPVOID lpParam ) {
             }
         }
 
-        // read cached resolutions...
+        // read cached resolutions and tags from single master file
         {
-            loading_status_msg = "Reading resolutions from cached metadata...";
-            loading_reusable_max = items.count;
-            PopulateResolutionsFromSeparateFileCaches(&items, &loading_reusable_count);
-        }
 
-        // read cached tags (items and master list)
-        {
-            loading_status_msg = "Reading item tags...";
+            loading_status_msg = "Reading master metadata file...";
+            loading_reusable_max = items.count;
 
             // first read list of master tags
             tag_list = ReadTagListFromFileOrSomethingUsableOtherwise(master_path);
 
+            // also create resolution list, to match length of items
+            InitResolutionsListToMatchItemList(&items);
+
+            LoadMasterDataFileAndPopulateResolutionsAndTags(&items,
+                                                            &item_resolutions,
+                                                            &item_resolutions_valid,
+                                                            &loading_reusable_count);
+        }
+
+        // fill in resolutions for any items not in the cache
+        {
+            loading_status_msg = "Reading resolutions of items not cached yet...";
+            loading_reusable_max = items.count;
+
             for (int i = 0; i < items.count; i++) {
                 loading_reusable_count = i;
-                loading_reusable_max = items.count;
-
-                if (PopulateTagsFromCachedFileIfPossible(&items[i])) {
-                    DEBUGPRINT("cached tags read for %s\n", tiles[i].name.ToUTF8Reusable());
-                } else {
-                    // fallback to directory orig file is in
-                    if (PopulateTagFromPath(&items[i])) {
-                        // DEBUGPRINT("read tag from directory for %s\n", tiles[i].name.ToUTF8Reusable());
-                    } else {
-                        DEBUGPRINT("unable to read tag from directory for %s\n", tiles[i].name.ToUTF8Reusable());
-                        assert(false);
-                    }
+                if (!item_resolutions_valid[i]) {
+                    v2 res = ReadResolutionFromFile(items[i]);
+                    item_resolutions[i] = res;
                 }
             }
-
-            SaveTagList();
         }
+
+        // // read cached resolutions...
+        // {
+        //     loading_status_msg = "Reading resolutions from cached metadata...";
+        //     loading_reusable_max = items.count;
+        //     PopulateResolutionsFromSeparateFileCaches(&items, &loading_reusable_count);
+        // }
+
+        // // read cached tags (items and master list)
+        // {
+        //     loading_status_msg = "Reading item tags...";
+
+        //     // first read list of master tags
+        //     tag_list = ReadTagListFromFileOrSomethingUsableOtherwise(master_path);
+
+        //     for (int i = 0; i < items.count; i++) {
+        //         loading_reusable_count = i;
+        //         loading_reusable_max = items.count;
+
+        //         if (PopulateTagsFromCachedFileIfPossible(&items[i])) {
+        //             DEBUGPRINT("cached tags read for %s\n", tiles[i].name.ToUTF8Reusable());
+        //         } else {
+        //             // fallback to directory orig file is in
+        //             if (PopulateTagFromPath(&items[i])) {
+        //                 // DEBUGPRINT("read tag from directory for %s\n", tiles[i].name.ToUTF8Reusable());
+        //             } else {
+        //                 DEBUGPRINT("unable to read tag from directory for %s\n", tiles[i].name.ToUTF8Reusable());
+        //                 assert(false);
+        //             }
+        //         }
+        //     }
+
+        //     SaveTagList();
+        // }
 
 
     }
