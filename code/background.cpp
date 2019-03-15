@@ -130,54 +130,19 @@ DWORD WINAPI RunBackgroundStartupThread( LPVOID lpParam ) {
             }
         }
 
-        // ReadCachedTileResolutions(&tiles);
+        // read cached resolutions...
         {
-            for (int i = 0; i < tiles.count; i++) {
-                loading_status_msg = "Reading resolutions from cached metadata...";
-                loading_reusable_count = i;
-                loading_reusable_max = tiles.count;
-
-                item_resolutions.add({0,0});
-                v2& res = item_resolutions[i]; //tiles.pool[i];
-
-                // if (GetCachedResolutionIfPossible(t.paths.metadatapath, &t.resolution)) {
-                if (GetCachedResolutionIfPossible(items[i].metadatapath, &res)) {
-                    // DEBUGPRINT("read res: %f, %f\n", t.resolution.x, t.resolution.y);
-                    // successfully loaded cached resolution
-                    continue;
-                } else {
-                    // consider: should we try reading orig files here for resolution?
-                    // 1 - we should have metadata for any file now
-                    //     (since they are creating during loading, before this is done)
-                    // but 2 - we are doing this async during loading as well now,
-                    //         so we should be okay that it might take a while
-                    // for now: don't try to load.. should we maybe even assert(false)?
-                    // DEBUGPRINT("Couldn't load cached resolution from metadata for item: %s", t.paths.fullpath.ToUTF8Reusable());
-                    DEBUGPRINT("Couldn't load cached resolution from metadata for item: %s", items[i].fullpath.ToUTF8Reusable());
-                    res = {7,7};
-                    assert(false);
-                }
-
-            }
+            loading_status_msg = "Reading resolutions from cached metadata...";
+            loading_reusable_max = items.count;
+            PopulateResolutionsFromSeparateFileCaches(&items, &loading_reusable_count);
         }
 
-        // for (int i = 0; i < tiles.count; i++) {
-        //     DEBUGPRINT("%f, %f \n", tiles[i].resolution.x, tiles[i].resolution.y);
-        // }
-
-        // read cached tag list from metadata file (combine with reading cached resolution?)
+        // read cached tags (items and master list)
         {
             loading_status_msg = "Reading item tags...";
 
             // first read list of master tags
             tag_list = ReadTagListFromFileOrSomethingUsableOtherwise(master_path);
-
-            // DEBUGPRINT("should be....");
-            // for (int i = 0 ; i < tag_list.count; i++) {
-            //     DEBUGPRINT(tag_list[i].ToUTF8Reusable());
-            // }
-            // DEBUGPRINT("total %i\n", tag_list.count);
-
 
             for (int i = 0; i < items.count; i++) {
                 loading_reusable_count = i;

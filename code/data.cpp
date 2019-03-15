@@ -301,7 +301,52 @@ bool PopulateTagFromPath(item *it) {
 
 v2_pool item_resolutions;
 
+// pull resolution from separate metadata file (unique one for each item)
+bool GetCachedResolutionIfPossible(string path, v2 *result) {
+    FILE *file = _wfopen(path.chars, L"r");
+    if (!file) {  DEBUGPRINT("error reading %s\n", path.ToUTF8Reusable()); return false; }
+    int x, y;
+    fwscanf(file, L"%i,%i", &x, &y);
+    result->x = x;
+    result->y = y;
+    fclose(file);
+    return true;
+}
+// create separate resolution metadata file (unique one for each item)
+void CreateCachedResolution(string path, v2 size) {
+    CreateAllDirectoriesForPathIfNeeded(path.chars);
+    FILE *file = _wfopen(path.chars, L"w");
+    if (!file) { DEBUGPRINT("error creating %s\n", path.ToUTF8Reusable()); return; }
+    fwprintf(file, L"%i,%i", (int)size.x, (int)size.y); // todo: round up? (should all be square ints anyway, though)
+    fclose(file);
+}
 
+void PopulateResolutionsFromSeparateFileCaches(item_pool *items, int *progress) {
+    for (int i = 0; i < items->count; i++) {
+        *progress = i;
+
+        item_resolutions.add({0,0});
+        v2& res = item_resolutions[i];
+
+        if (GetCachedResolutionIfPossible(items->pool[i].metadatapath, &res)) {
+            // DEBUGPRINT("read res: %f, %f\n", t.resolution.x, t.resolution.y);
+            // successfully loaded cached resolution
+            continue;
+        } else {
+            // consider: should we try reading orig files here for resolution?
+            // 1 - we should have metadata for any file now
+            //     (since they are creating during loading, before this is done)
+            // but 2 - we are doing this async during loading as well now,
+            //         so we should be okay that it might take a while
+            // for now: don't try to load.. should we maybe even assert(false)?
+            // DEBUGPRINT("Couldn't load cached resolution from metadata for item: %s", t.paths.fullpath.ToUTF8Reusable());
+            DEBUGPRINT("Couldn't load cached resolution from metadata for item: %s", items->pool[i].fullpath.ToUTF8Reusable());
+            res = {7,7};
+            assert(false);
+        }
+
+    }
+}
 
 
 

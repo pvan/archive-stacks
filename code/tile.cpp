@@ -139,62 +139,6 @@ void SortTilePoolByDate(tile_pool *pool)
 }
 
 
-bool GetCachedResolutionIfPossible(string path, v2 *result) {
-    // FILE *file = fopen(path.ToUTF8Reusable(), "rb");
-    // if (!file) {  DEBUGPRINT("error reading %s\n", path.ToUTF8Reusable()); return false; }
-    // fscanf(file, "%f,%f", &result->x, &result->y);
-    // fclose(file);
-    // return true;
-
-    // wchar version
-    FILE *file = _wfopen(path.chars, L"r");
-    if (!file) {  DEBUGPRINT("error reading %s\n", path.ToUTF8Reusable()); return false; }
-    int x, y;
-    fwscanf(file, L"%i,%i", &x, &y);
-    result->x = x;
-    result->y = y;
-    // fwscanf(file, L"%f,%f", &result->x, &result->y);
-    // DEBUGPRINT("test: %i", f1); DEBUGPRINT(" (%s)\n", path.ToUTF8Reusable());
-    fclose(file);
-    return true;
-}
-void CreateCachedResolution(string path, v2 size) {
-    // // DEBUGPRINT("creating %s\n", path.ToUTF8Reusable());
-    // CreateAllDirectoriesForPathIfNeeded(path.chars);
-    // FILE *file = fopen(path.ToUTF8Reusable(), "wb");
-    // if (!file) { DEBUGPRINT("error creating %s\n", path.ToUTF8Reusable()); return; }
-    // fprintf(file, "%f,%f", size.x, size.y);
-    // fclose(file);
-    // DEBUGPRINT("creating %s\n", path.ToUTF8Reusable());
-
-    // wchar version
-    CreateAllDirectoriesForPathIfNeeded(path.chars);
-    FILE *file = _wfopen(path.chars, L"w");
-    if (!file) { DEBUGPRINT("error creating %s\n", path.ToUTF8Reusable()); return; }
-    fwprintf(file, L"%i,%i", (int)size.x, (int)size.y); // todo: round up? (should all be square ints anyway, though)
-    fclose(file);
-}
-
-//inline now
-// void ReadCachedTileResolutions(tile_pool *pool)
-// {
-//     for (int i = 0; i < pool->count; i++) {
-//         loading_reusable_count = i;
-
-//         tile& t = pool->pool[i];
-
-//         if (GetCachedResolutionIfPossible(t.paths.metadatapath, &t.resolution)) {
-//             // successfully loaded cached resolution
-//             continue;
-//         } else {
-//             // don't try to read resolution from file here,
-//             // we now do in during loading (background)
-//             // to keep this function fast (ran in 1 frame)
-//             t.resolution = {10,10};
-//         }
-
-//     }
-// }
 
 
 // todo: audit the usage of limits, do we need a max?
