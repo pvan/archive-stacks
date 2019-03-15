@@ -442,19 +442,20 @@ void LoadMasterDataFileAndPopulateResolutionsAndTags(
         return;
     }
     int numread;
+    int linesread = 0;
     while (true) {
 
         // read resolution and save for later
         int x, y;
         numread = fwscanf(file, L"%i,%i,", &x, &y);
-        if (numread < 2) {DEBUGPRINT("1");goto fileclose;} // eof (or maybe badly formed file?)
+        if (numread < 2) {DEBUGPRINT("1 %i\n",linesread);goto fileclose;} // eof (or maybe badly formed file?)
 
         // read subpath
         wc_pool result_string = wc_pool::empty();
         wc nextchar;
         do {
             numread = fwscanf(file, L"%c", &nextchar);
-            if (numread < 0) {DEBUGPRINT("2");goto fileclose;} // eof (or maybe badly formed file?)
+            if (numread < 0) {DEBUGPRINT("2 %i\n",linesread);goto fileclose;} // eof (or maybe badly formed file?)
             result_string.add(nextchar);
         } while (nextchar != L'\0');
         result_string.add(L'\0'); // add \0 to end of array, we're going to treat array as a string
@@ -499,16 +500,17 @@ void LoadMasterDataFileAndPopulateResolutionsAndTags(
 
         while (true) {
             numread = fwscanf(file, L"%c", &nextchar);
-            if (numread < 0) goto fileclose; // eof (or maybe badly formed file?)
+            if (numread < 0) {DEBUGPRINT("3 %i\n",linesread);goto fileclose;} // eof (or maybe badly formed file?)
             if (nextchar == L'\n')
                 break; // done ready tag ints
 
             int nextint;
             numread = fwscanf(file, L"%i", &nextint);
-            if (numread < 0) goto fileclose; // eof (or maybe badly formed file?)
+            if (numread < 0) {DEBUGPRINT("4 %i\n",linesread);goto fileclose;} // eof (or maybe badly formed file?)
             items[this_item_i].tags.add(nextint);
 
         }
+        linesread++;
 
     }
 
