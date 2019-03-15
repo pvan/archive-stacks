@@ -81,6 +81,11 @@ void SaveMetadataFile()
 
     FILE *file = _wfopen(path, L"w");
 
+    // DEBUGPRINT("----------------");
+    // for (int i = 0; i < tiles.count; i++) {
+    //     DEBUGPRINT("%f, %f \n", tiles[i].resolution.x, tiles[i].resolution.y);
+    // }
+
     if (file) {
         for (int i = 0; i < items.count; i++) {
 
@@ -95,7 +100,10 @@ void SaveMetadataFile()
             // fputws(justsubpath, file);
             // fputws(L"\n", file);
 
-            fwprintf(file, L"%f,%f,%s\n", tiles[i].resolution.x, tiles[i].resolution.y, justsubpath);
+
+            assert(tiles[i].resolution.x == (int)tiles[i].resolution.x); // for now i just want to know if any resolutions are't whole numbers
+            assert(tiles[i].resolution.y == (int)tiles[i].resolution.y);
+            fwprintf(file, L"%i,%i,%s\n", (int)tiles[i].resolution.x, (int)tiles[i].resolution.y, justsubpath);
 
         }
     }
@@ -397,6 +405,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                 else if (t->is_media_loaded) {
                     if (!t->media.IsStaticImageBestGuess()) {
                         // if video, just force send new texture every frame
+                        // todo: i think a bug in playback speed here
+                        //       maybe b/c if video is offscreen, dt will get messed up?
                         bitmap img = t->GetImage(actual_dt); // the bitmap memory should be freed when getimage is called again
                         t->display_quad.set_texture(img.data, img.w, img.h);
                         t->display_quad_texture_sent_to_gpu = true;

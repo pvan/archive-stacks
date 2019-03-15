@@ -131,10 +131,10 @@ void SaveTagList() {
         Win32AppendBytesToFileW(path, tag_list[i].ToUTF8Reusable(), strlen(tag_list[i].ToUTF8Reusable()) + 1); // include the null-terminator
     }
 
-    for (int i = 0 ; i < tag_list.count; i++) {
-        DEBUGPRINT(tag_list[i].ToUTF8Reusable());
-    }
-    DEBUGPRINT("saved %i\n", tag_list.count);
+    // for (int i = 0 ; i < tag_list.count; i++) {
+    //     DEBUGPRINT(tag_list[i].ToUTF8Reusable());
+    // }
+    // DEBUGPRINT("saved %i\n", tag_list.count);
 }
 void AddNewTag(string tag) {
     assert(!tag_list.has(tag));

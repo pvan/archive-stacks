@@ -147,9 +147,14 @@ bool GetCachedResolutionIfPossible(string path, v2 *result) {
     // return true;
 
     // wchar version
-    FILE *file = _wfopen(path.chars, L"rb");
+    FILE *file = _wfopen(path.chars, L"r");
     if (!file) {  DEBUGPRINT("error reading %s\n", path.ToUTF8Reusable()); return false; }
-    fwscanf(file, L"%f,%f", &result->x, &result->y);
+    int x, y;
+    fwscanf(file, L"%i,%i", &x, &y);
+    result->x = x;
+    result->y = y;
+    // fwscanf(file, L"%f,%f", &result->x, &result->y);
+    // DEBUGPRINT("test: %i", f1); DEBUGPRINT(" (%s)\n", path.ToUTF8Reusable());
     fclose(file);
     return true;
 }
@@ -164,9 +169,9 @@ void CreateCachedResolution(string path, v2 size) {
 
     // wchar version
     CreateAllDirectoriesForPathIfNeeded(path.chars);
-    FILE *file = _wfopen(path.chars, L"wb");
+    FILE *file = _wfopen(path.chars, L"w");
     if (!file) { DEBUGPRINT("error creating %s\n", path.ToUTF8Reusable()); return; }
-    fwprintf(file, L"%f,%f", size.x, size.y);
+    fwprintf(file, L"%i,%i", (int)size.x, (int)size.y); // todo: round up? (should all be square ints anyway, though)
     fclose(file);
 }
 

@@ -141,6 +141,7 @@ DWORD WINAPI RunBackgroundStartupThread( LPVOID lpParam ) {
 
                 // if (GetCachedResolutionIfPossible(t.paths.metadatapath, &t.resolution)) {
                 if (GetCachedResolutionIfPossible(items[i].metadatapath, &t.resolution)) {
+                    DEBUGPRINT("read res: %f, %f\n", t.resolution.x, t.resolution.y);
                     // successfully loaded cached resolution
                     continue;
                 } else {
@@ -152,13 +153,16 @@ DWORD WINAPI RunBackgroundStartupThread( LPVOID lpParam ) {
                     // for now: don't try to load.. should we maybe even assert(false)?
                     // DEBUGPRINT("Couldn't load cached resolution from metadata for item: %s", t.paths.fullpath.ToUTF8Reusable());
                     DEBUGPRINT("Couldn't load cached resolution from metadata for item: %s", items[i].fullpath.ToUTF8Reusable());
-                    t.resolution = {10,10};
+                    t.resolution = {7,7};
                     assert(false);
                 }
 
             }
         }
 
+        // for (int i = 0; i < tiles.count; i++) {
+        //     DEBUGPRINT("%f, %f \n", tiles[i].resolution.x, tiles[i].resolution.y);
+        // }
 
         // read cached tag list from metadata file (combine with reading cached resolution?)
         {
