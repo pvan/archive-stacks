@@ -296,11 +296,19 @@ void LaunchBackgroundStartupLoop() {
 
 DWORD WINAPI RunBackgroundLoadingThread( LPVOID lpParam ) {
     while (running) {
-        for (int i = 0; i < tiles.count; i++) {
-            if (tiles[i].needs_loading) {
-                if (!tiles[i].is_media_loaded) {
-                    // tiles[i].LoadMedia(tiles[i].fullpath);
-                    tiles[i].LoadMedia(items[i].thumbpath);
+        if (app_mode == BROWSING_THUMBS) {
+            for (int i = 0; i < tiles.count; i++) {
+                if (tiles[i].needs_loading) {
+                    if (!tiles[i].is_media_loaded) {
+                        tiles[i].LoadMedia(items[i].thumbpath);
+                        // DEBUGPRINT("loading: %s\n", tiles[i].thumbpath.ToUTF8Reusable());
+                    }
+                }
+            }
+        } else if (app_mode == VIEWING_FILE) {
+            if (viewing_tile.needs_loading) {
+                if (!viewing_tile.is_media_loaded) {
+                    viewing_tile.LoadMedia(items[viewing_file_index].fullpath);
                     // DEBUGPRINT("loading: %s\n", tiles[i].thumbpath.ToUTF8Reusable());
                 }
             }
@@ -310,7 +318,7 @@ DWORD WINAPI RunBackgroundLoadingThread( LPVOID lpParam ) {
         //     OutputDebugString("done loading\n");
         // }
         // first_loop = false;
-        Sleep(16); // hmm
+        Sleep(16); // todo: hmm
     }
     return 0;
 }

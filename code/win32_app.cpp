@@ -68,10 +68,20 @@ bool running = true;
 bool loading = true;
 bool need_init = true;
 
+// could add loading/etc to this framework
+const int BROWSING_THUMBS = 0;
+const int VIEWING_FILE = 1;
+int app_mode = BROWSING_THUMBS;
+
+int viewing_file_index = 0; // what file do we have open if we're in VIEWING_FILE mode
+
 string master_path;
 
 #include "data.cpp"
 #include "tile.cpp"
+
+tile viewing_tile; // tile for our open file (created from fullpath rather than thumbpath like the "browsing" tiles are)
+
 #include "background.cpp"
 
 
@@ -309,53 +319,210 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         Input keysUp = input_keys_changed(last_input, input);
         last_input = input;
 
-        // position the tiles
-        static int tile_index_mouse_was_on = 0;
-        {
-            // arrange every frame, in case window size changed
-            // todo: could just arrange if window resize / tag settigns change / etc
 
-            int col_count = CalcColumnsNeededForDesiredWidth(master_desired_tile_width, cw);
+        // --UPDATE--
 
-            if (master_ctrl_scroll_delta > 0) { col_count++; master_desired_tile_width = CalcWidthToFitXColumns(col_count, cw); }
-            if (master_ctrl_scroll_delta < 0) { col_count--; master_desired_tile_width = CalcWidthToFitXColumns(col_count, cw); }
-            master_ctrl_scroll_delta = 0; // done using this in this frame
+        static int debug_info_tile_index_mouse_was_on = 0;
 
+        if (app_mode == BROWSING_THUMBS) {
+            // position the tiles
+            {
+                // arrange every frame, in case window size changed
+                // todo: could just arrange if window resize / tag settigns change / etc
 
-            int tiles_height = ArrangeTilesInOrder(&tiles, master_desired_tile_width, cw); // requires resolutions to be set
+                int col_count = CalcColumnsNeededForDesiredWidth(master_desired_tile_width, cw);
 
-            static int last_scroll_pos = 0;
-            int scroll_pos = CalculateScrollPosition(last_scroll_pos, master_scroll_delta, keysDown, ch, tiles_height);
-            last_scroll_pos = scroll_pos;
-            master_scroll_delta = 0; // done using this in this frame
-
-            ShiftTilesBasedOnScrollPosition(&tiles, last_scroll_pos);
-
-            tile_index_mouse_was_on = TileIndexMouseIsOver(tiles, input.mouseX, input.mouseY);
-        }
+                if (master_ctrl_scroll_delta > 0) { col_count++; master_desired_tile_width = CalcWidthToFitXColumns(col_count, cw); }
+                if (master_ctrl_scroll_delta < 0) { col_count--; master_desired_tile_width = CalcWidthToFitXColumns(col_count, cw); }
+                master_ctrl_scroll_delta = 0; // done using this in this frame
 
 
+                int tiles_height = ArrangeTilesInOrder(&tiles, master_desired_tile_width, cw); // requires resolutions to be set
 
-        for (int i = 0; i < tiles.count; i++) {
-            if (tiles[i].IsOnScreen(ch)) {   // tile is on screen
-                tiles[i].needs_loading = true;    // could use one flag "is_on_screen" just as easily probably
-                tiles[i].needs_unloading = false;
-            } else {
-                tiles[i].needs_loading = false;
-                tiles[i].needs_unloading = true;
+                static int last_scroll_pos = 0;
+                int scroll_pos = CalculateScrollPosition(last_scroll_pos, master_scroll_delta, keysDown, ch, tiles_height);
+                last_scroll_pos = scroll_pos;
+                master_scroll_delta = 0; // done using this in this frame
+
+                ShiftTilesBasedOnScrollPosition(&tiles, last_scroll_pos);
+
+                debug_info_tile_index_mouse_was_on = TileIndexMouseIsOver(tiles, input.mouseX, input.mouseY);
             }
+
+
+            for (int i = 0; i < tiles.count; i++) {
+                if (tiles[i].IsOnScreen(ch)) {   // tile is on screen
+                    tiles[i].needs_loading = true;    // could use one flag "is_on_screen" just as easily probably
+                    tiles[i].needs_unloading = false;
+                } else {
+                    tiles[i].needs_loading = false;
+                    tiles[i].needs_unloading = true;
+                }
+            }
+
+
+
         }
 
 
 
+        // --RENDER-- (any reason to keep update/render loops split out?)
 
-        // render
         opengl_clear();
 
 
-        for (int tileI = 0; tileI < tiles.count; tileI++) {
-            tile *t = &tiles[tileI];
-            if (t->IsOnScreen(ch)) { // only render if on screen
+        if (app_mode == BROWSING_THUMBS) {
+            for (int tileI = 0; tileI < tiles.count; tileI++) {
+                tile *t = &tiles[tileI];
+                if (t->IsOnScreen(ch)) { // only render if on screen
+
+                    if (!t->display_quad_created) {
+                        t->display_quad.create(0,0,1,1);
+                        t->display_quad_created = true;
+                    }
+
+                    if (!t->display_quad_texture_sent_to_gpu || t->texture_updated_since_last_read) {
+                        bitmap img = t->GetImage(actual_dt); // the bitmap memory should be freed when getimage is called again
+                        t->display_quad.set_texture(img.data, img.w, img.h);
+                        t->display_quad_texture_sent_to_gpu = true;
+                    }
+                    else if (t->is_media_loaded) {
+                        if (!t->media.IsStaticImageBestGuess()) {
+                            // if video, just force send new texture every frame
+                            // todo: i think a bug in playback speed here
+                            //       maybe b/c if video is offscreen, dt will get messed up?
+                            bitmap img = t->GetImage(actual_dt); // the bitmap memory should be freed when getimage is called again
+                            t->display_quad.set_texture(img.data, img.w, img.h);
+                            t->display_quad_texture_sent_to_gpu = true;
+                        }
+                    }
+
+                    t->display_quad.set_verts(t->pos.x, t->pos.y, t->size.w, t->size.h);
+                    t->display_quad.render(1);
+
+                }
+
+            }
+
+
+            // tag menu
+            static bool tag_menu_open = false;
+            {
+                if (!tag_menu_open) {
+                    if (ui_button("show tags", cw/2, 0, keysDown, UI_CENTER,UI_TOP)) {
+                        tag_menu_open = !tag_menu_open;
+                    }
+                } else {
+
+                    int x = 0;
+                    int y = 0;
+                    for (int i = 0; i < tag_list.count; i++) {
+                        // ui_rect this_rect = get_text_size(tag_list[i].ToUTF8Reusable());
+                        ui_rect this_rect = ui_text(tag_list[i].ToUTF8Reusable(), x,y, UI_LEFT,UI_TOP, false);
+                        if (x+this_rect.w > cw) { y+=this_rect.h; x=0; }
+                        ui_button(tag_list[i].ToUTF8Reusable(), x,y, keysDown, UI_LEFT,UI_TOP);
+                        x += this_rect.w;
+                        if (i == tag_list.count-1) y += this_rect.h; // \n for hide tag button
+                    }
+
+                    if (ui_button("hide tags", cw/2, y/*ch/2*/, keysDown, UI_CENTER,UI_TOP)) {
+                        tag_menu_open = !tag_menu_open;
+                    }
+                }
+            }
+
+
+            // debug display metrics
+            static bool show_debug_console = true;
+            if (keysDown.tilde) show_debug_console = !show_debug_console;
+            if (show_debug_console)
+            {
+                UI_PRINTRESET();
+
+                static int debug_pip_count = 0;
+                debug_pip_count = (debug_pip_count+1) % 32;
+                char debug_pip_string[32 +1/*null terminator*/] = {0};
+                for (int i = 0; i < 32; i++) { debug_pip_string[i] = '.'; }
+                debug_pip_string[debug_pip_count] = ':';
+                UI_PRINT(debug_pip_string);
+
+                UI_PRINT("dt: %f", actual_dt);
+
+                UI_PRINT("max dt: %f", metric_max_dt);
+
+                UI_PRINT("ms to first frame: %f", metric_time_to_first_frame);
+
+                int metric_media_loaded = 0;
+                for (int i = 0; i < tiles.count; i++) {
+                    if (tiles[i].media.loaded) metric_media_loaded++;
+                }
+                UI_PRINT("media loaded: %i", metric_media_loaded);
+
+                UI_PRINT("tiles: %i", tiles.count);
+                UI_PRINT("items: %i", items.count);
+
+
+                // UI_PRINT("amt off: %i", state_amt_off_anchor);
+
+
+                // for (int i = 0; i < tiles.count; i++) {
+                //     rect tile_rect = {tiles[i].pos.x, tiles[i].pos.y, tiles[i].size.w, tiles[i].size.h};
+                //     if (tile_rect.ContainsPoint(input.mouseX, input.mouseY)) {
+
+                        // can just used our value calc'd above now:
+                        int i = debug_info_tile_index_mouse_was_on;
+                        UI_PRINT("tile_index_mouse_was_on: %i", debug_info_tile_index_mouse_was_on);
+
+                        UI_PRINT("name: %s", tiles[i].name.ToUTF8());
+
+                        if (tiles[i].media.vfc && tiles[i].media.vfc->iformat)
+                            UI_PRINT("format name: %s", (char*)tiles[i].media.vfc->iformat->name);
+
+                        UI_PRINT("fps: %f", (float)tiles[i].media.fps);
+
+                        // UI_PRINT("frames: %f", (float)tiles[i].media.durationSeconds);
+                        // UI_PRINT("frames: %f", (float)tiles[i].media.totalFrameCount);
+
+                        if (tiles[i].media.vfc && tiles[i].media.vfc->iformat)
+                            UI_PRINT(tiles[i].media.IsStaticImageBestGuess() ? "image" : "video");
+
+                        wc *directory = CopyJustParentDirectoryName(items[i].fullpath.chars);
+                        string temp = string::Create(directory);
+                        UI_PRINT("folder: %s", temp.ToUTF8Reusable());
+                        free(directory);
+
+                        UI_PRINT("tile size: %f, %f", tiles[i].size.w, tiles[i].size.h);
+
+                        // i *thinl* items and tiles share a common index??
+                        // UI_PRINT("item[i] path: %s", items[i].fullpath.ToUTF8Reusable());
+                        if (items[i].tags.count>0) {
+                            int firsttagI = items[i].tags[0];
+                            if (tag_list.count>0) {
+                                UI_PRINT("tag0: %s", tag_list[firsttagI].ToUTF8Reusable());
+                            } else {
+                                UI_PRINT("tag0: [no master list?!]");
+                            }
+                        } else {
+                            UI_PRINT("tag0: none");
+                        }
+
+
+                //     }
+                // }
+
+                // char buf[235];
+                // sprintf(buf, "dt: %f\n", actual_dt);
+                // OutputDebugString(buf);
+            }
+        }
+
+        else if (app_mode == VIEWING_FILE) {
+            //viewing_file_index
+
+            // if (viewing_file_loaded) {
+            //     viewing_file_media
+            // }
+            tile *t = &viewing_tile;
 
                 if (!t->display_quad_created) {
                     t->display_quad.create(0,0,1,1);
@@ -381,121 +548,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                 t->display_quad.set_verts(t->pos.x, t->pos.y, t->size.w, t->size.h);
                 t->display_quad.render(1);
 
-            }
+
 
         }
-
-
-        // tag menu
-        static bool tag_menu_open = false;
-        {
-            if (!tag_menu_open) {
-                if (ui_button("show tags", cw/2, 0, keysDown, UI_CENTER,UI_TOP)) {
-                    tag_menu_open = !tag_menu_open;
-                }
-            } else {
-
-                int x = 0;
-                int y = 0;
-                for (int i = 0; i < tag_list.count; i++) {
-                    // ui_rect this_rect = get_text_size(tag_list[i].ToUTF8Reusable());
-                    ui_rect this_rect = ui_text(tag_list[i].ToUTF8Reusable(), x,y, UI_LEFT,UI_TOP, false);
-                    if (x+this_rect.w > cw) { y+=this_rect.h; x=0; }
-                    ui_button(tag_list[i].ToUTF8Reusable(), x,y, keysDown, UI_LEFT,UI_TOP);
-                    x += this_rect.w;
-                    if (i == tag_list.count-1) y += this_rect.h; // \n for hide tag button
-                }
-
-                if (ui_button("hide tags", cw/2, y/*ch/2*/, keysDown, UI_CENTER,UI_TOP)) {
-                    tag_menu_open = !tag_menu_open;
-                }
-            }
-        }
-
-
-        // debug display metrics
-        static bool show_debug_console = true;
-        if (keysDown.tilde) show_debug_console = !show_debug_console;
-        if (show_debug_console)
-        {
-            UI_PRINTRESET();
-
-            static int debug_pip_count = 0;
-            debug_pip_count = (debug_pip_count+1) % 32;
-            char debug_pip_string[32 +1/*null terminator*/] = {0};
-            for (int i = 0; i < 32; i++) { debug_pip_string[i] = '.'; }
-            debug_pip_string[debug_pip_count] = ':';
-            UI_PRINT(debug_pip_string);
-
-            UI_PRINT("dt: %f", actual_dt);
-
-            UI_PRINT("max dt: %f", metric_max_dt);
-
-            UI_PRINT("ms to first frame: %f", metric_time_to_first_frame);
-
-            int metric_media_loaded = 0;
-            for (int i = 0; i < tiles.count; i++) {
-                if (tiles[i].media.loaded) metric_media_loaded++;
-            }
-            UI_PRINT("media loaded: %i", metric_media_loaded);
-
-            UI_PRINT("tiles: %i", tiles.count);
-            UI_PRINT("items: %i", items.count);
-
-
-            // UI_PRINT("amt off: %i", state_amt_off_anchor);
-
-
-            // for (int i = 0; i < tiles.count; i++) {
-            //     rect tile_rect = {tiles[i].pos.x, tiles[i].pos.y, tiles[i].size.w, tiles[i].size.h};
-            //     if (tile_rect.ContainsPoint(input.mouseX, input.mouseY)) {
-
-                    // can just used our value calc'd above now:
-                    int i = tile_index_mouse_was_on;
-                    UI_PRINT("tile_index_mouse_was_on: %i", tile_index_mouse_was_on);
-
-                    UI_PRINT("name: %s", tiles[i].name.ToUTF8());
-
-                    if (tiles[i].media.vfc && tiles[i].media.vfc->iformat)
-                        UI_PRINT("format name: %s", (char*)tiles[i].media.vfc->iformat->name);
-
-                    UI_PRINT("fps: %f", (float)tiles[i].media.fps);
-
-                    // UI_PRINT("frames: %f", (float)tiles[i].media.durationSeconds);
-                    // UI_PRINT("frames: %f", (float)tiles[i].media.totalFrameCount);
-
-                    if (tiles[i].media.vfc && tiles[i].media.vfc->iformat)
-                        UI_PRINT(tiles[i].media.IsStaticImageBestGuess() ? "image" : "video");
-
-                    wc *directory = CopyJustParentDirectoryName(items[i].fullpath.chars);
-                    string temp = string::Create(directory);
-                    UI_PRINT("folder: %s", temp.ToUTF8Reusable());
-                    free(directory);
-
-                    UI_PRINT("tile size: %f, %f", tiles[i].size.w, tiles[i].size.h);
-
-                    // i *thinl* items and tiles share a common index??
-                    // UI_PRINT("item[i] path: %s", items[i].fullpath.ToUTF8Reusable());
-                    if (items[i].tags.count>0) {
-                        int firsttagI = items[i].tags[0];
-                        if (tag_list.count>0) {
-                            UI_PRINT("tag0: %s", tag_list[firsttagI].ToUTF8Reusable());
-                        } else {
-                            UI_PRINT("tag0: [no master list?!]");
-                        }
-                    } else {
-                        UI_PRINT("tag0: none");
-                    }
-
-
-            //     }
-            // }
-
-            // char buf[235];
-            // sprintf(buf, "dt: %f\n", actual_dt);
-            // OutputDebugString(buf);
-        }
-
 
         opengl_swap();
 
