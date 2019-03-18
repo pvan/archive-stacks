@@ -300,19 +300,42 @@ bool PopulateTagFromPath(item *it) {
 
 
 
-//struct tag {
 
 
-
-// for now, a separate list
+// for now, these are separate lists
 // consider: combine with item struct?
 // -wouldn't need to init list of same length as items
 // -but i kind of like as separate for now
+
+
+//
+// modified times
+
+DEFINE_TYPE_POOL(u64);
+
+// doing "uninitialized" this way for times, see resolutions for another approach
+const u64 TIME_NOT_SET = 0;
+
+u64_pool modifiedTimes; // time since last epoc
+
+void InitModifiedTimes(int count) {
+    for (int i = 0; i < count; i++) {
+        modifiedTimes.add(TIME_NOT_SET);
+    }
+}
+
+u64 ReadModifedTimeFromFile(item it) {
+    return win32_GetModifiedTimeSinceEpoc(it.fullpath);
+}
+
+//
+// resolutions
+
 v2_pool item_resolutions;
 bool_pool item_resolutions_valid; // could use -1,-1 or similar as code for this, but i like makign it explicit for now
 
-void InitResolutionsListToMatchItemList(item_pool *its) {
-    for (int i = 0; i < its->count; i++) {
+void InitResolutionsListToMatchItemList(int count) {
+    for (int i = 0; i < count; i++) {
         item_resolutions.add({0,0});
         item_resolutions_valid.add(false);
     }
@@ -390,6 +413,18 @@ v2 ReadResolutionFromFile(item it) {
 }
 
 
+// todo: replace inits with .init(count) in the collection?
+
+void InitAllDataLists(int count) {
+    InitModifiedTimes(count);
+    InitResolutionsListToMatchItemList(count);
+}
+
+//
+////
+
+
+
 //
 // new method that saves all metadata into one file
 //
@@ -412,6 +447,7 @@ void SaveMetadataFile()
         assert(item_resolutions[i].y == (int)item_resolutions[i].y);
 
         fwprintf(file, L"%i,%i,", (int)item_resolutions[i].x, (int)item_resolutions[i].y);
+        fwprintf(file, L"%llu,", modifiedTimes[i]);
         fwprintf(file, L"%s", justsubpath);
         fwprintf(file, L"%c", L'\0'); // note we add our own \0 after string for easier parsing later
         for (int j = 0; j < items[i].tags.count; j++) {
@@ -424,7 +460,7 @@ void SaveMetadataFile()
 // for reading strings one wchar at a time (used as a stretch buffer, basically)
 DEFINE_TYPE_POOL(wc);
 
-void LoadMasterDataFileAndPopulateResolutionsAndTags(
+void LoadMasterDataFileAndPopulateResolutionsAndTagsEtc(
                                                      // item_pool *itemslocal,
                                                      // v2_pool *resolutions,
                                                      // bool_pool *res_are_valid,
@@ -448,14 +484,19 @@ void LoadMasterDataFileAndPopulateResolutionsAndTags(
         // read resolution and save for later
         int x, y;
         numread = fwscanf(file, L"%i,%i,", &x, &y);
-        if (numread < 2) {DEBUGPRINT("1 %i\n",linesread);goto fileclose;} // eof (or maybe badly formed file?)
+        if (numread < 2/*note 2 here*/) {DEBUGPRINT("e1 %i\n",linesread);goto fileclose;} // eof (or maybe badly formed file?)
+
+        // read modified time
+        u64 time;
+        numread = fwscanf(file, L"%llu,", &time);
+        if (numread < 0) {DEBUGPRINT("e2 %i\n",linesread);goto fileclose;} // eof (or maybe badly formed file?)
 
         // read subpath
         wc_pool result_string = wc_pool::empty();
         wc nextchar;
         do {
             numread = fwscanf(file, L"%c", &nextchar);
-            if (numread < 0) {DEBUGPRINT("2 %i\n",linesread);goto fileclose;} // eof (or maybe badly formed file?)
+            if (numread < 0) {DEBUGPRINT("e3 %i\n",linesread);goto fileclose;} // eof (or maybe badly formed file?)
             result_string.add(nextchar);
         } while (nextchar != L'\0');
         result_string.add(L'\0'); // add \0 to end of array, we're going to treat array as a string
@@ -481,6 +522,9 @@ void LoadMasterDataFileAndPopulateResolutionsAndTags(
         // todo: could put this with its parsing code if we put subpath first in the file
         item_resolutions[this_item_i] = {(float)x, (float)y};
         item_resolutions_valid[this_item_i] = true;
+
+        modifiedTimes[this_item_i] = time;
+
         items[this_item_i].found_in_cache = true;
 
         // int nextint;
@@ -500,13 +544,13 @@ void LoadMasterDataFileAndPopulateResolutionsAndTags(
 
         while (true) {
             numread = fwscanf(file, L"%c", &nextchar);
-            if (numread < 0) {DEBUGPRINT("3 %i\n",linesread);goto fileclose;} // eof (or maybe badly formed file?)
+            if (numread < 0) {DEBUGPRINT("e4 %i\n",linesread);goto fileclose;} // eof (or maybe badly formed file?)
             if (nextchar == L'\n')
                 break; // done ready tag ints
 
             int nextint;
             numread = fwscanf(file, L"%i", &nextint);
-            if (numread < 0) {DEBUGPRINT("4 %i\n",linesread);goto fileclose;} // eof (or maybe badly formed file?)
+            if (numread < 0) {DEBUGPRINT("e5 %i\n",linesread);goto fileclose;} // eof (or maybe badly formed file?)
             items[this_item_i].tags.add(nextint);
 
         }

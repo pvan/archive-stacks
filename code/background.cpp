@@ -139,10 +139,10 @@ DWORD WINAPI RunBackgroundStartupThread( LPVOID lpParam ) {
             // first read list of master tags
             tag_list = ReadTagListFromFileOrSomethingUsableOtherwise(master_path);
 
-            // also create resolution list, to match length of items
-            InitResolutionsListToMatchItemList(&items);
+            // also create resolution list, etc, to match length of items
+            InitAllDataLists(items.count);
 
-            LoadMasterDataFileAndPopulateResolutionsAndTags(
+            LoadMasterDataFileAndPopulateResolutionsAndTagsEtc(
                                                             // &items,
                                                             // &item_resolutions,
                                                             // &item_resolutions_valid,
@@ -168,7 +168,7 @@ DWORD WINAPI RunBackgroundStartupThread( LPVOID lpParam ) {
 
         // fill in resolutions for any items not in the cache
         {
-            loading_status_msg = "Reading resolutions of items not cached yet...";
+            loading_status_msg = "Reading missing resolutions...";
 
             // this is entirely to just get a count of how many we need to do
             int_pool unset_resolution_indices = int_pool::empty();
@@ -182,8 +182,38 @@ DWORD WINAPI RunBackgroundStartupThread( LPVOID lpParam ) {
             for (int i = 0; i < unset_resolution_indices.count; i++) {
                 loading_reusable_count = i;
                 int item_index = unset_resolution_indices[i];
-                v2 res = ReadResolutionFromFile(items[item_index]);
-                item_resolutions[item_index] = res;
+                item_resolutions[item_index] = ReadResolutionFromFile(items[item_index]);
+            }
+
+            // method without needing to pre-figure which we need (wrong max progress)
+            // loading_reusable_max = items.count;
+            // for (int i = 0; i < items.count; i++) {
+            //     loading_reusable_count = i;
+            //     if (!item_resolutions_valid[i]) {
+            //         v2 res = ReadResolutionFromFile(items[i]);
+            //         item_resolutions[i] = res;
+            //     }
+            // }
+        }
+
+
+        // fill in modified times for any items not in the cache
+        {
+            loading_status_msg = "Reading missing modified times...";
+
+            // this is entirely to just get a count of how many we need to do
+            int_pool unset_times_indices = int_pool::empty();
+            for (int i = 0; i < modifiedTimes.count; i++) {
+                if (modifiedTimes[i] == TIME_NOT_SET) {
+                    unset_times_indices.add(i);
+                }
+            }
+
+            loading_reusable_max = modifiedTimes.count;
+            for (int i = 0; i < unset_times_indices.count; i++) {
+                loading_reusable_count = i;
+                int item_index = unset_times_indices[i];
+                modifiedTimes[item_index] = ReadModifedTimeFromFile(items[item_index]);
             }
 
             // method without needing to pre-figure which we need (wrong max progress)

@@ -13,7 +13,7 @@ struct tile
     // string fullpath;
     item paths_just_for_comparing_tiles; // just used for == (for tile_pool)
     string name; // just for printing i think
-    u64 modifiedTimeSinceLastEpoc;
+    // u64 modifiedTimeSinceLastEpoc;
 
     // thumbnail data
     // string thumbpath;
@@ -90,7 +90,7 @@ struct tile
 
         newTile.paths_just_for_comparing_tiles.fullpath = path.Copy();
         newTile.name = string::Create(CopyJustFilename(path.chars));
-        newTile.modifiedTimeSinceLastEpoc = win32_GetModifiedTimeSinceEpoc(path);
+        // newTile.modifiedTimeSinceLastEpoc = win32_GetModifiedTimeSinceEpoc(path);
         // note getmodified time has to touch the files which means slow on cold hdd
         // todo: consider moving elsewhere? special loop perhaps?
 
@@ -124,7 +124,8 @@ void SortTilePoolByDate(tile_pool *pool)
         int anyswap = false;
 
         for (int j = 0; j < pool->count-1; j++) {
-            if (pool->pool[j].modifiedTimeSinceLastEpoc > pool->pool[j+1].modifiedTimeSinceLastEpoc) {
+            // if (pool->pool[j].modifiedTimeSinceLastEpoc > pool->pool[j+1].modifiedTimeSinceLastEpoc) {
+            if (modifiedTimes[j] > modifiedTimes[j+1]) {
 
                 // swap
                 tile temp = pool->pool[j];
