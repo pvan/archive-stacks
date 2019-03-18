@@ -82,6 +82,12 @@ struct Input
 
     float mouseX;
     float mouseY;
+
+
+    bool point_in_client_area(int cw, int ch) {
+        return mouseX>0 && mouseY>0 && mouseX<cw && mouseY<ch;
+    }
+
 };
 
 

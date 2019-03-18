@@ -110,14 +110,11 @@ DWORD WINAPI RunBackgroundStartupThread( LPVOID lpParam ) {
     {
         tiles = tile_pool::empty();
         for (int i = 0; i < items.count; i++) {
-            loading_status_msg = "Reading file timestamps...";
+            loading_status_msg = "Reading file paths...";
             loading_reusable_count = i;
             loading_reusable_max = items.count;
 
-            // TODO: we should put timestamps in the metadata cache
-            // that way we potentially dont have to touch the original files at all on startup
-            // (would cut loading time on a cold hdd in half)
-            tiles.add(tile::CreateFromItem(items[i])); // reads timestamps! = slow on cold hdd
+            tiles.add(tile::CreateFromItem(items[i])); // note: no longer reads timestamps
         }
         // AddRandomColorToTilePool
         {
@@ -308,7 +305,14 @@ DWORD WINAPI RunBackgroundLoadingThread( LPVOID lpParam ) {
         } else if (app_mode == VIEWING_FILE) {
             if (viewing_tile.needs_loading) {
                 if (!viewing_tile.is_media_loaded) {
-                    viewing_tile.LoadMedia(items[viewing_file_index].fullpath);
+                    if (ffmpeg_can_open(items[viewing_file_index].fullpath)) {
+                        viewing_tile.LoadMedia(items[viewing_file_index].fullpath);
+                    } else {
+                        // fallback to thumb for non-media files
+                        // todo: without this branch, ffmpeg seems to actually open and display txt files?
+                        // confused, can we somehow take out or special txt file handling in ffmpeg + thumbnails?
+                        viewing_tile.LoadMedia(items[viewing_file_index].thumbpath);
+                    }
                     // DEBUGPRINT("loading: %s\n", tiles[i].thumbpath.ToUTF8Reusable());
                 }
             }

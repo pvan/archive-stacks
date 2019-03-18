@@ -361,7 +361,35 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             }
 
 
+            if (keysDown.mouseL && input.point_in_client_area(cw,ch)) {
+                app_mode = VIEWING_FILE;
 
+                viewing_file_index = TileIndexMouseIsOver(tiles, input.mouseX, input.mouseY);
+
+                // // note shallow copy, not pointer or deep copy
+                // viewing_tile = tiles[viewing_file_index];
+
+                viewing_tile = tile::CreateFromItem(items[viewing_file_index]);
+
+                viewing_tile.needs_loading = true;
+                viewing_tile.needs_unloading = false; // these are init to false in tile::Create,
+                viewing_tile.is_media_loaded = false; // but just to make it explicit here..
+            }
+
+
+        }
+
+        else if (app_mode == VIEWING_FILE) {
+            float aspect_ratio = item_resolutions[viewing_file_index].aspect_ratio();
+            rect fit_to_screen = calc_pixel_letterbox_subrect(cw, ch, aspect_ratio);
+            // note rect seems to be TLBR not XYWH
+            viewing_tile.pos = {fit_to_screen.x, fit_to_screen.y};
+            viewing_tile.size = {fit_to_screen.w-fit_to_screen.x, fit_to_screen.h-fit_to_screen.y};
+
+            if (keysDown.mouseR) {
+                app_mode = BROWSING_THUMBS;
+                // todo: remove tile stuff from memory or gpu ?
+            }
         }
 
 
@@ -460,6 +488,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
                 UI_PRINT("tiles: %i", tiles.count);
                 UI_PRINT("items: %i", items.count);
+
+                // UI_PRINT("mouseX: %f", input.mouseX);
+                // UI_PRINT("mouseY: %f", input.mouseY);
 
 
                 // UI_PRINT("amt off: %i", state_amt_off_anchor);

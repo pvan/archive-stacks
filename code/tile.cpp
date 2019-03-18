@@ -1,6 +1,22 @@
 
 
 
+
+// assuming a canvas of 0,0,dw,dh, returns subrect (t/l/r/b it seems) filling that space but with aspect_ratio (w/h)
+rect calc_pixel_letterbox_subrect(int dw, int dh, float aspect_ratio)
+{
+    float calcW = (float)dh * aspect_ratio;
+    float calcH = (float)dw / aspect_ratio;
+    if (calcW > dw) calcW = dw;  // letterbox
+    else calcH = dh;  // pillarbox
+    float posX = ((float)dw - calcW) / 2.0;
+    float posY = ((float)dh - calcH) / 2.0;
+    return {posX, posY, posX+calcW, posY+calcH};
+}
+
+
+
+
 struct tile
 {
 
