@@ -1,6 +1,43 @@
 
 
 
+const int UI_TEXT_SIZE = 24;
+const int UI_RESUSABLE_BUFFER_SIZE = 256;
+
+char ui_text_reusable_buffer[UI_RESUSABLE_BUFFER_SIZE];
+opengl_quad ui_reusable_quad;
+
+// struct ui_rect {int x, y, w, h;};
+#define ui_rect ttf_rect
+
+#define recti ui_rect
+
+// todo: what rounding to use?
+recti to_recti(rect r) { return {(int)r.x, (int)r.y, (int)r.w, (int)r.h}; }
+
+
+bitmap ui_font_atlas;
+opengl_quad ui_font_quad;
+
+void ui_init(bitmap baked_font) {
+    ui_font_atlas = baked_font;
+}
+
+
+void ui_draw_rect(ui_rect r, u32 col = 0, float a = 1) {
+    if (!ui_reusable_quad.created) ui_reusable_quad.create(0,0,1,1);
+    ui_reusable_quad.set_texture(&col, 1, 1);
+    ui_reusable_quad.set_verts(r.x, r.y, r.w, r.h);
+    ui_reusable_quad.render(a);
+}
+void ui_highlight(ui_rect r) {
+    u32 white = 0xffffffff;
+    if (!ui_reusable_quad.created) ui_reusable_quad.create(0,0,1,1);
+    ui_reusable_quad.set_texture(&white, 1, 1);
+    ui_reusable_quad.set_verts(r.x, r.y, r.w, r.h);
+    ui_reusable_quad.render(0.4);
+}
+
 //
 // buttons
 
@@ -34,7 +71,8 @@ DEFINE_TYPE_POOL(button);
 button_pool buttons;
 
 void ButtonsReset() {  // call every frame
-    buttons.count = 0;
+    buttons.empty_out();
+    // buttons.count = 0; // same thing atm
 }
 
 button TopMostButtonUnderPoint(float mx, float my) {
@@ -44,10 +82,10 @@ button TopMostButtonUnderPoint(float mx, float my) {
     for (int i = 0; i < buttons.count; i++) {
         rect r = buttons[i].rect;
         if (mx > r.x && mx <= r.x+r.w && my > r.y && my <= r.y+r.h) {
-            if (buttons[i].z_level > result.z_level) {
+            // if (buttons[i].z_level > result.z_level) {
                 result = buttons[i];
                 found_at_least_one = true;
-            }
+            // }
         }
     }
     if (found_at_least_one)
@@ -56,21 +94,22 @@ button TopMostButtonUnderPoint(float mx, float my) {
         return {0};
 }
 
-// void ButtonsHighlight(float mx, float my) {
-//     button top_most = TopMostButtonUnderPoint(mx, my);
-//     rect r = top_most.rect;
-//     if (r.w != 0 && r.h != 0) {
+void ButtonsHighlight(float mx, float my) {
+    button top_most = TopMostButtonUnderPoint(mx, my);
+    rect r = top_most.rect;
+    if (r.w != 0 && r.h != 0) {
+        DEBUGPRINT("x:%f, w:%f\n", r.x, r.w);
+        // todo: or highlighting in mouseover handler?
+        ui_highlight(to_recti(r));
+        // u32 white = 0xffffffff;
+        // ui_reusable_quad.set_texture(&white, 1, 1);
+        // ui_reusable_quad.set_verts(r.x, r.y, r.w, r.h);
+        // ui_reusable_quad.render(0.5);
 
-//         // todo: but highlighting in mouseover handler?
-//         u32 white = 0xffffffff;
-//         hl_quad.update_tex((u8*)&white, 1, 1);
-//         hl_quad.set_to_pixel_coords_TL(r.x, r.y, r.w, r.h);
-//         hl_quad.render(0.2);
-
-//         if (top_most.on_mouseover)
-//             top_most.on_mouseover(top_most.mouseover_arg);
-//     }
-// }
+        if (top_most.on_mouseover)
+            top_most.on_mouseover(top_most.mouseover_arg);
+    }
+}
 
 void ButtonsClick(float mx, float my) {
     button top_most = TopMostButtonUnderPoint(mx, my);
@@ -89,23 +128,6 @@ void AddButton(rect r, void(*on_click)(int),int click_arg, void(*on_mouseover)(i
 
 
 
-const int UI_TEXT_SIZE = 24;
-const int UI_RESUSABLE_BUFFER_SIZE = 256;
-
-char ui_text_reusable_buffer[UI_RESUSABLE_BUFFER_SIZE];
-opengl_quad ui_reusable_quad;
-
-// struct ui_rect {int x, y, w, h;};
-#define ui_rect ttf_rect
-
-
-bitmap ui_font_atlas;
-opengl_quad ui_font_quad;
-
-void ui_init(bitmap baked_font) {
-    ui_font_atlas = baked_font;
-}
-
 // ui_rect get_text_size(char *text, float x = 0, float y = 0) {
 //     // could certain values of x/y change our size by 1? i think so
 //     ui_rect bb = ttf_render_text(text, x, y, ui_font_atlas, &ui_font_quad, false);
@@ -118,19 +140,6 @@ void ui_init(bitmap baked_font) {
 // }
 
 
-void ui_draw_rect(ui_rect r, u32 col = 0, float a = 1) {
-    if (!ui_reusable_quad.created) ui_reusable_quad.create(0,0,1,1);
-    ui_reusable_quad.set_texture(&col, 1, 1);
-    ui_reusable_quad.set_verts(r.x, r.y, r.w, r.h);
-    ui_reusable_quad.render(a);
-}
-void ui_highlight(ui_rect r) {
-    u32 white = 0xffffffff;
-    if (!ui_reusable_quad.created) ui_reusable_quad.create(0,0,1,1);
-    ui_reusable_quad.set_texture(&white, 1, 1);
-    ui_reusable_quad.set_verts(r.x, r.y, r.w, r.h);
-    ui_reusable_quad.render(0.4);
-}
 
 
 const int UI_CENTER = 0;

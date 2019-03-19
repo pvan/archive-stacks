@@ -612,16 +612,20 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
         }
 
-        opengl_swap();
 
-        if (!measured_first_frame_time) { metric_time_to_first_frame = time_now() - time_at_startup; measured_first_frame_time = true; }
-
-
-        // ButtonsHighlight(input.mouseX, input.mouseY);
+        // button handling & reset
+        ButtonsHighlight(input.mouseX, input.mouseY);
         if (keysDown.mouseL) { // or check this inside buttonsclick?
             ButtonsClick(input.mouseX, input.mouseY);
         }
         ButtonsReset(); // call at the end or start of every frame so buttons don't carry over between frames
+
+
+
+        opengl_swap();
+
+        if (!measured_first_frame_time) { metric_time_to_first_frame = time_now() - time_at_startup; measured_first_frame_time = true; }
+
 
 
         // Sleep(16); // we set frame rate above right? or should we here?
