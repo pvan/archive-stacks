@@ -1,6 +1,94 @@
 
 
 
+//
+// buttons
+
+struct button {
+    rect rect;
+    float z_level;
+
+    void (*on_click)(int);
+    int click_arg;
+
+    void (*on_mouseover)(int);
+    int mouseover_arg;
+
+    bool operator==(button o) {
+        return rect==o.rect &&
+               z_level==o.z_level &&
+
+               on_click==o.on_click &&
+               click_arg==o.click_arg &&
+
+               on_mouseover==o.on_mouseover &&
+               mouseover_arg==o.mouseover_arg;
+   }
+};
+// button *buttons = 0;
+// int buttonCount = 0;
+// int buttonAlloc = 0;
+
+DEFINE_TYPE_POOL(button);
+
+button_pool buttons;
+
+void ButtonsReset() {  // call every frame
+    buttons.count = 0;
+}
+
+button TopMostButtonUnderPoint(float mx, float my) {
+    button result = {0};
+    result.z_level = -99999; // max negative z level
+    bool found_at_least_one = false;
+    for (int i = 0; i < buttons.count; i++) {
+        rect r = buttons[i].rect;
+        if (mx > r.x && mx <= r.x+r.w && my > r.y && my <= r.y+r.h) {
+            if (buttons[i].z_level > result.z_level) {
+                result = buttons[i];
+                found_at_least_one = true;
+            }
+        }
+    }
+    if (found_at_least_one)
+        return result;
+    else
+        return {0};
+}
+
+// void ButtonsHighlight(float mx, float my) {
+//     button top_most = TopMostButtonUnderPoint(mx, my);
+//     rect r = top_most.rect;
+//     if (r.w != 0 && r.h != 0) {
+
+//         // todo: but highlighting in mouseover handler?
+//         u32 white = 0xffffffff;
+//         hl_quad.update_tex((u8*)&white, 1, 1);
+//         hl_quad.set_to_pixel_coords_TL(r.x, r.y, r.w, r.h);
+//         hl_quad.render(0.2);
+
+//         if (top_most.on_mouseover)
+//             top_most.on_mouseover(top_most.mouseover_arg);
+//     }
+// }
+
+void ButtonsClick(float mx, float my) {
+    button top_most = TopMostButtonUnderPoint(mx, my);
+    if (top_most.on_click)
+        top_most.on_click(top_most.click_arg);
+}
+
+void AddButton(rect r, void(*on_click)(int),int click_arg, void(*on_mouseover)(int)=0,int mouseover_arg=0)
+{
+    buttons.add({r,1, on_click,click_arg, on_mouseover,mouseover_arg});
+    // if (!buttons)                   { buttonAlloc=256; buttons = (Button*)malloc(          buttonAlloc * sizeof(Button)); }
+    // if (buttonCount >= buttonAlloc) { buttonAlloc*=2;  buttons = (Button*)realloc(buttons, buttonAlloc * sizeof(Button)); }
+    // buttons[buttonCount++] = {r,z,  on_click,click_arg,  on_mouseover,mouseover_arg};
+}
+
+
+
+
 const int UI_TEXT_SIZE = 24;
 const int UI_RESUSABLE_BUFFER_SIZE = 256;
 
@@ -113,19 +201,39 @@ bool ui_mouse_over_rect(int mx, int my, ui_rect rect) {
     return mx > rect.x && mx < rect.x+rect.w && my > rect.y && my < rect.y+rect.h;
 }
 
-bool ui_button(char *text, int x, int y, Input i, int hpos, int vpos) {
-    ui_rect button_rect = ui_text(text, x, y, hpos, vpos);
-    // if (out_rect) *out_rect = button_rect;
-    if (ui_mouse_over_rect(i.mouseX, i.mouseY, button_rect)) {
-        ui_highlight(button_rect);
-        if (i.mouseL) {
-            return true;
-        }
-    }
-    return false;
+// bool ui_button(char *text, int x, int y, Input i, int hpos, int vpos) {
+//     ui_rect button_rect = ui_text(text, x, y, hpos, vpos);
+//     // if (out_rect) *out_rect = button_rect;
+//     if (ui_mouse_over_rect(i.mouseX, i.mouseY, button_rect)) {
+//         ui_highlight(button_rect);
+//         if (i.mouseL) {
+//             return true;
+//         }
+//     }
+//     return false;
+// }
+
+
+
+
+
+rect ui_button(char *text, float x, float y, bool hpos, bool vpos, void(*effect)(int), int arg=0)
+{
+    ttf_rect tr = ui_text(text, x, y, hpos, vpos); //RenderTextCenter(x, y, text);
+    rect r = {(float)tr.x, (float)tr.y, (float)tr.w, (float)tr.h};
+    AddButton(r, effect, arg);
+    return r;
 }
 
-
+// todo: audit this api
+rect ui_button(char *text, rect br, bool hpos, bool vpos, void(*effect)(int), int arg=0)
+{
+    // todo: test all hpos/vpos paths here, i dont think this will work for all
+    ttf_rect tr = ui_text(text, br.x, br.y, hpos, vpos); //RenderTextCenter(x, y, text);
+    // rect r = {(float)rr.x, (float)rr.y, (float)rr.w, (float)rr.h};
+    AddButton(br, effect, arg);
+    return br;
+}
 
 
 

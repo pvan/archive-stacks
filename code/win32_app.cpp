@@ -85,6 +85,24 @@ tile viewing_tile; // tile for our open file (created from fullpath rather than 
 #include "background.cpp"
 
 
+// button click handlers
+bool tag_menu_open = false;
+void ToggleTagMenu(int) { tag_menu_open = !tag_menu_open; }
+
+void OpenTagMenu(int item_index) {
+    app_mode = VIEWING_FILE;
+
+    viewing_file_index = item_index;
+
+    // // note shallow copy, not pointer or deep copy
+    // viewing_tile = tiles[viewing_file_index];
+
+    viewing_tile = tile::CreateFromItem(items[viewing_file_index]);
+
+    viewing_tile.needs_loading = true;
+    viewing_tile.needs_unloading = false; // these are init to false in tile::Create,
+    viewing_tile.is_media_loaded = false; // but just to make it explicit here..
+}
 
 
 int master_scroll_delta = 0;
@@ -361,20 +379,30 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             }
 
 
-            if (keysDown.mouseL && input.point_in_client_area(cw,ch)) {
-                app_mode = VIEWING_FILE;
-
+            // make invisible button on top of mouse-overed tile
+            // consider: what do you think about this, seems a little funny
+            if (input.point_in_client_area(cw,ch)) { // todo: where to put this check, here or with all click handling?
                 viewing_file_index = TileIndexMouseIsOver(tiles, input.mouseX, input.mouseY);
-
-                // // note shallow copy, not pointer or deep copy
-                // viewing_tile = tiles[viewing_file_index];
-
-                viewing_tile = tile::CreateFromItem(items[viewing_file_index]);
-
-                viewing_tile.needs_loading = true;
-                viewing_tile.needs_unloading = false; // these are init to false in tile::Create,
-                viewing_tile.is_media_loaded = false; // but just to make it explicit here..
+                // if (tiles[viewing_file_index].IsOnScreen(ch)) {
+                rect r = {tiles[viewing_file_index].pos.x, tiles[viewing_file_index].pos.y,
+                          tiles[viewing_file_index].size.w, tiles[viewing_file_index].size.h};
+                ui_button("#", r, true,true, &OpenTagMenu, viewing_file_index);
             }
+
+            // if (keysDown.mouseL && input.point_in_client_area(cw,ch)) {
+            //     app_mode = VIEWING_FILE;
+
+            //     viewing_file_index = TileIndexMouseIsOver(tiles, input.mouseX, input.mouseY);
+
+            //     // // note shallow copy, not pointer or deep copy
+            //     // viewing_tile = tiles[viewing_file_index];
+
+            //     viewing_tile = tile::CreateFromItem(items[viewing_file_index]);
+
+            //     viewing_tile.needs_loading = true;
+            //     viewing_tile.needs_unloading = false; // these are init to false in tile::Create,
+            //     viewing_tile.is_media_loaded = false; // but just to make it explicit here..
+            // }
 
 
         }
@@ -434,12 +462,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 
             // tag menu
-            static bool tag_menu_open = false;
             {
                 if (!tag_menu_open) {
-                    if (ui_button("show tags", cw/2, 0, keysDown, UI_CENTER,UI_TOP)) {
-                        tag_menu_open = !tag_menu_open;
-                    }
+                    ui_button("show tags", cw/2, 0, UI_CENTER,UI_TOP, &ToggleTagMenu);
+                    // if (ui_button("show tags", cw/2, 0, keysDown, UI_CENTER,UI_TOP)) {
+                    //     tag_menu_open = !tag_menu_open;
+                    // }
                 } else {
 
                     int x = 0;
@@ -448,14 +476,15 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                         // ui_rect this_rect = get_text_size(tag_list[i].ToUTF8Reusable());
                         ui_rect this_rect = ui_text(tag_list[i].ToUTF8Reusable(), x,y, UI_LEFT,UI_TOP, false);
                         if (x+this_rect.w > cw) { y+=this_rect.h; x=0; }
-                        ui_button(tag_list[i].ToUTF8Reusable(), x,y, keysDown, UI_LEFT,UI_TOP);
+                        ui_button(tag_list[i].ToUTF8Reusable(), x,y, UI_LEFT,UI_TOP, 0);
                         x += this_rect.w;
                         if (i == tag_list.count-1) y += this_rect.h; // \n for hide tag button
                     }
 
-                    if (ui_button("hide tags", cw/2, y/*ch/2*/, keysDown, UI_CENTER,UI_TOP)) {
-                        tag_menu_open = !tag_menu_open;
-                    }
+                    ui_button("hide tags", cw/2, y/*ch/2*/, UI_CENTER,UI_TOP, &ToggleTagMenu);
+                    // if (ui_button("hide tags", cw/2, y/*ch/2*/, keysDown, UI_CENTER,UI_TOP)) {
+                    //     tag_menu_open = !tag_menu_open;
+                    // }
                 }
             }
 
@@ -586,6 +615,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         opengl_swap();
 
         if (!measured_first_frame_time) { metric_time_to_first_frame = time_now() - time_at_startup; measured_first_frame_time = true; }
+
+
+        // ButtonsHighlight(input.mouseX, input.mouseY);
+        if (keysDown.mouseL) { // or check this inside buttonsclick?
+            ButtonsClick(input.mouseX, input.mouseY);
+        }
+        ButtonsReset(); // call at the end or start of every frame so buttons don't carry over between frames
 
 
         // Sleep(16); // we set frame rate above right? or should we here?
