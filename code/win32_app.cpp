@@ -342,6 +342,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
         static int debug_info_tile_index_mouse_was_on = 0;
 
+        static int last_scroll_pos = 0;
+        int tiles_height; // declare out here so we can use in our scrollbar figuring
         if (app_mode == BROWSING_THUMBS) {
             // position the tiles
             {
@@ -355,9 +357,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                 master_ctrl_scroll_delta = 0; // done using this in this frame
 
 
-                int tiles_height = ArrangeTilesInOrder(&tiles, master_desired_tile_width, cw); // requires resolutions to be set
+                tiles_height = ArrangeTilesInOrder(&tiles, master_desired_tile_width, cw); // requires resolutions to be set
 
-                static int last_scroll_pos = 0;
                 int scroll_pos = CalculateScrollPosition(last_scroll_pos, master_scroll_delta, keysDown, ch, tiles_height);
                 last_scroll_pos = scroll_pos;
                 master_scroll_delta = 0; // done using this in this frame
@@ -464,6 +465,34 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                 // ui_highlight(r);
             }
 
+            // scroll bar
+            {
+                int SCROLL_WIDTH = 25;
+
+                u32 grey = 0xffbbbbbb;
+                ui_reusable_quad.set_texture(&grey, 1, 1);
+                ui_reusable_quad.set_verts(cw-SCROLL_WIDTH, 0, SCROLL_WIDTH, ch);
+                ui_reusable_quad.render(.55);//.35);
+
+
+                float amtDown = (float)last_scroll_pos; // note this is set about
+
+                float top_percent = amtDown / (float)tiles_height;
+                float bot_percent = (amtDown+(float)ch) / (float)tiles_height;
+
+                float top_pixels = top_percent * (float)ch;
+                float bot_pixels = bot_percent * (float)ch;
+
+                float size = roundf(bot_pixels-top_pixels);
+                if (size < 10) size = 10;
+
+                // u32 dgrey = 0xff888888;
+                u32 dgrey = 0xffbbbbbb;
+                ui_reusable_quad.set_texture(&dgrey, 1, 1);
+                ui_reusable_quad.set_verts(cw-SCROLL_WIDTH, top_pixels, SCROLL_WIDTH, size);
+                ui_reusable_quad.render(.9);//.75);
+
+            }
 
             // tag menu
             {

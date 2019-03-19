@@ -257,6 +257,15 @@ rect ui_button_invisible(rect br, void(*effect)(int), int arg=0)
 // }
 
 
+
+// // note takes two values, for top/bottom of scroll bar indicator (for variable size)
+// float scroll_bar(rect r, float value1, float value2, void(*effect)(int), int arg=0)
+// {
+
+// }
+
+
+
 char ui_log_reuseable_mem[256];
 int ui_log_count;
 void UI_PRINT(char *s) {
