@@ -52,18 +52,19 @@ void ui_highlight(rect r) {
     ui_highlight(to_recti(r));
 }
 
+
 //
 // buttons
 
 // todo: rename to ui_element ?
 struct button {
-    rect rect;
+    rect rect; // same name works huh? seems like trouble
     float z_level;
     bool highlight;
 
     bool is_scrollbar; // make into generic "type" var when needed
     float *callbackvalue; // so we can change value with our deferred handling
-    float callbackvaluescale;
+    float callbackvaluescale; // kind of a "units" factor for the callbackvalue
 
     void (*on_click)(int);
     int click_arg;
@@ -133,19 +134,42 @@ void ButtonsHighlight(float mx, float my) {
     }
 }
 
+// store our dragging state across multiple frames
+// so we can click and drag on something and move off that thing and still be dragging
+bool ui_dragging = false;
+
+// will persist over multiple frames unlike most elements, so be careful
+// for example, if you are resizing scrollbars dynamically (for some reason)
+// this will only be the scrollbar at the time of the drag start
+button ui_drag_element = {0};
+
+// call to update elements that respond to clicking
 void ButtonsClick(float mx, float my) {
     button top_most = TopMostButtonUnderPoint(mx, my);
 
     if (top_most.is_scrollbar) {
-        float click_percent = (my - top_most.rect.y) / top_most.rect.h;
-        // consider: pass function pointer instead of scale factor?
-        // or some other alternative?
-        *(top_most.callbackvalue) = top_most.callbackvaluescale * click_percent;
+        ui_drag_element = top_most;
+        ui_dragging = true;
     }
 
     if (top_most.on_click)
         top_most.on_click(top_most.click_arg);
 }
+
+// call to update elements that respond to dragging (eg scrollbars)
+void ButtonsDrag(float mx, float my, bool mouseDown) {
+    if (!mouseDown) {
+        ui_dragging = false;
+    } else {
+        if (ui_dragging) {
+            float click_percent = (my - ui_drag_element.rect.y) / ui_drag_element.rect.h;
+            // consider: pass function pointer instead of scale factor?
+            // or some other alternative?
+            *(ui_drag_element.callbackvalue) = ui_drag_element.callbackvaluescale * click_percent;
+        }
+    }
+}
+
 
 void AddButton(rect r, bool hl, void(*on_click)(int),int click_arg, void(*on_mouseover)(int)=0,int mouseover_arg=0)
 {

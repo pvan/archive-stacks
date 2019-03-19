@@ -636,6 +636,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
         // button handling & reset
         ButtonsHighlight(input.mouseX, input.mouseY);
+        ButtonsDrag(input.mouseX, input.mouseY, input.mouseL);
         if (keysDown.mouseL) { // or check this inside buttonsclick?
             ButtonsClick(input.mouseX, input.mouseY);
         }
