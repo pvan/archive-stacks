@@ -22,7 +22,9 @@ opengl_quad ui_reusable_quad;
 #define recti ui_rect
 
 // todo: what rounding to use?
+// todo: pick one and stick with it?
 recti to_recti(rect r) { return {(int)r.x, (int)r.y, (int)r.w, (int)r.h}; }
+rect to_rectf(recti r) { return {(float)r.x, (float)r.y, (float)r.w, (float)r.h}; }
 
 
 bitmap ui_font_atlas;
@@ -53,10 +55,15 @@ void ui_highlight(rect r) {
 //
 // buttons
 
+// todo: rename to ui_element ?
 struct button {
     rect rect;
     float z_level;
     bool highlight;
+
+    bool is_scrollbar; // make into generic "type" var when needed
+    float *callbackvalue; // so we can change value with our deferred handling
+    float callbackvaluescale;
 
     void (*on_click)(int);
     int click_arg;
@@ -128,16 +135,28 @@ void ButtonsHighlight(float mx, float my) {
 
 void ButtonsClick(float mx, float my) {
     button top_most = TopMostButtonUnderPoint(mx, my);
+
+    if (top_most.is_scrollbar) {
+        float click_percent = (my - top_most.rect.y) / top_most.rect.h;
+        // consider: pass function pointer instead of scale factor?
+        // or some other alternative?
+        *(top_most.callbackvalue) = top_most.callbackvaluescale * click_percent;
+    }
+
     if (top_most.on_click)
         top_most.on_click(top_most.click_arg);
 }
 
 void AddButton(rect r, bool hl, void(*on_click)(int),int click_arg, void(*on_mouseover)(int)=0,int mouseover_arg=0)
 {
-    buttons.add({r,1, hl, on_click,click_arg, on_mouseover,mouseover_arg});
+    buttons.add({r,1, hl, false,0,0, on_click,click_arg, on_mouseover,mouseover_arg});
     // if (!buttons)                   { buttonAlloc=256; buttons = (Button*)malloc(          buttonAlloc * sizeof(Button)); }
     // if (buttonCount >= buttonAlloc) { buttonAlloc*=2;  buttons = (Button*)realloc(buttons, buttonAlloc * sizeof(Button)); }
     // buttons[buttonCount++] = {r,z,  on_click,click_arg,  on_mouseover,mouseover_arg};
+}
+
+void AddScrollbar(rect r, bool hl, float *callbackvalue, float callbackscale) {
+    buttons.add({r,1, hl, true,callbackvalue,callbackscale, 0,0, 0,0});
 }
 
 
@@ -266,15 +285,12 @@ rect ui_button_invisible(rect br, void(*effect)(int), int arg=0)
 
 
 // note takes two values, for top/bottom of scroll bar indicator (for variable size)
-void ui_scrollbar(recti r, float top_percent, float bot_percent, void(*effect)(int), int arg=0)
+void ui_scrollbar(recti r, float top_percent, float bot_percent,
+                  float *callbackvalue, float callbackscale,
+                  void(*effect)(int), int arg=0)
 {
-
+    // bg
     ui_draw_rect(r, 0xffbbbbbb, .4); //0xffbbbbbb, .35
-    // u32 grey = 0xffbbbbbb;
-    // ui_reusable_quad.set_texture(&grey, 1, 1);
-    // ui_reusable_quad.set_verts(cw-SCROLL_WIDTH, 0, SCROLL_WIDTH, ch);
-    // ui_reusable_quad.render(.55);//.35);
-
 
     float top_pixels = top_percent * (float)r.h;
     float bot_pixels = bot_percent * (float)r.h;
@@ -282,14 +298,13 @@ void ui_scrollbar(recti r, float top_percent, float bot_percent, void(*effect)(i
     float size = roundf(bot_pixels-top_pixels);
     if (size < 10) size = 10;
 
+    // indicator
     // todo: round?
     ui_draw_rect({r.x, (int)top_pixels, r.w, (int)size}, 0xffdddddd, .9); //0xff888888, .75
     // ui_draw_rect({r.x+1, (int)top_pixels+1, r.w-2, (int)size-2}, 0xff888888, .9); //, .75
-    // // u32 dgrey = 0xff888888;
-    // u32 dgrey = 0xffbbbbbb;
-    // ui_reusable_quad.set_texture(&dgrey, 1, 1);
-    // ui_reusable_quad.set_verts(cw-SCROLL_WIDTH, top_pixels, SCROLL_WIDTH, size);
-    // ui_reusable_quad.render(.9);//.75);
+
+    // click handler
+    AddScrollbar(to_rectf(r), true, callbackvalue, callbackscale);
 }
 
 

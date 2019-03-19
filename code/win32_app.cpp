@@ -342,7 +342,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
         static int debug_info_tile_index_mouse_was_on = 0;
 
-        static int last_scroll_pos = 0;
+        static float last_scroll_pos = 0;
         int tiles_height; // declare out here so we can use in our scrollbar figuring
         if (app_mode == BROWSING_THUMBS) {
             // position the tiles
@@ -360,7 +360,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                 tiles_height = ArrangeTilesInOrder(&tiles, master_desired_tile_width, cw); // requires resolutions to be set
 
                 int scroll_pos = CalculateScrollPosition(last_scroll_pos, master_scroll_delta, keysDown, ch, tiles_height);
-                last_scroll_pos = scroll_pos;
+                last_scroll_pos = (float)scroll_pos;
                 master_scroll_delta = 0; // done using this in this frame
 
                 ShiftTilesBasedOnScrollPosition(&tiles, last_scroll_pos);
@@ -469,13 +469,15 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             {
                 int SCROLL_WIDTH = 25;
 
-                float amtDown = (float)last_scroll_pos; // note this is set about
+                float amtDown = last_scroll_pos; // note this is set about
 
                 float top_percent = amtDown / (float)tiles_height;
                 float bot_percent = (amtDown+ch) / (float)tiles_height;
 
                 ui_scrollbar({cw-SCROLL_WIDTH, 0, SCROLL_WIDTH, ch},
                              top_percent, bot_percent,
+                             &last_scroll_pos,
+                             tiles_height,
                              0);
 
             }
