@@ -469,28 +469,14 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             {
                 int SCROLL_WIDTH = 25;
 
-                u32 grey = 0xffbbbbbb;
-                ui_reusable_quad.set_texture(&grey, 1, 1);
-                ui_reusable_quad.set_verts(cw-SCROLL_WIDTH, 0, SCROLL_WIDTH, ch);
-                ui_reusable_quad.render(.55);//.35);
-
-
                 float amtDown = (float)last_scroll_pos; // note this is set about
 
                 float top_percent = amtDown / (float)tiles_height;
-                float bot_percent = (amtDown+(float)ch) / (float)tiles_height;
+                float bot_percent = (amtDown+ch) / (float)tiles_height;
 
-                float top_pixels = top_percent * (float)ch;
-                float bot_pixels = bot_percent * (float)ch;
-
-                float size = roundf(bot_pixels-top_pixels);
-                if (size < 10) size = 10;
-
-                // u32 dgrey = 0xff888888;
-                u32 dgrey = 0xffbbbbbb;
-                ui_reusable_quad.set_texture(&dgrey, 1, 1);
-                ui_reusable_quad.set_verts(cw-SCROLL_WIDTH, top_pixels, SCROLL_WIDTH, size);
-                ui_reusable_quad.render(.9);//.75);
+                ui_scrollbar({cw-SCROLL_WIDTH, 0, SCROLL_WIDTH, ch},
+                             top_percent, bot_percent,
+                             0);
 
             }
 

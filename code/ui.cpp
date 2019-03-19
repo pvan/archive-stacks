@@ -1,6 +1,15 @@
 
 
 
+// todo: audit this api
+// -float or int rects?
+// -how to pass alignments in
+// -rects or components for size/positions?
+// -and how to pass auto w/h (most funcs defaults to this now)
+// -names
+// -deferred rendering probably
+
+
 const int UI_TEXT_SIZE = 24;
 const int UI_RESUSABLE_BUFFER_SIZE = 256;
 
@@ -231,8 +240,6 @@ bool ui_mouse_over_rect(int mx, int my, ui_rect rect) {
 
 
 
-// todo: audit this api
-
 rect ui_button(char *text, float x, float y, bool hpos, bool vpos, void(*effect)(int), int arg=0)
 {
     ttf_rect tr = ui_text(text, x, y, hpos, vpos); //RenderTextCenter(x, y, text);
@@ -258,11 +265,32 @@ rect ui_button_invisible(rect br, void(*effect)(int), int arg=0)
 
 
 
-// // note takes two values, for top/bottom of scroll bar indicator (for variable size)
-// float scroll_bar(rect r, float value1, float value2, void(*effect)(int), int arg=0)
-// {
+// note takes two values, for top/bottom of scroll bar indicator (for variable size)
+void ui_scrollbar(recti r, float top_percent, float bot_percent, void(*effect)(int), int arg=0)
+{
 
-// }
+    ui_draw_rect(r, 0xffbbbbbb, .4); //0xffbbbbbb, .35
+    // u32 grey = 0xffbbbbbb;
+    // ui_reusable_quad.set_texture(&grey, 1, 1);
+    // ui_reusable_quad.set_verts(cw-SCROLL_WIDTH, 0, SCROLL_WIDTH, ch);
+    // ui_reusable_quad.render(.55);//.35);
+
+
+    float top_pixels = top_percent * (float)r.h;
+    float bot_pixels = bot_percent * (float)r.h;
+
+    float size = roundf(bot_pixels-top_pixels);
+    if (size < 10) size = 10;
+
+    // todo: round?
+    ui_draw_rect({r.x, (int)top_pixels, r.w, (int)size}, 0xffdddddd, .9); //0xff888888, .75
+    // ui_draw_rect({r.x+1, (int)top_pixels+1, r.w-2, (int)size-2}, 0xff888888, .9); //, .75
+    // // u32 dgrey = 0xff888888;
+    // u32 dgrey = 0xffbbbbbb;
+    // ui_reusable_quad.set_texture(&dgrey, 1, 1);
+    // ui_reusable_quad.set_verts(cw-SCROLL_WIDTH, top_pixels, SCROLL_WIDTH, size);
+    // ui_reusable_quad.render(.9);//.75);
+}
 
 
 
