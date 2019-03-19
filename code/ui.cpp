@@ -8,6 +8,7 @@
 // -and how to pass auto w/h (most funcs defaults to this now)
 // -names
 // -deferred rendering probably
+// -compress call chain?
 
 
 const int UI_TEXT_SIZE = 24;
@@ -32,78 +33,6 @@ opengl_quad ui_font_quad;
 
 void ui_init(bitmap baked_font) {
     ui_font_atlas = baked_font;
-}
-
-
-
-//
-// store our render commands to render last after having all the elements
-
-// todo: what language to use here? queue? command? etc?
-
-// keeps pointer to texture so make sure not to change textures after passing them in
-struct ui_deferred_quad {
-    rect rect;
-    bitmap img; // recall the embedded memory
-    float alpha;
-    bool free_mem_after_render = 0;
-    bool operator==(ui_deferred_quad o) { return rect==o.rect && img.data==o.img.data && alpha==o.alpha; }
-    void render() {
-        // todo: consider: check if img memory is still vaid here somehow?
-        if (!ui_reusable_quad.created) ui_reusable_quad.create(0,0,1,1);
-        ui_reusable_quad.set_texture(img.data, img.w, img.h);
-        ui_reusable_quad.set_verts(rect.x, rect.y, rect.w, rect.h);
-        ui_reusable_quad.render(alpha);
-        if (free_mem_after_render) { free(img.data); } // gotta be a better way.. handle all memory outside ui_*?
-    }
-};
-
-DEFINE_TYPE_POOL(ui_deferred_quad);
-
-ui_deferred_quad_pool ui_deferred_quads;
-
-void AddRenderQuad(rect r, bitmap img, float alpha, bool free_mem_after_render) {
-    ui_deferred_quads.add({r, img, alpha, free_mem_after_render});
-}
-
-void ui_RenderDeferredQuads() {
-    for (int i = 0; i < ui_deferred_quads.count; i++) {
-        ui_deferred_quads[i].render();
-    }
-}
-
-
-
-//
-//
-
-
-
-void ui_draw_rect(ui_rect r, u32 col = 0, float a = 1) {
-    // have to allocate col now since we're keeping the mem for later
-    // todo: free this at end of frame
-    u32 *colmem = (u32*)malloc(sizeof(u32));
-    *colmem = col;
-    AddRenderQuad(to_rectf(r), {colmem,1,1}, a, true);
-    // if (!ui_reusable_quad.created) ui_reusable_quad.create(0,0,1,1);
-    // ui_reusable_quad.set_texture(&col, 1, 1);
-    // ui_reusable_quad.set_verts(r.x, r.y, r.w, r.h);
-    // ui_reusable_quad.render(a);
-}
-void ui_highlight(ui_rect r) {
-    u32 white = 0xffffffff;
-    // have to allocate col now since we're keeping the mem for later
-    // todo: free this at end of frame
-    u32 *colmem = (u32*)malloc(sizeof(u32));
-    *colmem = white;
-    AddRenderQuad(to_rectf(r), {colmem,1,1}, 0.3, true);
-    // if (!ui_reusable_quad.created) ui_reusable_quad.create(0,0,1,1);
-    // ui_reusable_quad.set_texture(&white, 1, 1);
-    // ui_reusable_quad.set_verts(r.x, r.y, r.w, r.h);
-    // ui_reusable_quad.render(0.3);
-}
-void ui_highlight(rect r) {
-    ui_highlight(to_recti(r));
 }
 
 
@@ -146,11 +75,6 @@ DEFINE_TYPE_POOL(button);
 
 button_pool buttons;
 
-void ui_Reset() {  // call every frame
-    buttons.empty_out();
-    ui_deferred_quads.empty_out();
-    // buttons.count = 0; // same thing atm
-}
 
 button TopMostButtonUnderPoint(float mx, float my) {
     button result = {0};
@@ -172,23 +96,117 @@ button TopMostButtonUnderPoint(float mx, float my) {
         return {0};
 }
 
-// void DefaultButtonHighlight(int pointer_to_rect_will_this_even_work) {
-//     rect *r = (rect*)pointer_to_rect_will_this_even_work;
-//     ui_highlight(to_recti(*r));
-// }
 
-void ButtonsHighlight(float mx, float my) {
+
+//
+// store our render commands to render last after having all the elements
+
+// todo: what language to use here? queue? command? etc?
+
+// keeps pointer to texture so make sure not to change textures after passing them in
+struct ui_deferred_quad {
+    rect rect;
+    bitmap img; // recall the embedded memory
+    float alpha;
+    bool free_mem_after_render = 0;
+    bool operator==(ui_deferred_quad o) { return rect==o.rect && img.data==o.img.data && alpha==o.alpha; }
+    void render() {
+        // todo: consider: check if img memory is still vaid here somehow?
+        if (!ui_reusable_quad.created) ui_reusable_quad.create(0,0,1,1);
+        if (img.data) ui_reusable_quad.set_texture(img.data, img.w, img.h); // !img.data used intentionally in the case of invisible elements
+        ui_reusable_quad.set_verts(rect.x, rect.y, rect.w, rect.h);
+        ui_reusable_quad.render(alpha);
+        if (free_mem_after_render) { free(img.data); } // gotta be a better way.. handle all memory outside ui_*?
+    }
+};
+
+DEFINE_TYPE_POOL(ui_deferred_quad);
+
+ui_deferred_quad_pool ui_deferred_quads;
+
+void AddRenderQuad(rect r, bitmap img, float alpha, bool free_mem_after_render) {
+    ui_deferred_quads.add({r, img, alpha, free_mem_after_render});
+}
+
+void ui_render_hl_immediately(ui_rect r) {
+    u32 white = 0xffffffff;
+    if (!ui_reusable_quad.created) ui_reusable_quad.create(0,0,1,1);
+    ui_reusable_quad.set_texture(&white, 1, 1);
+    ui_reusable_quad.set_verts(r.x, r.y, r.w, r.h);
+    ui_reusable_quad.render(0.3);
+}
+void ui_render_hl_immediately(rect r) {
+    ui_render_hl_immediately(to_recti(r));
+}
+
+
+void ui_RenderDeferredQuads(float mx, float my) {
     button top_most = TopMostButtonUnderPoint(mx, my);
     rect r = top_most.rect;
-    if (r.w != 0 && r.h != 0) {
 
-        if (top_most.highlight)
-            ui_highlight(r);
+    for (int i = 0; i < ui_deferred_quads.count; i++) {
+        ui_deferred_quads[i].render();
 
-        if (top_most.on_mouseover)
-            top_most.on_mouseover(top_most.mouseover_arg);
+        // draw highlight quad here for now until we get a better system
+        if (ui_deferred_quads[i].rect == r) { // should be some better way to check this
+            if (r.w != 0 && r.h != 0) {
+                ui_render_hl_immediately(r);
+            }
+        }
+
     }
 }
+
+
+
+//
+//
+
+
+void ui_Reset() {  // call every frame
+    buttons.empty_out();
+    ui_deferred_quads.empty_out();
+    // buttons.count = 0; // same thing atm
+}
+
+void ui_draw_rect(ui_rect r, u32 col = 0, float a = 1) {
+    // have to allocate col now since we're keeping the mem for later
+    // todo: free this at end of frame
+    u32 *colmem = (u32*)malloc(sizeof(u32));
+    *colmem = col;
+    AddRenderQuad(to_rectf(r), {colmem,1,1}, a, true);
+    // if (!ui_reusable_quad.created) ui_reusable_quad.create(0,0,1,1);
+    // ui_reusable_quad.set_texture(&col, 1, 1);
+    // ui_reusable_quad.set_verts(r.x, r.y, r.w, r.h);
+    // ui_reusable_quad.render(a);
+}
+// void ui_highlight(ui_rect r) {
+//     u32 white = 0xffffffff;
+//     // have to allocate col now since we're keeping the mem for later
+//     // todo: free this at end of frame
+//     u32 *colmem = (u32*)malloc(sizeof(u32));
+//     *colmem = white;
+//     AddRenderQuad(to_rectf(r), {colmem,1,1}, 0.3, true);
+//     // if (!ui_reusable_quad.created) ui_reusable_quad.create(0,0,1,1);
+//     // ui_reusable_quad.set_texture(&white, 1, 1);
+//     // ui_reusable_quad.set_verts(r.x, r.y, r.w, r.h);
+//     // ui_reusable_quad.render(0.3);
+// }
+
+
+// try hl'ing at same time as render, now that it's deferred
+// void ButtonsHighlight(float mx, float my) {
+//     button top_most = TopMostButtonUnderPoint(mx, my);
+//     rect r = top_most.rect;
+//     if (r.w != 0 && r.h != 0) {
+
+//         if (top_most.highlight)
+//             ui_highlight(r);
+
+//         if (top_most.on_mouseover)
+//             top_most.on_mouseover(top_most.mouseover_arg);
+//     }
+// }
 
 // store our dragging state across multiple frames
 // so we can click and drag on something and move off that thing and still be dragging
@@ -227,6 +245,7 @@ void ButtonsDrag(float mx, float my, bool mouseDown) {
 }
 
 
+// should call this addbutton callback maybe?
 void AddButton(rect r, bool hl, void(*on_click)(int),int click_arg, void(*on_mouseover)(int)=0,int mouseover_arg=0)
 {
     buttons.add({r,1, hl, false,0,0, on_click,click_arg, on_mouseover,mouseover_arg});
@@ -234,6 +253,11 @@ void AddButton(rect r, bool hl, void(*on_click)(int),int click_arg, void(*on_mou
     // if (buttonCount >= buttonAlloc) { buttonAlloc*=2;  buttons = (Button*)realloc(buttons, buttonAlloc * sizeof(Button)); }
     // buttons[buttonCount++] = {r,z,  on_click,click_arg,  on_mouseover,mouseover_arg};
 }
+
+// void AddImageButton(rect r, bitmap img, void(*on_click)(int),int click_arg) {
+//     buttons.add({r, 1, true, false,0,0, on_click, click_arg, 0,0});
+//     AddRenderQuad(r, img, 1/*alpha*/, false);
+// }
 
 void AddScrollbar(rect r, bool hl, float *callbackvalue, float callbackscale) {
     buttons.add({r,1, hl, true,callbackvalue,callbackscale, 0,0, 0,0});
@@ -347,11 +371,23 @@ rect ui_button(char *text, float x, float y, bool hpos, bool vpos, void(*effect)
     return r;
 }
 
-rect ui_button_invisible(rect br, void(*effect)(int), int arg=0)
+// kind of a hack so we can highlight tiles without bringing them into this system
+// (they have their own opengl_quads so they don't re-send textures to the gpu every frame)
+rect ui_button_invisible_highlight(rect br, void(*effect)(int), int arg=0)
 {
+    // ttf_rect tr = ui_text("#", br.x, br.y, true, true); //RenderTextCenter(x, y, text);
     AddButton(br, true, effect, arg);
+    AddRenderQuad(br, {0}, 0, false); // 0 alpha, button handles any highlighting
     return br;
 }
+
+// // created for drawing tiles basically
+// void ui_draw_bitmap_button(rect r, bitmap img, void(*effect)(int), int arg=0) {
+//     // use this after removing the _invisible buttons on every tile
+//     // AddImageButton(r, img, effect, arg);
+
+//     AddRenderQuad(r, img, 1/*alpha*/, false);
+// }
 
 // rect ui_button(char *text, rect br, bool hpos, bool vpos, void(*effect)(int), int arg=0)
 // {

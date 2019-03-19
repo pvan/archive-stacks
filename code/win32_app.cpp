@@ -459,7 +459,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                 // if (tiles[viewing_file_index].IsOnScreen(ch)) {
                 rect r = {tiles[viewing_file_index].pos.x, tiles[viewing_file_index].pos.y,
                           tiles[viewing_file_index].size.w, tiles[viewing_file_index].size.h};
-                ui_button_invisible(r, &OpenTagMenu, viewing_file_index);
+                ui_button_invisible_highlight(r, &OpenTagMenu, viewing_file_index);
 
                 // nevermind, still need some sort of ordering or we'll hl even when hovering over hud
                 // // highlight here so HUD is drawn overtop highlight rect
@@ -636,12 +636,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 
         // button handling & reset
-        ButtonsHighlight(input.mouseX, input.mouseY);
+        // ButtonsHighlight(input.mouseX, input.mouseY);
         ButtonsDrag(input.mouseX, input.mouseY, input.mouseL);
         if (keysDown.mouseL) { // or check this inside buttonsclick?
             ButtonsClick(input.mouseX, input.mouseY);
         }
-        ui_RenderDeferredQuads();
+        ui_RenderDeferredQuads(input.mouseX, input.mouseY); // pass mouse pos for highlighting
         ui_Reset(); // call at the end or start of every frame so buttons don't carry over between frames
 
 
