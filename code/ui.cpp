@@ -35,26 +35,81 @@ void ui_init(bitmap baked_font) {
 }
 
 
+
+//
+// store our render commands to render last after having all the elements
+
+// todo: what language to use here? queue? command? etc?
+
+// keeps pointer to texture so make sure not to change textures after passing them in
+struct ui_deferred_quad {
+    rect rect;
+    bitmap img; // recall the embedded memory
+    float alpha;
+    bool free_mem_after_render = 0;
+    bool operator==(ui_deferred_quad o) { return rect==o.rect && img.data==o.img.data && alpha==o.alpha; }
+    void render() {
+        // todo: consider: check if img memory is still vaid here somehow?
+        if (!ui_reusable_quad.created) ui_reusable_quad.create(0,0,1,1);
+        ui_reusable_quad.set_texture(img.data, img.w, img.h);
+        ui_reusable_quad.set_verts(rect.x, rect.y, rect.w, rect.h);
+        ui_reusable_quad.render(alpha);
+        if (free_mem_after_render) { free(img.data); } // gotta be a better way.. handle all memory outside ui_*?
+    }
+};
+
+DEFINE_TYPE_POOL(ui_deferred_quad);
+
+ui_deferred_quad_pool ui_deferred_quads;
+
+void AddRenderQuad(rect r, bitmap img, float alpha, bool free_mem_after_render) {
+    ui_deferred_quads.add({r, img, alpha, free_mem_after_render});
+}
+
+void ui_RenderDeferredQuads() {
+    for (int i = 0; i < ui_deferred_quads.count; i++) {
+        ui_deferred_quads[i].render();
+    }
+}
+
+
+
+//
+//
+
+
+
 void ui_draw_rect(ui_rect r, u32 col = 0, float a = 1) {
-    if (!ui_reusable_quad.created) ui_reusable_quad.create(0,0,1,1);
-    ui_reusable_quad.set_texture(&col, 1, 1);
-    ui_reusable_quad.set_verts(r.x, r.y, r.w, r.h);
-    ui_reusable_quad.render(a);
+    // have to allocate col now since we're keeping the mem for later
+    // todo: free this at end of frame
+    u32 *colmem = (u32*)malloc(sizeof(u32));
+    *colmem = col;
+    AddRenderQuad(to_rectf(r), {colmem,1,1}, a, true);
+    // if (!ui_reusable_quad.created) ui_reusable_quad.create(0,0,1,1);
+    // ui_reusable_quad.set_texture(&col, 1, 1);
+    // ui_reusable_quad.set_verts(r.x, r.y, r.w, r.h);
+    // ui_reusable_quad.render(a);
 }
 void ui_highlight(ui_rect r) {
     u32 white = 0xffffffff;
-    if (!ui_reusable_quad.created) ui_reusable_quad.create(0,0,1,1);
-    ui_reusable_quad.set_texture(&white, 1, 1);
-    ui_reusable_quad.set_verts(r.x, r.y, r.w, r.h);
-    ui_reusable_quad.render(0.3);
+    // have to allocate col now since we're keeping the mem for later
+    // todo: free this at end of frame
+    u32 *colmem = (u32*)malloc(sizeof(u32));
+    *colmem = white;
+    AddRenderQuad(to_rectf(r), {colmem,1,1}, 0.3, true);
+    // if (!ui_reusable_quad.created) ui_reusable_quad.create(0,0,1,1);
+    // ui_reusable_quad.set_texture(&white, 1, 1);
+    // ui_reusable_quad.set_verts(r.x, r.y, r.w, r.h);
+    // ui_reusable_quad.render(0.3);
 }
 void ui_highlight(rect r) {
     ui_highlight(to_recti(r));
 }
 
 
+
 //
-// buttons
+// buttons / interactable elements
 
 // todo: rename to ui_element ?
 struct button {
@@ -91,8 +146,9 @@ DEFINE_TYPE_POOL(button);
 
 button_pool buttons;
 
-void ButtonsReset() {  // call every frame
+void ui_Reset() {  // call every frame
     buttons.empty_out();
+    ui_deferred_quads.empty_out();
     // buttons.count = 0; // same thing atm
 }
 

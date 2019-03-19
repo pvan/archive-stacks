@@ -13,6 +13,7 @@ void DEBUGPRINT(u64 ui) { sprintf(debugprintbuffer, "%lli\n", ui); OutputDebugSt
 void DEBUGPRINT(float f) { sprintf(debugprintbuffer, "%f\n", f); OutputDebugString(debugprintbuffer); }
 void DEBUGPRINT(char *s) { sprintf(debugprintbuffer, "%s\n", s); OutputDebugString(debugprintbuffer); }
 void DEBUGPRINT(char *s, int i) { sprintf(debugprintbuffer, s, i); OutputDebugString(debugprintbuffer); }
+void DEBUGPRINT(char *s, u32 i) { sprintf(debugprintbuffer, s, i); OutputDebugString(debugprintbuffer); }
 void DEBUGPRINT(char *s, char *s1) { sprintf(debugprintbuffer, s, s1); OutputDebugString(debugprintbuffer); }
 void DEBUGPRINT(char *s, char *s1, char *s2) { sprintf(debugprintbuffer, s, s1, s2); OutputDebugString(debugprintbuffer); }
 void DEBUGPRINT(char *s, float f) { sprintf(debugprintbuffer, s, f); OutputDebugString(debugprintbuffer); }
@@ -469,7 +470,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             {
                 int SCROLL_WIDTH = 25;
 
-                float amtDown = last_scroll_pos; // note this is set about
+                float amtDown = last_scroll_pos; // note this is set above
 
                 float top_percent = amtDown / (float)tiles_height;
                 float bot_percent = (amtDown+ch) / (float)tiles_height;
@@ -640,13 +641,18 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         if (keysDown.mouseL) { // or check this inside buttonsclick?
             ButtonsClick(input.mouseX, input.mouseY);
         }
-        ButtonsReset(); // call at the end or start of every frame so buttons don't carry over between frames
+        ui_RenderDeferredQuads();
+        ui_Reset(); // call at the end or start of every frame so buttons don't carry over between frames
 
 
 
         opengl_swap();
 
         if (!measured_first_frame_time) { metric_time_to_first_frame = time_now() - time_at_startup; measured_first_frame_time = true; }
+
+
+
+
 
 
 
