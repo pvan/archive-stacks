@@ -35,7 +35,10 @@ void ui_highlight(ui_rect r) {
     if (!ui_reusable_quad.created) ui_reusable_quad.create(0,0,1,1);
     ui_reusable_quad.set_texture(&white, 1, 1);
     ui_reusable_quad.set_verts(r.x, r.y, r.w, r.h);
-    ui_reusable_quad.render(0.4);
+    ui_reusable_quad.render(0.3);
+}
+void ui_highlight(rect r) {
+    ui_highlight(to_recti(r));
 }
 
 //
@@ -44,6 +47,7 @@ void ui_highlight(ui_rect r) {
 struct button {
     rect rect;
     float z_level;
+    bool highlight;
 
     void (*on_click)(int);
     int click_arg;
@@ -83,6 +87,7 @@ button TopMostButtonUnderPoint(float mx, float my) {
         rect r = buttons[i].rect;
         if (mx > r.x && mx <= r.x+r.w && my > r.y && my <= r.y+r.h) {
             // if (buttons[i].z_level > result.z_level) {
+                // note we keep checking the whole list, so we implicitly get the last/topmost rect
                 result = buttons[i];
                 found_at_least_one = true;
             // }
@@ -94,17 +99,18 @@ button TopMostButtonUnderPoint(float mx, float my) {
         return {0};
 }
 
+// void DefaultButtonHighlight(int pointer_to_rect_will_this_even_work) {
+//     rect *r = (rect*)pointer_to_rect_will_this_even_work;
+//     ui_highlight(to_recti(*r));
+// }
+
 void ButtonsHighlight(float mx, float my) {
     button top_most = TopMostButtonUnderPoint(mx, my);
     rect r = top_most.rect;
     if (r.w != 0 && r.h != 0) {
-        DEBUGPRINT("x:%f, w:%f\n", r.x, r.w);
-        // todo: or highlighting in mouseover handler?
-        ui_highlight(to_recti(r));
-        // u32 white = 0xffffffff;
-        // ui_reusable_quad.set_texture(&white, 1, 1);
-        // ui_reusable_quad.set_verts(r.x, r.y, r.w, r.h);
-        // ui_reusable_quad.render(0.5);
+
+        if (top_most.highlight)
+            ui_highlight(r);
 
         if (top_most.on_mouseover)
             top_most.on_mouseover(top_most.mouseover_arg);
@@ -117,9 +123,9 @@ void ButtonsClick(float mx, float my) {
         top_most.on_click(top_most.click_arg);
 }
 
-void AddButton(rect r, void(*on_click)(int),int click_arg, void(*on_mouseover)(int)=0,int mouseover_arg=0)
+void AddButton(rect r, bool hl, void(*on_click)(int),int click_arg, void(*on_mouseover)(int)=0,int mouseover_arg=0)
 {
-    buttons.add({r,1, on_click,click_arg, on_mouseover,mouseover_arg});
+    buttons.add({r,1, hl, on_click,click_arg, on_mouseover,mouseover_arg});
     // if (!buttons)                   { buttonAlloc=256; buttons = (Button*)malloc(          buttonAlloc * sizeof(Button)); }
     // if (buttonCount >= buttonAlloc) { buttonAlloc*=2;  buttons = (Button*)realloc(buttons, buttonAlloc * sizeof(Button)); }
     // buttons[buttonCount++] = {r,z,  on_click,click_arg,  on_mouseover,mouseover_arg};
@@ -225,27 +231,30 @@ bool ui_mouse_over_rect(int mx, int my, ui_rect rect) {
 
 
 
+// todo: audit this api
 
 rect ui_button(char *text, float x, float y, bool hpos, bool vpos, void(*effect)(int), int arg=0)
 {
     ttf_rect tr = ui_text(text, x, y, hpos, vpos); //RenderTextCenter(x, y, text);
     rect r = {(float)tr.x, (float)tr.y, (float)tr.w, (float)tr.h};
-    AddButton(r, effect, arg);
+    AddButton(r, true, effect, arg);
     return r;
 }
 
-// todo: audit this api
-rect ui_button(char *text, rect br, bool hpos, bool vpos, void(*effect)(int), int arg=0)
+rect ui_button_invisible(rect br, void(*effect)(int), int arg=0)
 {
-    // todo: test all hpos/vpos paths here, i dont think this will work for all
-    ttf_rect tr = ui_text(text, br.x, br.y, hpos, vpos); //RenderTextCenter(x, y, text);
-    // rect r = {(float)rr.x, (float)rr.y, (float)rr.w, (float)rr.h};
-    AddButton(br, effect, arg);
+    AddButton(br, true, effect, arg);
     return br;
 }
 
-
-
+// rect ui_button(char *text, rect br, bool hpos, bool vpos, void(*effect)(int), int arg=0)
+// {
+//     // todo: test all hpos/vpos paths here, i dont think this will work for all
+//     ttf_rect tr = ui_text(text, br.x, br.y, hpos, vpos); //RenderTextCenter(x, y, text);
+//     // rect r = {(float)rr.x, (float)rr.y, (float)rr.w, (float)rr.h};
+//     AddButton(br, effect, arg);
+//     return br;
+// }
 
 
 char ui_log_reuseable_mem[256];

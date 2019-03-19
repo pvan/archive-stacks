@@ -379,16 +379,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             }
 
 
-            // make invisible button on top of mouse-overed tile
-            // consider: what do you think about this, seems a little funny
-            if (input.point_in_client_area(cw,ch)) { // todo: where to put this check, here or with all click handling?
-                viewing_file_index = TileIndexMouseIsOver(tiles, input.mouseX, input.mouseY);
-                // if (tiles[viewing_file_index].IsOnScreen(ch)) {
-                rect r = {tiles[viewing_file_index].pos.x, tiles[viewing_file_index].pos.y,
-                          tiles[viewing_file_index].size.w, tiles[viewing_file_index].size.h};
-                ui_button("#", r, true,true, &OpenTagMenu, viewing_file_index);
-            }
-
             // if (keysDown.mouseL && input.point_in_client_area(cw,ch)) {
             //     app_mode = VIEWING_FILE;
 
@@ -457,7 +447,21 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                     t->display_quad.render(1);
 
                 }
+            }
 
+
+            // make invisible button on top of mouse-overed tile
+            // consider: what do you think about this, seems a little funny
+            if (input.point_in_client_area(cw,ch)) { // todo: where to put this check, here or with all click handling?
+                viewing_file_index = TileIndexMouseIsOver(tiles, input.mouseX, input.mouseY);
+                // if (tiles[viewing_file_index].IsOnScreen(ch)) {
+                rect r = {tiles[viewing_file_index].pos.x, tiles[viewing_file_index].pos.y,
+                          tiles[viewing_file_index].size.w, tiles[viewing_file_index].size.h};
+                ui_button_invisible(r, &OpenTagMenu, viewing_file_index);
+
+                // nevermind, still need some sort of ordering or we'll hl even when hovering over hud
+                // // highlight here so HUD is drawn overtop highlight rect
+                // ui_highlight(r);
             }
 
 
