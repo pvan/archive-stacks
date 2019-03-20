@@ -137,23 +137,23 @@ int gpu_upload_vertices(gpu_quad *quads, int quadcount) {
         gpu_quad q = quads[i];
 
         // TL
-        gpu_cached_verts[v++]=q.x0; gpu_cached_verts[v++]=q.y0; gpu_cached_verts[v++]=0; gpu_cached_verts[v++]=1; gpu_cached_verts[v++]=0;
+        gpu_cached_verts[v++]=q.x0; gpu_cached_verts[v++]=q.y0; gpu_cached_verts[v++]=1; gpu_cached_verts[v++]=1; gpu_cached_verts[v++]=1;
         gpu_cached_verts[v++]=q.u0; gpu_cached_verts[v++]=q.v0; gpu_cached_verts[v++]=q.alpha;
         // TR
-        gpu_cached_verts[v++]=q.x1; gpu_cached_verts[v++]=q.y0; gpu_cached_verts[v++]=0; gpu_cached_verts[v++]=1; gpu_cached_verts[v++]=0;
+        gpu_cached_verts[v++]=q.x1; gpu_cached_verts[v++]=q.y0; gpu_cached_verts[v++]=1; gpu_cached_verts[v++]=1; gpu_cached_verts[v++]=1;
         gpu_cached_verts[v++]=q.u1; gpu_cached_verts[v++]=q.v0; gpu_cached_verts[v++]=q.alpha;
         // BR
-        gpu_cached_verts[v++]=q.x1; gpu_cached_verts[v++]=q.y1; gpu_cached_verts[v++]=0; gpu_cached_verts[v++]=1; gpu_cached_verts[v++]=0;
+        gpu_cached_verts[v++]=q.x1; gpu_cached_verts[v++]=q.y1; gpu_cached_verts[v++]=1; gpu_cached_verts[v++]=1; gpu_cached_verts[v++]=1;
         gpu_cached_verts[v++]=q.u1; gpu_cached_verts[v++]=q.v1; gpu_cached_verts[v++]=q.alpha;
 
         // BR
-        gpu_cached_verts[v++]=q.x1; gpu_cached_verts[v++]=q.y1; gpu_cached_verts[v++]=0; gpu_cached_verts[v++]=1; gpu_cached_verts[v++]=0;
+        gpu_cached_verts[v++]=q.x1; gpu_cached_verts[v++]=q.y1; gpu_cached_verts[v++]=1; gpu_cached_verts[v++]=1; gpu_cached_verts[v++]=1;
         gpu_cached_verts[v++]=q.u1; gpu_cached_verts[v++]=q.v1; gpu_cached_verts[v++]=q.alpha;
         // TL
-        gpu_cached_verts[v++]=q.x0; gpu_cached_verts[v++]=q.y0; gpu_cached_verts[v++]=0; gpu_cached_verts[v++]=1; gpu_cached_verts[v++]=0;
+        gpu_cached_verts[v++]=q.x0; gpu_cached_verts[v++]=q.y0; gpu_cached_verts[v++]=1; gpu_cached_verts[v++]=1; gpu_cached_verts[v++]=1;
         gpu_cached_verts[v++]=q.u0; gpu_cached_verts[v++]=q.v0; gpu_cached_verts[v++]=q.alpha;
         // BL
-        gpu_cached_verts[v++]=q.x0; gpu_cached_verts[v++]=q.y1; gpu_cached_verts[v++]=0; gpu_cached_verts[v++]=1; gpu_cached_verts[v++]=0;
+        gpu_cached_verts[v++]=q.x0; gpu_cached_verts[v++]=q.y1; gpu_cached_verts[v++]=1; gpu_cached_verts[v++]=1; gpu_cached_verts[v++]=1;
         gpu_cached_verts[v++]=q.u0; gpu_cached_verts[v++]=q.v1; gpu_cached_verts[v++]=q.alpha;
 
     }
@@ -359,6 +359,73 @@ rect tf_create_quad_list_for_text_at_rect(char *text, float x, float y, gpu_quad
     return bb;
 }
 
+
+
+// for getting size of text before rendering it
+
+
+// basically how far above the baseline a glyph can go
+// used to positition drawn text by top edge
+int tf_cached_largest_ascent = 0;
+
+// ran once when baking and cached
+int tf_largest_baked_ascent() {
+    // float scale = stbtt_ScaleForPixelHeight(&ttfont, pixel_size);
+    int smallest_y = 10000;
+    for (int i = 0; i < 96; i++) {
+        // yoff appears to be basically what the y0 from stbtt_GetBakedQuad becomes
+        if (tf_bakedchars[i].yoff < smallest_y) smallest_y = tf_bakedchars[i].yoff;
+    }
+    return -smallest_y; // y0s are negative, return the farthest as a distance basically
+}
+
+
+
+// returns bounding box of rendered text
+// todo: or add optional "render" flag to tf_create_quad_list_for_text_at_rect(
+// and call that with the flag to get the size?
+rect tf_text_bounding_box(char *text, float screenX = 0, float screenY = 0) {
+
+    // to find bb
+    bool set_left_most_x = false;
+    float left_most_x = 0;
+    float right_most_x = 0;
+    float largest_y = 0;
+    float smallest_y = 10000;
+
+    float tx = screenX;
+    float ty = screenY;
+    while (*text) {
+        if (*text >= 32 && *text < 128) {
+            stbtt_aligned_quad q;
+            stbtt_GetBakedQuad(tf_bakedchars, 512,512, *text-32, &tx,&ty,&q,1);//1=opengl & d3d10+,0=d3d9
+
+            // x bounding box
+            if (!set_left_most_x) {
+                set_left_most_x = true;
+                left_most_x = q.x0;
+            }
+            right_most_x = q.x1;
+
+            // y bounding box
+            if (q.y0 > largest_y) largest_y = q.y0;
+            if (q.y1 > largest_y) largest_y = q.y1;
+            if (q.y0 < smallest_y) smallest_y = q.y0;
+            if (q.y1 < smallest_y) smallest_y = q.y1;
+        }
+        text++;
+    }
+    rect bb;
+    bb.x = left_most_x;
+    bb.w = right_most_x-left_most_x;
+    bb.y = smallest_y;
+    bb.h = largest_y-smallest_y;
+
+    return bb;
+}
+
+
+
 void tf_init(int fontsize) {
     tf_openfont();
     tf_fontatlas = tf_bakefont(fontsize);
@@ -366,8 +433,12 @@ void tf_init(int fontsize) {
     gpu_upload_texture(tf_fontatlas.data, tf_fontatlas.w, tf_fontatlas.h, tf_fonttexture);
 }
 
+
+
 //
 ////
+
+
 
 
 //

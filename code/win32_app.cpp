@@ -254,9 +254,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     ui_init(tf_fontatlas, tf_fonttexture);
 
 
-    opengl_quad quad;
-    quad.create(0,0,300,200);
-
 
 
     master_path = string::Create(L"E:\\inspiration test folder");
@@ -478,14 +475,14 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
             // scroll bar
             {
-                int SCROLL_WIDTH = 25;
+                float SCROLL_WIDTH = 25;
 
                 float amtDown = last_scroll_pos; // note this is set above
 
                 float top_percent = amtDown / (float)tiles_height;
                 float bot_percent = (amtDown+ch) / (float)tiles_height;
 
-                ui_scrollbar({cw-SCROLL_WIDTH, 0, SCROLL_WIDTH, ch},
+                ui_scrollbar({cw-SCROLL_WIDTH, 0, SCROLL_WIDTH, (float)ch},
                              top_percent, bot_percent,
                              &last_scroll_pos,
                              tiles_height,
@@ -506,7 +503,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                     int y = 0;
                     for (int i = 0; i < tag_list.count; i++) {
                         // ui_rect this_rect = get_text_size(tag_list[i].ToUTF8Reusable());
-                        ui_rect this_rect = ui_text(tag_list[i].ToUTF8Reusable(), x,y, UI_LEFT,UI_TOP, false);
+                        rect this_rect = ui_text(tag_list[i].ToUTF8Reusable(), x,y, UI_LEFT,UI_TOP, false);
                         if (x+this_rect.w > cw) { y+=this_rect.h; x=0; }
                         ui_button(tag_list[i].ToUTF8Reusable(), x,y, UI_LEFT,UI_TOP, 0);
                         x += this_rect.w;
