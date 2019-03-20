@@ -339,13 +339,9 @@ const int UI_BOTTOM = 4;
 // note we return rect with TL pos but take as input whatever (as specified by v/h pos)
 rect ui_text(char *text, float x, float y, int hpos, int vpos, bool render = true) {
 
-    // // without any changes, bb will be TL
+    // without any changes, bb will be TL
     rect bb = tf_text_bounding_box(text, x, y);
-    // // ui_rect bb = get_text_size(text, x, y);
 
-    int largest_ascent = find_largest_baked_ascent();
-    y += largest_ascent;
-    // DEBUGPRINT(largest_ascent);
 
     // by default here x,y will be left/top
     if (hpos == UI_RIGHT) x -= bb.w;
@@ -357,7 +353,7 @@ rect ui_text(char *text, float x, float y, int hpos, int vpos, bool render = tru
     int margin = 2;
 
     // calc rect for background
-    rect background_rect = {x, y-largest_ascent, bb.w, UI_TEXT_SIZE};
+    rect background_rect = {x, y, bb.w, UI_TEXT_SIZE};
     background_rect.x -= margin;
     background_rect.y -= margin;
     background_rect.w += margin*2;
@@ -368,27 +364,33 @@ rect ui_text(char *text, float x, float y, int hpos, int vpos, bool render = tru
                         (float)background_rect.x+background_rect.w, (float)background_rect.y+background_rect.h,
                         2/512.0,2/512.0};
 
+
+    // bg
     if (render) {
         bg_quad.alpha = 1;
         AddDeferredRectQuad(bg_quad);
     }
 
-    // old
-    // ui_rect final_bb = ttf_render_text(text, (float)x, (float)(y+margin), ui_font_atlas, &ui_font_quad, render);
 
-    // todo: where to put this allocation? up one level?
-    // if we leave it here, why not just nest these into one new api call
-    int quadsneeded = tf_how_many_quads_needed_for_text(text);
-    gpu_quad *quads = (gpu_quad*)malloc(quadsneeded*sizeof(gpu_quad));
-    tf_create_quad_list_for_text_at_rect(text, (float)x,(float)(y+margin), quads, quadsneeded);
+    // text
+    if (render) {
+        y += tf_cached_largest_ascent; // move y to top instead of baseline of text
 
-    if (render)
+        int quadsneeded = tf_how_many_quads_needed_for_text(text);
+        gpu_quad *quads = (gpu_quad*)malloc(quadsneeded*sizeof(gpu_quad));
+        tf_create_quad_list_for_text_at_rect(text, (float)x,(float)(y+margin), quads, quadsneeded);
+
         AddDeferredTextQuads(quads, quadsneeded);
 
-    // seems like a terrible way to do this,
-    // but just add an invisible rect above every text
-    // and if highlighted, chagne the alpha up from 0
+        free(quads);
+    }
+
+
+    // highlight
     if (render) {
+        // seems like a terrible way to do this,
+        // but just add an invisible rect above every text
+        // and if highlighted (cheked when rendering), change the alpha up from 0
         gpu_quad invisible_hl_quad = bg_quad;
         invisible_hl_quad.alpha = 0; // will get changed if the highlight quad in ui_RenderDeferredQuads
         // change uv to bottom right pixel of font atlas (hacked to be white)

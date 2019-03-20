@@ -428,9 +428,12 @@ rect tf_text_bounding_box(char *text, float screenX = 0, float screenY = 0) {
 
 void tf_init(int fontsize) {
     tf_openfont();
+
     tf_fontatlas = tf_bakefont(fontsize);
     tf_fonttexture = gpu_create_texture();
     gpu_upload_texture(tf_fontatlas.data, tf_fontatlas.w, tf_fontatlas.h, tf_fonttexture);
+
+    tf_cached_largest_ascent = tf_largest_baked_ascent();
 }
 
 
