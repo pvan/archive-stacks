@@ -32,14 +32,17 @@ void gpu_create_and_setup_global_vert_buffers() {
     glBindBuffer(GL_ARRAY_BUFFER, gpu_vbo);
 
     // pos attrib
-    glVertexAttribPointer(0/*loc*/, 2/*comps*/, GL_FLOAT, GL_FALSE, 7*sizeof(GLfloat), NULL);
+    glVertexAttribPointer(0/*loc*/, 2/*comps*/, GL_FLOAT, GL_FALSE, 8*sizeof(GLfloat), NULL);
     glEnableVertexAttribArray(0/*loc*/); // enable this attribute
     // color attrib
-    glVertexAttribPointer(1/*loc*/, 3/*comps*/, GL_FLOAT, GL_FALSE, 7*sizeof(GLfloat), (void*)(2*sizeof(float)));
+    glVertexAttribPointer(1/*loc*/, 3/*comps*/, GL_FLOAT, GL_FALSE, 8*sizeof(GLfloat), (void*)(2*sizeof(float)));
     glEnableVertexAttribArray(1/*loc*/); // enable this attribute
     // uv attrib
-    glVertexAttribPointer(2/*loc*/, 2/*comps*/, GL_FLOAT, GL_FALSE, 7*sizeof(GLfloat), (void*)(5*sizeof(float)));
+    glVertexAttribPointer(2/*loc*/, 2/*comps*/, GL_FLOAT, GL_FALSE, 8*sizeof(GLfloat), (void*)(5*sizeof(float)));
     glEnableVertexAttribArray(2/*loc*/); // enable this attribute
+    // alpha attrib
+    glVertexAttribPointer(3/*loc*/, 1/*comps*/, GL_FLOAT, GL_FALSE, 8*sizeof(GLfloat), (void*)(7*sizeof(float)));
+    glEnableVertexAttribArray(3/*loc*/); // enable this attribute
 
     // // without color attrib
     // // pos attrib
@@ -123,7 +126,7 @@ int gpu_upload_vertices(gpu_quad *quads, int quadcount) {
 
 
 
-    int floats_per_quad = 3/*verts per tri*/ * 2/*tris*/ * 7/*comps per vert*/;
+    int floats_per_quad = 3/*verts per tri*/ * 2/*tris*/ * 8/*comps per vert*/;
     int total_floats = quadcount*floats_per_quad;
 
     if (gpu_cached_verts) free(gpu_cached_verts);
@@ -134,29 +137,29 @@ int gpu_upload_vertices(gpu_quad *quads, int quadcount) {
         gpu_quad q = quads[i];
 
         // TL
-        gpu_cached_verts[v++]=q.x0; gpu_cached_verts[v++]=q.y0; gpu_cached_verts[v++]=q.alpha; gpu_cached_verts[v++]=1; gpu_cached_verts[v++]=1;
-        gpu_cached_verts[v++]=q.u0; gpu_cached_verts[v++]=q.v0;
+        gpu_cached_verts[v++]=q.x0; gpu_cached_verts[v++]=q.y0; gpu_cached_verts[v++]=0; gpu_cached_verts[v++]=1; gpu_cached_verts[v++]=0;
+        gpu_cached_verts[v++]=q.u0; gpu_cached_verts[v++]=q.v0; gpu_cached_verts[v++]=q.alpha;
         // TR
-        gpu_cached_verts[v++]=q.x1; gpu_cached_verts[v++]=q.y0; gpu_cached_verts[v++]=q.alpha; gpu_cached_verts[v++]=1; gpu_cached_verts[v++]=1;
-        gpu_cached_verts[v++]=q.u1; gpu_cached_verts[v++]=q.v0;
+        gpu_cached_verts[v++]=q.x1; gpu_cached_verts[v++]=q.y0; gpu_cached_verts[v++]=0; gpu_cached_verts[v++]=1; gpu_cached_verts[v++]=0;
+        gpu_cached_verts[v++]=q.u1; gpu_cached_verts[v++]=q.v0; gpu_cached_verts[v++]=q.alpha;
         // BR
-        gpu_cached_verts[v++]=q.x1; gpu_cached_verts[v++]=q.y1; gpu_cached_verts[v++]=q.alpha; gpu_cached_verts[v++]=1; gpu_cached_verts[v++]=1;
-        gpu_cached_verts[v++]=q.u1; gpu_cached_verts[v++]=q.v1;
+        gpu_cached_verts[v++]=q.x1; gpu_cached_verts[v++]=q.y1; gpu_cached_verts[v++]=0; gpu_cached_verts[v++]=1; gpu_cached_verts[v++]=0;
+        gpu_cached_verts[v++]=q.u1; gpu_cached_verts[v++]=q.v1; gpu_cached_verts[v++]=q.alpha;
 
         // BR
-        gpu_cached_verts[v++]=q.x1; gpu_cached_verts[v++]=q.y1; gpu_cached_verts[v++]=q.alpha; gpu_cached_verts[v++]=1; gpu_cached_verts[v++]=1;
-        gpu_cached_verts[v++]=q.u1; gpu_cached_verts[v++]=q.v1;
+        gpu_cached_verts[v++]=q.x1; gpu_cached_verts[v++]=q.y1; gpu_cached_verts[v++]=0; gpu_cached_verts[v++]=1; gpu_cached_verts[v++]=0;
+        gpu_cached_verts[v++]=q.u1; gpu_cached_verts[v++]=q.v1; gpu_cached_verts[v++]=q.alpha;
         // TL
-        gpu_cached_verts[v++]=q.x0; gpu_cached_verts[v++]=q.y0; gpu_cached_verts[v++]=q.alpha; gpu_cached_verts[v++]=1; gpu_cached_verts[v++]=1;
-        gpu_cached_verts[v++]=q.u0; gpu_cached_verts[v++]=q.v0;
+        gpu_cached_verts[v++]=q.x0; gpu_cached_verts[v++]=q.y0; gpu_cached_verts[v++]=0; gpu_cached_verts[v++]=1; gpu_cached_verts[v++]=0;
+        gpu_cached_verts[v++]=q.u0; gpu_cached_verts[v++]=q.v0; gpu_cached_verts[v++]=q.alpha;
         // BL
-        gpu_cached_verts[v++]=q.x0; gpu_cached_verts[v++]=q.y1; gpu_cached_verts[v++]=q.alpha; gpu_cached_verts[v++]=1; gpu_cached_verts[v++]=1;
-        gpu_cached_verts[v++]=q.u0; gpu_cached_verts[v++]=q.v1;
+        gpu_cached_verts[v++]=q.x0; gpu_cached_verts[v++]=q.y1; gpu_cached_verts[v++]=0; gpu_cached_verts[v++]=1; gpu_cached_verts[v++]=0;
+        gpu_cached_verts[v++]=q.u0; gpu_cached_verts[v++]=q.v1; gpu_cached_verts[v++]=q.alpha;
 
     }
 
     assert(v == total_floats);
-    int cached_vert_count = total_floats / 7/*comps per vert*/;
+    int cached_vert_count = total_floats / 8/*comps per vert*/;
 
     glBindVertexArray(gpu_vao); // need this here or no?
     glBindBuffer(GL_ARRAY_BUFFER, gpu_vbo);

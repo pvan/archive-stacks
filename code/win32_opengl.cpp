@@ -16,6 +16,7 @@ char *vertex_shader = MULTILINE_STRING
     layout (location = 0) in vec2 aPos;
     layout (location = 1) in vec3 aColor;
     layout (location = 2) in vec2 aUV;
+    layout (location = 3) in float aAlpha;
 
     out vec4 vertColor;
     out vec2 vertUV;
@@ -25,9 +26,9 @@ char *vertex_shader = MULTILINE_STRING
 
     void main()
     {
-        vertA = aColor.x;
-        // vertColor = vec4(aColor,1);
-        vertColor = vec4(1,1,1,1);
+        vertA = aAlpha;
+        vertColor = vec4(aColor,1);
+        // vertColor = vec4(1,1,1,1);
         // vertColor = vec4(1,1,1,aColor.x); // todo: hijacking color to pass an alpha in atm
         vertUV = aUV;
         vec4 ppp = vec4(aPos.x, aPos.y, 1, 1);
@@ -55,7 +56,7 @@ char *fragment_shader = MULTILINE_STRING
     {
         // fragColor = texture(tex, vertUV);
         // fragColor = texture(tex, vertUV) * color;
-        fragColor = texture(tex, vertUV);// * vertColor;
+        fragColor = texture(tex, vertUV) * vertColor;
         fragColor.rb = fragColor.br; // swap rb
         fragColor.a = alpha * vertA;
         // fragColor = texture(tex, vertUV) * vertColor * color;
