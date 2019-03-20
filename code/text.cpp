@@ -1,19 +1,248 @@
 
 
-#define STB_TRUETYPE_IMPLEMENTATION  // force following include to generate implementation
+#define STB_TRUETYPE_IMPLEMENTATION
 #include "../lib/stb_truetype.h"
 
 
-stbtt_fontinfo ttfont;
+// start of our new gpu api (move to gpu file)
+struct gpu_quad {
+    float x0, y0, u0, v0; // TL
+    float x1, y1, u1, v1; // BR
+};
+
+
+#define gpu_texture_id GLuint
+
+
+// create spot for texture on gpu
+// return id of texture
+gpu_texture_id gpu_create_texture() {
+    // create texture
+    GLuint texture;
+    glGenTextures(1, &texture);
+    // set texture params
+    glBindTexture(GL_TEXTURE_2D, texture);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);//GL_NEAREST_MIPMAP_LINEAR); // what to use?
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST); //GL_LINEAR
+    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    return texture;
+}
+
+// pass texture data to gpu
+// only supporting rgba format atm
+void gpu_upload_texture(u32 *tex, int w, int h, gpu_texture_id tex_id) {
+    // if (!texture_created) create_texture(); // could cache what id's we've created already?
+
+    glActiveTexture(GL_TEXTURE0); // texture unit   todo: curious, can you set texture unit after binding the texture?
+    glBindTexture(GL_TEXTURE_2D, tex_id); // todo: what happens if we bind a texture id we haven't created yet?
+
+    // todo look into
+    // glGetInternalFormativ(GL_TEXTURE_2D, GL_RGBA8, GL_TEXTURE_IMAGE_FORMAT, 1, &preferred_format).
+
+    // for now, just using one kind of data format on our textures: rgba
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, tex);
+    // glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, tex);
+
+    // todo check for GL_OUT_OF_MEMORY ?
+    glGenerateMipmap(GL_TEXTURE_2D); // i think we always need to call this even if we aren't using them
+}
+
+
+////
+//
+
+
+// new api design
+// tf_
+
+// seeing what it's like without abstracting the gpu data
+
+// trying to keep: the lower level the api, the more functional
+// (less state, less memory allocs, less side effects)
+
+
+//
+// state and inits...
+
+// right now just support one font
+// to change we could make a font struct with this data
+// and pass it in to the render functions
+
+u8 *tf_file_buffer = 0;  // opened font file
+
+stbtt_fontinfo tf_font;  // font info loaded by stb
+
+stbtt_bakedchar tf_bakedchars[96]; // ASCII 32..126 is 95 glyphs
+
+// let stb open and parse font
+void tf_openfont() // could pass in path
+{
+    tf_file_buffer = (u8*)malloc(1<<20);
+    fread(tf_file_buffer, 1, 1<<20, fopen("c:/windows/fonts/segoeui.ttf", "rb"));
+    // fread(ttf_file_buffer, 1, 1<<20, fopen("c:/windows/fonts/arial.ttf", "rb"));
+
+    if (!stbtt_InitFont(&tf_font, tf_file_buffer, 0)) {
+        MessageBox(0, "stbtt init font failed", 0,0);
+    }
+    // free(ttf_file_buffer);  // looks like we need to keep this around?
+}
+
+// return newly-allocated bitmap with baked chars on it
+bitmap tf_bakefont(float pixel_height)
+{
+    assert(tf_file_buffer);
+
+    int first_char = 32;
+    int num_chars = 96;
+
+    int bitmapW = 512;
+    int bitmapH = 512;
+    u8 *gray_bitmap = (u8*)malloc(bitmapW * bitmapH);
+    ZeroMemory(gray_bitmap, bitmapW * bitmapH);
+
+    // no guarantee this fits, esp with variable pixel_height
+    stbtt_BakeFontBitmap(tf_file_buffer, 0,
+                         pixel_height,
+                         gray_bitmap, bitmapW, bitmapH,
+                         first_char, num_chars,
+                         tf_bakedchars);
+
+    // stb gives us a 1-channel grey-scale image
+    // convert to full color bitmap here (or just add greyscale support to gpu api)
+    u8 *color_bitmap = (u8*)malloc(bitmapW * bitmapH * 4);
+    for (int px = 0; px < bitmapW; px++) {
+        for (int py = 0; py < bitmapH; py++) {
+            u8 *r = color_bitmap + ((py*bitmapW)+px)*4 + 0;
+            u8 *g = color_bitmap + ((py*bitmapW)+px)*4 + 1;
+            u8 *b = color_bitmap + ((py*bitmapW)+px)*4 + 2;
+            u8 *a = color_bitmap + ((py*bitmapW)+px)*4 + 3;
+
+            int sx = px;// + first_non_blank_column;
+            *r = *(gray_bitmap + ((py*bitmapW)+sx));
+            *g = *(gray_bitmap + ((py*bitmapW)+sx));
+            *b = *(gray_bitmap + ((py*bitmapW)+sx));
+            // *a = *(gray_bitmap);// + ((py*sourceW)+sx));
+            // if (bgA != 0) *a = bgA;
+            *a = 255;
+        }
+    }
+    free(gray_bitmap);
+
+    return {(u32*)color_bitmap, bitmapW, bitmapH};
+}
+
+
+// calls for rendering text...
+
+// call to know how much memory to pass in to create_quad_list
+int tf_how_many_quads_needed_for_text(char *text) {
+    int result = 0;
+    while (*text) {
+        if (*text >= 32 && *text < 128) {
+            result++;
+        }
+    }
+    return result;
+}
+
+// caller passes in quad memory to be filled in
+// use tf_how_many_quads_needed_for_text to know how much memory to pass in
+// return bounding box of all resulting quads
+rect tf_create_quad_list_for_text_at_rect(char *text, rect r, gpu_quad *quadlist, int quadcount) {
+
+    assert(quadlist && quadcount>0);
+
+    // to find bb
+    bool set_left_most_x = false;
+    float left_most_x = 0;
+    float right_most_x = 0;
+    float largest_y = 0;
+    float smallest_y = 10000;
+
+    int quadcountsofar = 0;
+
+    float tx = r.x; // i think these keep track of where next quad goes
+    float ty = r.y; // (updated by stbtt_GetBakedQuad)
+    while (*text) {
+        if (*text >= 32 && *text < 128) {
+            assert(quadcountsofar+1 < quadcount);
+            stbtt_aligned_quad q;
+            stbtt_GetBakedQuad(tf_bakedchars, 512,512, *text-32, &tx,&ty,&q,1);//1=opengl & d3d10+,0=d3d9
+            quadlist[quadcountsofar++] = {q.x0,q.y0,q.s0,q.t0, q.x1,q.y1,q.s1,q.t1}; // structs are the same, but being explicit
+            // // DEBUGPRINT("u0: %f  u1: %f \n", q.s0, q.s1);
+            // // DEBUGPRINT("v0: %f  v1: %f \n", q.t0, q.t1);
+            // if (render) {
+            //     render_quad->set_verts_uvs(q.x0, q.y0, q.x1-q.x0, q.y1-q.y0,
+            //                            q.s0, q.s1, q.t0, q.t1);
+            //     render_quad->render(1);
+            // }
+
+            // x bounding box
+            if (!set_left_most_x) {
+                set_left_most_x = true;
+                left_most_x = q.x0;
+            }
+            right_most_x = q.x1;
+
+            // y bounding box
+            if (q.y0 > largest_y) largest_y = q.y0;
+            if (q.y1 > largest_y) largest_y = q.y1;
+            if (q.y0 < smallest_y) smallest_y = q.y0;
+            if (q.y1 < smallest_y) smallest_y = q.y1;
+        }
+        ++text;
+    }
+    rect bb;
+    bb.x = left_most_x;
+    bb.w = right_most_x-left_most_x;
+    bb.y = smallest_y;
+    bb.h = largest_y-smallest_y;
+
+    return bb;
+    // return {
+    //     (int)floor(bb.x),
+    //     (int)floor(bb.y),
+    //     (int)ceil(bb.w),
+    //     (int)ceil(bb.h)
+    // };
+}
+
+
+//
+////
+
+
+//
+// old api
 
 
 
+stbtt_fontinfo ttfont;  // font info loaded by stb
+
+u8 *ttf_file_buffer = 0;  // opened font file
 
 
-u8 *ttf_file_buffer = 0;
+void ttf_init()
+{
+    ttf_file_buffer = (u8*)malloc(1<<20);
+    fread(ttf_file_buffer, 1, 1<<20, fopen("c:/windows/fonts/segoeui.ttf", "rb"));
+    // fread(ttf_file_buffer, 1, 1<<20, fopen("c:/windows/fonts/arial.ttf", "rb"));
+
+    if (!stbtt_InitFont(&ttfont, ttf_file_buffer, 0))
+    {
+        MessageBox(0, "stbtt init font failed", 0,0);
+    }
+    // free(ttf_file_buffer);  // looks like we need to keep this around?
+}
+
+
+
+struct ttf_rect {int x, y, w, h;};
 
 
 stbtt_bakedchar cdata[96]; // ASCII 32..126 is 95 glyphs
+
 
 // should just cache this
 int find_largest_baked_ascent(/*float pixel_size*/) {
@@ -27,7 +256,6 @@ int find_largest_baked_ascent(/*float pixel_size*/) {
 }
 
 
-struct ttf_rect {int x, y, w, h;};
 
 // todo: batch verts into one buffer
 // returns bounding box of rendered text
@@ -103,6 +331,7 @@ ttf_rect ttf_render_text(char *text, float screenX, float screenY,
 }
 
 
+
 // return bitmap with baked chars on it
 bitmap ttf_bake(float pixel_height)
 {
@@ -150,19 +379,6 @@ bitmap ttf_bake(float pixel_height)
     return {(u32*)color_bitmap, bitmapW, bitmapH};
 }
 
-
-void ttf_init()
-{
-    ttf_file_buffer = (u8*)malloc(1<<20);
-    fread(ttf_file_buffer, 1, 1<<20, fopen("c:/windows/fonts/segoeui.ttf", "rb"));
-    // fread(ttf_file_buffer, 1, 1<<20, fopen("c:/windows/fonts/arial.ttf", "rb"));
-
-    if (!stbtt_InitFont(&ttfont, ttf_file_buffer, 0))
-    {
-        MessageBox(0, "stbtt init font failed", 0,0);
-    }
-    // free(ttf_file_buffer);  // looks like we need to keep this around?
-}
 
 // todo: return height as well
 // todo: call this in ttf_create_bitmap
