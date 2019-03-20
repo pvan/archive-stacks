@@ -96,6 +96,9 @@ void gpu_upload_texture(u32 *tex, int w, int h, gpu_texture_id tex_id) {
     // todo check for GL_OUT_OF_MEMORY ?
     glGenerateMipmap(GL_TEXTURE_2D); // i think we always need to call this even if we aren't using them
 }
+void gpu_upload_texture(bitmap img, gpu_texture_id tex_id) {
+    gpu_upload_texture(img.data, img.w, img.h, tex_id);
+}
 
 
 
@@ -279,15 +282,6 @@ bitmap tf_bakefont(float pixel_height)
     }
     free(gray_bitmap);
 
-    // omg remove this
-    u8 *r = color_bitmap + ((0*bitmapW)+0)*4 + 0;
-    u8 *g = color_bitmap + ((0*bitmapW)+0)*4 + 1;
-    u8 *b = color_bitmap + ((0*bitmapW)+0)*4 + 2;
-    u8 *a = color_bitmap + ((0*bitmapW)+0)*4 + 3;
-    *r = 0xff;
-    *g = 0xff;
-    *b = 0xff;
-
     return {(u32*)color_bitmap, bitmapW, bitmapH};
 }
 
@@ -364,7 +358,7 @@ rect tf_create_quad_list_for_text_at_rect(char *text, float x, float y, gpu_quad
 
 void tf_init(int fontsize) {
     tf_openfont();
-    bitmap tf_fontatlas = tf_bakefont(fontsize);
+    tf_fontatlas = tf_bakefont(fontsize);
     tf_fonttexture = gpu_create_texture();
     gpu_upload_texture(tf_fontatlas.data, tf_fontatlas.w, tf_fontatlas.h, tf_fonttexture);
 }

@@ -31,8 +31,17 @@ rect to_rectf(recti r) { return {(float)r.x, (float)r.y, (float)r.w, (float)r.h}
 bitmap ui_font_atlas;
 opengl_quad ui_font_quad;
 
-void ui_init(bitmap baked_font) {
+void ui_init(bitmap baked_font, gpu_texture_id atlas_tex_id) {
     ui_font_atlas = baked_font;
+
+
+    // force change last pixel to white and reupload
+    // we use this pixel when drawing solid-color quads
+    // (so we can use the same texture as our letters)
+    // uv for this would be 511/512
+    // todo: magic numbers
+    baked_font.data[512*512-1] = 0xffffffff;
+    gpu_upload_texture(baked_font, atlas_tex_id);
 }
 
 
@@ -410,10 +419,10 @@ ui_rect ui_text(char *text, int x, int y, int hpos, int vpos, bool render = true
         gpu_quad invisible_hl_quad = bg_quad;
         invisible_hl_quad.alpha = 0; // will get changed if the highlight quad in ui_RenderDeferredQuads
         // change uv to bottom right pixel of font atlas (hacked to be white)
-        invisible_hl_quad.u0 = 0;
-        invisible_hl_quad.v0 = 0;
-        invisible_hl_quad.u1 = 1.0/512.0;
-        invisible_hl_quad.v1 = 1.0/512.0;
+        invisible_hl_quad.u0 = 511.0/512.0;
+        invisible_hl_quad.v0 = 511.0/512.0;
+        invisible_hl_quad.u1 = 1.0;
+        invisible_hl_quad.v1 = 1.0;
         AddDeferredRectQuad(invisible_hl_quad);
     }
 

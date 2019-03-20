@@ -251,7 +251,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     tf_init(UI_TEXT_SIZE);   // where to set font size, specifically, though?
 
 
-    ui_init(baked_font);
+    ui_init(tf_fontatlas, tf_fonttexture);
 
 
     opengl_quad quad;
