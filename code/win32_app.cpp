@@ -146,6 +146,11 @@ void load_tick(item_pool all_items, int cw, int ch) {
     ui_text(loading_status_msg, cw/2, ch/2 + UI_TEXT_SIZE*line++, UI_CENTER,UI_CENTER);
     ui_texti("files: %i of %i", loading_reusable_count, loading_reusable_max, cw/2, ch/2 + UI_TEXT_SIZE*line++, UI_CENTER,UI_CENTER);
 
+
+    ui_RenderDeferredQuads(0, 0); // pass mouse pos for highlighting
+    ui_Reset(); // call at the end or start of every frame so buttons don't carry over between frames
+
+
     opengl_swap();
 
 }
@@ -232,14 +237,19 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     HDC hdc = GetDC(hwnd);
 
+
     opengl_init(hdc);
     opengl_resize_if_change(cw, ch);
+    gpu_init(hdc);
 
 
     ffmpeg_init();
 
+
     ttf_init();
     bitmap baked_font = ttf_bake(UI_TEXT_SIZE);
+    tf_init(UI_TEXT_SIZE);   // where to set font size, specifically, though?
+
 
     ui_init(baked_font);
 

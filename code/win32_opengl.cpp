@@ -313,6 +313,8 @@ struct opengl_quad {
         glBindVertexArray(vao);
 
         glGenBuffers(1, &vbo);
+        glBindBuffer(GL_ARRAY_BUFFER, vbo);  // only reason this works without this is it's bound in set_verts() as well
+
         set_verts(x, y, w, h);
 
         // pos attrib

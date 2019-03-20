@@ -99,6 +99,26 @@ button TopMostButtonUnderPoint(float mx, float my) {
 
 
 //
+// store text quads
+
+DEFINE_TYPE_POOL(gpu_quad);
+
+gpu_quad_pool text_quads;
+
+void ClearTextQuads() {
+    text_quads.count = 0;
+}
+
+void AddDeferredTextQuads(gpu_quad *quads, int quadcount) {
+    for (int i = 0; i < quadcount; i++) {
+        text_quads.add(quads[i]);
+    }
+}
+
+
+
+
+//
 // store our render commands to render last after having all the elements
 
 // todo: what language to use here? queue? command? etc?
@@ -153,8 +173,10 @@ void ui_RenderDeferredQuads(float mx, float my) {
                 ui_render_hl_immediately(r);
             }
         }
-
     }
+
+    gpu_render_quads_with_texture(&text_quads.pool[0], text_quads.count, tf_fonttexture, 1);
+
 }
 
 
@@ -167,6 +189,8 @@ void ui_Reset() {  // call every frame
     buttons.empty_out();
     ui_deferred_quads.empty_out();
     // buttons.count = 0; // same thing atm
+
+    ClearTextQuads();
 }
 
 void ui_draw_rect(ui_rect r, u32 col = 0, float a = 1) {
@@ -318,7 +342,16 @@ ui_rect ui_text(char *text, int x, int y, int hpos, int vpos, bool render = true
     if (render)
         ui_draw_rect(background_rect);
 
-    ui_rect final_bb = ttf_render_text(text, (float)x, (float)(y+margin), ui_font_atlas, &ui_font_quad, render);
+    // old
+    // ui_rect final_bb = ttf_render_text(text, (float)x, (float)(y+margin), ui_font_atlas, &ui_font_quad, render);
+
+    // todo: where to put this allocation? up one level?
+    // if we leave it here, why not just nest these into one new api call
+    int quadsneeded = tf_how_many_quads_needed_for_text(text);
+    gpu_quad *quads = (gpu_quad*)malloc(quadsneeded*sizeof(gpu_quad));
+    tf_create_quad_list_for_text_at_rect(text, (float)x,(float)(y+margin), quads, quadsneeded);
+
+    AddDeferredTextQuads(quads, quadsneeded);
 
     return background_rect;
 }

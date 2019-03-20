@@ -8,7 +8,50 @@
 struct gpu_quad {
     float x0, y0, u0, v0; // TL
     float x1, y1, u1, v1; // BR
+    bool operator==(gpu_quad o) {
+        for(int i=0;i<8;i++) {
+            if ( ((float*)(&x0))[i] == ((float*)(&o))[i] ) {
+                return false;
+            }
+        }
+        return true;
+    }
 };
+
+
+// just using one vao/vbo for everything atm even though it's a little ridiculous
+GLuint gpu_vao;
+GLuint gpu_vbo;
+
+void gpu_create_and_setup_global_vert_buffers() {
+
+    // DEBUGPRINT("gpu_create_and_setup_global_vert_buffers");
+
+    glGenVertexArrays(1, &gpu_vao);
+    glBindVertexArray(gpu_vao);
+
+    glGenBuffers(1, &gpu_vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, gpu_vbo);
+
+    // pos attrib
+    glVertexAttribPointer(0/*loc*/, 2/*comps*/, GL_FLOAT, GL_FALSE, 7*sizeof(GLfloat), NULL);
+    glEnableVertexAttribArray(0/*loc*/); // enable this attribute
+    // color attrib
+    glVertexAttribPointer(1/*loc*/, 3/*comps*/, GL_FLOAT, GL_FALSE, 7*sizeof(GLfloat), (void*)(2*sizeof(float)));
+    glEnableVertexAttribArray(1/*loc*/); // enable this attribute
+    // uv attrib
+    glVertexAttribPointer(2/*loc*/, 2/*comps*/, GL_FLOAT, GL_FALSE, 7*sizeof(GLfloat), (void*)(5*sizeof(float)));
+    glEnableVertexAttribArray(2/*loc*/); // enable this attribute
+
+    // // without color attrib
+    // // pos attrib
+    // glVertexAttribPointer(0/*loc*/, 2/*comps*/, GL_FLOAT, GL_FALSE, 4*sizeof(GLfloat), NULL);
+    // glEnableVertexAttribArray(0/*loc*/); // enable this attribute
+    // // uv attrib
+    // glVertexAttribPointer(2/*loc*/, 2/*comps*/, GL_FLOAT, GL_FALSE, 4*sizeof(GLfloat), (void*)(2*sizeof(float)));
+    // glEnableVertexAttribArray(2/*loc*/); // enable this attribute
+}
+
 
 
 #define gpu_texture_id GLuint
@@ -17,11 +60,16 @@ struct gpu_quad {
 // create spot for texture on gpu
 // return id of texture
 gpu_texture_id gpu_create_texture() {
+
+    // DEBUGPRINT("gpu_create_texture");
+
+    // MessageBox(0,"test",0,0);
+
     // create texture
-    GLuint texture;
-    glGenTextures(1, &texture);
+    GLuint texture = 0;
+    glGenTextures(1, &texture);  DEBUGPRINT("glGenTextures");
     // set texture params
-    glBindTexture(GL_TEXTURE_2D, texture);
+    glBindTexture(GL_TEXTURE_2D, texture);   DEBUGPRINT("glBindTexture");
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);//GL_NEAREST_MIPMAP_LINEAR); // what to use?
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST); //GL_LINEAR
     // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -32,6 +80,9 @@ gpu_texture_id gpu_create_texture() {
 // pass texture data to gpu
 // only supporting rgba format atm
 void gpu_upload_texture(u32 *tex, int w, int h, gpu_texture_id tex_id) {
+
+    // DEBUGPRINT("gpu_upload_texture");
+
     // if (!texture_created) create_texture(); // could cache what id's we've created already?
 
     glActiveTexture(GL_TEXTURE0); // texture unit   todo: curious, can you set texture unit after binding the texture?
@@ -46,6 +97,102 @@ void gpu_upload_texture(u32 *tex, int w, int h, gpu_texture_id tex_id) {
 
     // todo check for GL_OUT_OF_MEMORY ?
     glGenerateMipmap(GL_TEXTURE_2D); // i think we always need to call this even if we aren't using them
+}
+
+
+
+// every time we pass verts to the gpu we need some memory to
+// convert the list of quads to a list of triangle verts
+// this is the pointer to that memory (freed/alloced every upload_ call)
+float *gpu_cached_verts = 0;
+
+// returns number of verts uploaded
+int gpu_upload_vertices(gpu_quad *quads, int quadcount) {
+
+    // DEBUGPRINT("gpu_upload_vertices");
+
+    // float
+    // float verts[] = {
+    //     // pos   // col   // uv
+    //     x,y,     1,1,1,   u0, v0,
+    //     x,y+h,   1,1,1,   u0, v1,
+    //     x+w,y,   1,1,1,   u1, v0,
+    //     x+w,y+h, 1,1,1,   u1, v1,
+    // };
+
+
+
+    int floats_per_quad = 3/*verts per tri*/ * 2/*tris*/ * 7/*comps per vert*/;
+    int total_floats = quadcount*floats_per_quad;
+
+    if (gpu_cached_verts) free(gpu_cached_verts);
+    gpu_cached_verts = (float*)malloc(total_floats * sizeof(float));
+
+    int v = 0;
+    for (int i = 0; i < quadcount; i++) {
+        gpu_quad q = quads[i];
+
+        // TL
+        gpu_cached_verts[v++]=q.x0; gpu_cached_verts[v++]=q.y0; gpu_cached_verts[v++]=1; gpu_cached_verts[v++]=1; gpu_cached_verts[v++]=1;
+        gpu_cached_verts[v++]=q.u0; gpu_cached_verts[v++]=q.v0;
+        // TR
+        gpu_cached_verts[v++]=q.x1; gpu_cached_verts[v++]=q.y0; gpu_cached_verts[v++]=1; gpu_cached_verts[v++]=1; gpu_cached_verts[v++]=1;
+        gpu_cached_verts[v++]=q.u1; gpu_cached_verts[v++]=q.v0;
+        // BR
+        gpu_cached_verts[v++]=q.x1; gpu_cached_verts[v++]=q.y1; gpu_cached_verts[v++]=1; gpu_cached_verts[v++]=1; gpu_cached_verts[v++]=1;
+        gpu_cached_verts[v++]=q.u1; gpu_cached_verts[v++]=q.v1;
+
+        // BR
+        gpu_cached_verts[v++]=q.x1; gpu_cached_verts[v++]=q.y1; gpu_cached_verts[v++]=1; gpu_cached_verts[v++]=1; gpu_cached_verts[v++]=1;
+        gpu_cached_verts[v++]=q.u1; gpu_cached_verts[v++]=q.v1;
+        // TL
+        gpu_cached_verts[v++]=q.x0; gpu_cached_verts[v++]=q.y0; gpu_cached_verts[v++]=1; gpu_cached_verts[v++]=1; gpu_cached_verts[v++]=1;
+        gpu_cached_verts[v++]=q.u0; gpu_cached_verts[v++]=q.v0;
+        // BL
+        gpu_cached_verts[v++]=q.x0; gpu_cached_verts[v++]=q.y1; gpu_cached_verts[v++]=1; gpu_cached_verts[v++]=1; gpu_cached_verts[v++]=1;
+        gpu_cached_verts[v++]=q.u0; gpu_cached_verts[v++]=q.v1;
+
+    }
+
+    assert(v == total_floats);
+    int cached_vert_count = total_floats / 7/*comps per vert*/;
+
+    glBindVertexArray(gpu_vao); // need this here or no?
+    glBindBuffer(GL_ARRAY_BUFFER, gpu_vbo);
+    glBufferData(GL_ARRAY_BUFFER, total_floats*sizeof(float), gpu_cached_verts, GL_STATIC_DRAW);
+
+    return cached_vert_count;
+}
+
+
+
+void gpu_render_quads_with_texture(gpu_quad *quads, int quadcount, gpu_texture_id tex_id, float a = 1) {
+
+    // DEBUGPRINT("gpu_render_quads_with_texture");
+
+    int vertcount = gpu_upload_vertices(quads, quadcount);
+    // if (vertcount <= 0) return;
+
+    // todo: it might be faster to rebind the attributes every frame than switch vaos?
+    glBindVertexArray(gpu_vao); // has all our attribute info (et al?) tied to it
+
+    // GLuint loc_color = glGetUniformLocation(shader_program, "color");
+    // glUniform4f(loc_color, r,g,b,a);
+    GLuint loc_alpha = glGetUniformLocation(opengl_shader_program, "alpha");
+    glUniform1f(loc_alpha, a);
+
+    glActiveTexture(GL_TEXTURE0); // texture unit
+    glBindTexture(GL_TEXTURE_2D, tex_id);
+
+    glDrawArrays(GL_TRIANGLES, 0, vertcount);
+}
+
+
+void gpu_init(HDC hdc) {
+    // opengl_init(hdc); // uncomment this when removing old api
+
+    gpu_create_and_setup_global_vert_buffers();  // or let caller manage their own / multiple vao/vbo ids?
+
 }
 
 
@@ -75,6 +222,9 @@ stbtt_fontinfo tf_font;  // font info loaded by stb
 
 stbtt_bakedchar tf_bakedchars[96]; // ASCII 32..126 is 95 glyphs
 
+bitmap tf_fontatlas; // bitmap with our baked chars onto it
+gpu_texture_id tf_fonttexture; // texture id of our font atlas bitmap (sent to gpu on creation)
+
 // let stb open and parse font
 void tf_openfont() // could pass in path
 {
@@ -89,6 +239,8 @@ void tf_openfont() // could pass in path
 }
 
 // return newly-allocated bitmap with baked chars on it
+// i'm ok just allocating this mem because it's kind of a one-time thing
+// (whereas we let the caller allocate mem for the rendering calls)
 bitmap tf_bakefont(float pixel_height)
 {
     assert(tf_file_buffer);
@@ -142,6 +294,7 @@ int tf_how_many_quads_needed_for_text(char *text) {
         if (*text >= 32 && *text < 128) {
             result++;
         }
+        text++;
     }
     return result;
 }
@@ -149,7 +302,7 @@ int tf_how_many_quads_needed_for_text(char *text) {
 // caller passes in quad memory to be filled in
 // use tf_how_many_quads_needed_for_text to know how much memory to pass in
 // return bounding box of all resulting quads
-rect tf_create_quad_list_for_text_at_rect(char *text, rect r, gpu_quad *quadlist, int quadcount) {
+rect tf_create_quad_list_for_text_at_rect(char *text, float x, float y, gpu_quad *quadlist, int quadcount) {
 
     assert(quadlist && quadcount>0);
 
@@ -162,11 +315,11 @@ rect tf_create_quad_list_for_text_at_rect(char *text, rect r, gpu_quad *quadlist
 
     int quadcountsofar = 0;
 
-    float tx = r.x; // i think these keep track of where next quad goes
-    float ty = r.y; // (updated by stbtt_GetBakedQuad)
+    float tx = /*r.*/x; // i think these keep track of where next quad goes
+    float ty = /*r.*/y; // (updated by stbtt_GetBakedQuad)
     while (*text) {
         if (*text >= 32 && *text < 128) {
-            assert(quadcountsofar+1 < quadcount);
+            assert(quadcountsofar+1 <= quadcount); // just checking ourselves
             stbtt_aligned_quad q;
             stbtt_GetBakedQuad(tf_bakedchars, 512,512, *text-32, &tx,&ty,&q,1);//1=opengl & d3d10+,0=d3d9
             quadlist[quadcountsofar++] = {q.x0,q.y0,q.s0,q.t0, q.x1,q.y1,q.s1,q.t1}; // structs are the same, but being explicit
@@ -191,7 +344,7 @@ rect tf_create_quad_list_for_text_at_rect(char *text, rect r, gpu_quad *quadlist
             if (q.y0 < smallest_y) smallest_y = q.y0;
             if (q.y1 < smallest_y) smallest_y = q.y1;
         }
-        ++text;
+        text++;
     }
     rect bb;
     bb.x = left_most_x;
@@ -200,14 +353,14 @@ rect tf_create_quad_list_for_text_at_rect(char *text, rect r, gpu_quad *quadlist
     bb.h = largest_y-smallest_y;
 
     return bb;
-    // return {
-    //     (int)floor(bb.x),
-    //     (int)floor(bb.y),
-    //     (int)ceil(bb.w),
-    //     (int)ceil(bb.h)
-    // };
 }
 
+void tf_init(int fontsize) {
+    tf_openfont();
+    bitmap tf_fontatlas = tf_bakefont(fontsize);
+    tf_fonttexture = gpu_create_texture();
+    gpu_upload_texture(tf_fontatlas.data, tf_fontatlas.w, tf_fontatlas.h, tf_fonttexture);
+}
 
 //
 ////
