@@ -19,12 +19,16 @@ char *vertex_shader = MULTILINE_STRING
 
     out vec4 vertColor;
     out vec2 vertUV;
+    out float vertA;
 
     uniform vec4 camera;
 
     void main()
     {
-        vertColor = vec4(aColor,1);
+        vertA = aColor.x;
+        // vertColor = vec4(aColor,1);
+        vertColor = vec4(1,1,1,1);
+        // vertColor = vec4(1,1,1,aColor.x); // todo: hijacking color to pass an alpha in atm
         vertUV = aUV;
         vec4 ppp = vec4(aPos.x, aPos.y, 1, 1);
         ppp.xy = (ppp.xy / camera.zw)*2.0 - 1.0;
@@ -39,6 +43,7 @@ char *fragment_shader = MULTILINE_STRING
 
     in vec4 vertColor;
     in vec2 vertUV;
+    in float vertA;
 
     out vec4 fragColor;
 
@@ -50,9 +55,9 @@ char *fragment_shader = MULTILINE_STRING
     {
         // fragColor = texture(tex, vertUV);
         // fragColor = texture(tex, vertUV) * color;
-        fragColor = texture(tex, vertUV) * vertColor;
+        fragColor = texture(tex, vertUV);// * vertColor;
         fragColor.rb = fragColor.br; // swap rb
-        fragColor.a = alpha;
+        fragColor.a = alpha * vertA;
         // fragColor = texture(tex, vertUV) * vertColor * color;
         // fragColor = mix(texture(tex, vertUV), vertColor, 0.2);
         // fragColor = mix(mix(texture(tex, vertUV), vertColor, 0.5), color, 0.5);

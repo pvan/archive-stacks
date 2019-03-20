@@ -8,13 +8,11 @@
 struct gpu_quad {
     float x0, y0, u0, v0; // TL
     float x1, y1, u1, v1; // BR
+    float alpha;
     bool operator==(gpu_quad o) {
-        for(int i=0;i<8;i++) {
-            if ( ((float*)(&x0))[i] == ((float*)(&o))[i] ) {
-                return false;
-            }
-        }
-        return true;
+        return x0==o.x0 && y0==o.y0 && u0==o.u0 && v0==o.v0 &&
+               x1==o.x1 && y1==o.y1 && u1==o.u1 && v1==o.v1 &&
+               alpha==o.alpha;
     }
 };
 
@@ -133,23 +131,23 @@ int gpu_upload_vertices(gpu_quad *quads, int quadcount) {
         gpu_quad q = quads[i];
 
         // TL
-        gpu_cached_verts[v++]=q.x0; gpu_cached_verts[v++]=q.y0; gpu_cached_verts[v++]=1; gpu_cached_verts[v++]=1; gpu_cached_verts[v++]=1;
+        gpu_cached_verts[v++]=q.x0; gpu_cached_verts[v++]=q.y0; gpu_cached_verts[v++]=q.alpha; gpu_cached_verts[v++]=1; gpu_cached_verts[v++]=1;
         gpu_cached_verts[v++]=q.u0; gpu_cached_verts[v++]=q.v0;
         // TR
-        gpu_cached_verts[v++]=q.x1; gpu_cached_verts[v++]=q.y0; gpu_cached_verts[v++]=1; gpu_cached_verts[v++]=1; gpu_cached_verts[v++]=1;
+        gpu_cached_verts[v++]=q.x1; gpu_cached_verts[v++]=q.y0; gpu_cached_verts[v++]=q.alpha; gpu_cached_verts[v++]=1; gpu_cached_verts[v++]=1;
         gpu_cached_verts[v++]=q.u1; gpu_cached_verts[v++]=q.v0;
         // BR
-        gpu_cached_verts[v++]=q.x1; gpu_cached_verts[v++]=q.y1; gpu_cached_verts[v++]=1; gpu_cached_verts[v++]=1; gpu_cached_verts[v++]=1;
+        gpu_cached_verts[v++]=q.x1; gpu_cached_verts[v++]=q.y1; gpu_cached_verts[v++]=q.alpha; gpu_cached_verts[v++]=1; gpu_cached_verts[v++]=1;
         gpu_cached_verts[v++]=q.u1; gpu_cached_verts[v++]=q.v1;
 
         // BR
-        gpu_cached_verts[v++]=q.x1; gpu_cached_verts[v++]=q.y1; gpu_cached_verts[v++]=1; gpu_cached_verts[v++]=1; gpu_cached_verts[v++]=1;
+        gpu_cached_verts[v++]=q.x1; gpu_cached_verts[v++]=q.y1; gpu_cached_verts[v++]=q.alpha; gpu_cached_verts[v++]=1; gpu_cached_verts[v++]=1;
         gpu_cached_verts[v++]=q.u1; gpu_cached_verts[v++]=q.v1;
         // TL
-        gpu_cached_verts[v++]=q.x0; gpu_cached_verts[v++]=q.y0; gpu_cached_verts[v++]=1; gpu_cached_verts[v++]=1; gpu_cached_verts[v++]=1;
+        gpu_cached_verts[v++]=q.x0; gpu_cached_verts[v++]=q.y0; gpu_cached_verts[v++]=q.alpha; gpu_cached_verts[v++]=1; gpu_cached_verts[v++]=1;
         gpu_cached_verts[v++]=q.u0; gpu_cached_verts[v++]=q.v0;
         // BL
-        gpu_cached_verts[v++]=q.x0; gpu_cached_verts[v++]=q.y1; gpu_cached_verts[v++]=1; gpu_cached_verts[v++]=1; gpu_cached_verts[v++]=1;
+        gpu_cached_verts[v++]=q.x0; gpu_cached_verts[v++]=q.y1; gpu_cached_verts[v++]=q.alpha; gpu_cached_verts[v++]=1; gpu_cached_verts[v++]=1;
         gpu_cached_verts[v++]=q.u0; gpu_cached_verts[v++]=q.v1;
 
     }
@@ -281,6 +279,15 @@ bitmap tf_bakefont(float pixel_height)
     }
     free(gray_bitmap);
 
+    // omg remove this
+    u8 *r = color_bitmap + ((0*bitmapW)+0)*4 + 0;
+    u8 *g = color_bitmap + ((0*bitmapW)+0)*4 + 1;
+    u8 *b = color_bitmap + ((0*bitmapW)+0)*4 + 2;
+    u8 *a = color_bitmap + ((0*bitmapW)+0)*4 + 3;
+    *r = 0xff;
+    *g = 0xff;
+    *b = 0xff;
+
     return {(u32*)color_bitmap, bitmapW, bitmapH};
 }
 
@@ -322,7 +329,7 @@ rect tf_create_quad_list_for_text_at_rect(char *text, float x, float y, gpu_quad
             assert(quadcountsofar+1 <= quadcount); // just checking ourselves
             stbtt_aligned_quad q;
             stbtt_GetBakedQuad(tf_bakedchars, 512,512, *text-32, &tx,&ty,&q,1);//1=opengl & d3d10+,0=d3d9
-            quadlist[quadcountsofar++] = {q.x0,q.y0,q.s0,q.t0, q.x1,q.y1,q.s1,q.t1}; // structs are the same, but being explicit
+            quadlist[quadcountsofar++] = {q.x0,q.y0,q.s0,q.t0, q.x1,q.y1,q.s1,q.t1, 1}; // 1 for alpha
             // // DEBUGPRINT("u0: %f  u1: %f \n", q.s0, q.s1);
             // // DEBUGPRINT("v0: %f  v1: %f \n", q.t0, q.t1);
             // if (render) {

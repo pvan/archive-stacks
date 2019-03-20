@@ -116,6 +116,23 @@ void AddDeferredTextQuads(gpu_quad *quads, int quadcount) {
 }
 
 
+//
+// store quads for rects (bg or hl mostly)
+
+// DEFINE_TYPE_POOL(u32);
+
+// gpu_quad_pool rect_quads;
+// u32_pool rect_colors;
+
+// void ClearRectQuads() {
+//     rect_quads.count = 0;
+// }
+
+void AddDeferredRectQuad(gpu_quad quad) {
+    text_quads.add(quad);
+    // rect_quads.add(quad);
+    // rect_colors.add(col);
+}
 
 
 //
@@ -175,7 +192,31 @@ void ui_RenderDeferredQuads(float mx, float my) {
         }
     }
 
+
+    // change alpha of the hidden quad above our mouse
+    // go in reverse and stop at the first one,
+    // should give us only the topmost quad
+    for (int i = text_quads.count-1; i >= 0; i--) {
+        if (r.x == text_quads[i].x0 && r.y == text_quads[i].y0 &&
+            r.w == text_quads[i].x1-text_quads[i].x0 &&
+            r.h == text_quads[i].y1-text_quads[i].y0)
+        {
+            text_quads[i].alpha = 0.3;
+            break;
+        }
+    }
+
+    // change color of highlighted
+
     gpu_render_quads_with_texture(&text_quads.pool[0], text_quads.count, tf_fonttexture, 1);
+
+    // for (int i = 0; i < rect_quads.count; i++) {
+    //     // eventually could use col attrib for colors
+
+    //     gpu_render_quads_with_texture(&rect_quads.pool[i], 1, tf_fonttexture, 1);
+    //     // gpu_quad_pool rect_quads;
+    //     // u32_pool rect_colors;
+    // }
 
 }
 
@@ -191,6 +232,7 @@ void ui_Reset() {  // call every frame
     // buttons.count = 0; // same thing atm
 
     ClearTextQuads();
+    // ClearRectQuads();
 }
 
 void ui_draw_rect(ui_rect r, u32 col = 0, float a = 1) {
@@ -339,8 +381,15 @@ ui_rect ui_text(char *text, int x, int y, int hpos, int vpos, bool render = true
     background_rect.w += margin*2;
     background_rect.h += margin*1; // really does not seem to need... hmm
 
-    if (render)
-        ui_draw_rect(background_rect);
+    gpu_quad bg_quad = {(float)background_rect.x, (float)background_rect.y,
+                        1/512.0,1/512.0,
+                        (float)background_rect.x+background_rect.w, (float)background_rect.y+background_rect.h,
+                        2/512.0,2/512.0};
+
+    if (render) {
+        bg_quad.alpha = 1;
+        AddDeferredRectQuad(bg_quad);
+    }
 
     // old
     // ui_rect final_bb = ttf_render_text(text, (float)x, (float)(y+margin), ui_font_atlas, &ui_font_quad, render);
@@ -351,7 +400,22 @@ ui_rect ui_text(char *text, int x, int y, int hpos, int vpos, bool render = true
     gpu_quad *quads = (gpu_quad*)malloc(quadsneeded*sizeof(gpu_quad));
     tf_create_quad_list_for_text_at_rect(text, (float)x,(float)(y+margin), quads, quadsneeded);
 
-    AddDeferredTextQuads(quads, quadsneeded);
+    if (render)
+        AddDeferredTextQuads(quads, quadsneeded);
+
+    // seems like a terrible way to do this,
+    // but just add an invisible rect above every text
+    // and if highlighted, chagne the alpha up from 0
+    if (render) {
+        gpu_quad invisible_hl_quad = bg_quad;
+        invisible_hl_quad.alpha = 0; // will get changed if the highlight quad in ui_RenderDeferredQuads
+        // change uv to bottom right pixel of font atlas (hacked to be white)
+        invisible_hl_quad.u0 = 0;
+        invisible_hl_quad.v0 = 0;
+        invisible_hl_quad.u1 = 1.0/512.0;
+        invisible_hl_quad.v1 = 1.0/512.0;
+        AddDeferredRectQuad(invisible_hl_quad);
+    }
 
     return background_rect;
 }
