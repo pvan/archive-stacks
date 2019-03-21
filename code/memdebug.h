@@ -64,6 +64,13 @@ void memdebug_free(void *ptr, char *file, uint line)
     }
 }
 
+void *memdebug_realloc(void *ptr, uint size, char *file, uint line) {
+    md_record_free({ptr});
+    ptr = realloc(ptr, size);
+    md_record_alloc({ptr, size, file, line});
+    return ptr;
+}
+
 void memdebug_reset()
 {
     md_r_count = 0;
@@ -88,6 +95,7 @@ void memdebug_print()
 
 
 #define malloc(n) memdebug_malloc(n, __FILE__, __LINE__)
+#define realloc(n,m) memdebug_realloc(n,m, __FILE__, __LINE__)
 #define free(n) memdebug_free(n, __FILE__, __LINE__)
 
 
