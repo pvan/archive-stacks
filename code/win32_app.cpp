@@ -247,8 +247,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     ffmpeg_init();
 
 
-    ttf_init();
-    bitmap baked_font = ttf_bake(UI_TEXT_SIZE);
     tf_init(UI_TEXT_SIZE);   // where to set font size, specifically, though?
 
 
