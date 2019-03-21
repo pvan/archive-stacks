@@ -212,6 +212,14 @@ void ui_RenderDeferredQuads(float mx, float my) {
 
 
 
+    // so this is not a great solution but for now we are just putting a highlight quad
+    // last over top of everything
+    // this wont work on buttons underneath other buttons (eg thumbnails)
+    // but for now we don't have any of those in this system
+    // we have a hacky special case for thumbnails -- see .._permanent_highlight(
+    gpu_quad hl_quad = gpu_quad_from_rect(top_most.rect, 0.3);
+    gpu_render_quads_with_texture(&hl_quad, 1, tf_fonttexture, 1);
+
 
     // for (int i = 0; i < rect_quads.count; i++) {
     //     // eventually could use col attrib for colors
@@ -428,14 +436,17 @@ rect ui_button(char *text, float x, float y, bool hpos, bool vpos, void(*effect)
     return r;
 }
 
-// kind of a hack so we can highlight tiles without bringing them into this system
-// (they have their own opengl_quads so they don't re-send textures to the gpu every frame)
-rect ui_button_invisible_highlight(rect br, void(*effect)(int), int arg=0)
+// kind of a hack so we can highlight tiles without bringing them into our normal system
+// (they have their own opengl_quads so they don't have to re-send textures to the gpu every frame)
+rect ui_button_permanent_highlight(rect br, void(*effect)(int), int arg=0)
 {
-    // ttf_rect tr = ui_text("#", br.x, br.y, true, true); //RenderTextCenter(x, y, text);
-    AddButton(br, true, effect, arg);
+    // note our button has the normal hl disabled
+    AddButton(br, false, effect, arg);
+
+    // instead we have a permanent highlight
+    // (caller only has one of this button and moves it to be under the mouse at all times)
     AddDeferredRectQuad(gpu_quad_from_rect(br, 0.3));
-    // AddRenderQuad(br, {0}, 0, false); // 0 alpha, button handles any highlighting
+
     return br;
 }
 

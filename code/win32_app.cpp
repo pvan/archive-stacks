@@ -90,7 +90,7 @@ tile viewing_tile; // tile for our open file (created from fullpath rather than 
 bool tag_menu_open = false;
 void ToggleTagMenu(int) { tag_menu_open = !tag_menu_open; }
 
-void OpenTagMenu(int item_index) {
+void OpenFileToView(int item_index) {
     app_mode = VIEWING_FILE;
 
     viewing_file_index = item_index;
@@ -466,7 +466,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                 // if (tiles[viewing_file_index].IsOnScreen(ch)) {
                 rect r = {tiles[viewing_file_index].pos.x, tiles[viewing_file_index].pos.y,
                           tiles[viewing_file_index].size.w, tiles[viewing_file_index].size.h};
-                ui_button_invisible_highlight(r, &OpenTagMenu, viewing_file_index);
+                ui_button_permanent_highlight(r, &OpenFileToView, viewing_file_index);
 
                 // nevermind, still need some sort of ordering or we'll hl even when hovering over hud
                 // // highlight here so HUD is drawn overtop highlight rect

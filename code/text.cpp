@@ -80,13 +80,11 @@ gpu_texture_id gpu_create_texture() {
 
     // DEBUGPRINT("gpu_create_texture");
 
-    // MessageBox(0,"test",0,0);
-
     // create texture
     GLuint texture = 0;
-    glGenTextures(1, &texture);  DEBUGPRINT("glGenTextures");
+    glGenTextures(1, &texture);
     // set texture params
-    glBindTexture(GL_TEXTURE_2D, texture);   DEBUGPRINT("glBindTexture");
+    glBindTexture(GL_TEXTURE_2D, texture);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);//GL_NEAREST_MIPMAP_LINEAR); // what to use?
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST); //GL_LINEAR
     // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -145,7 +143,7 @@ int gpu_upload_vertices(gpu_quad *quads, int quadcount) {
     int floats_per_quad = 3/*verts per tri*/ * 2/*tris*/ * 8/*comps per vert*/;
     int total_floats = quadcount*floats_per_quad;
 
-    if (gpu_cached_verts) free(gpu_cached_verts);
+    if (gpu_cached_verts) free(gpu_cached_verts); // maybe free after using instead of on an as-needed basis?
     gpu_cached_verts = (float*)malloc(total_floats * sizeof(float));
 
     int v = 0;
