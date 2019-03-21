@@ -246,33 +246,6 @@ void ui_draw_rect(rect r, u32 col = 0, float a = 1) {
     // ui_reusable_quad.set_verts(r.x, r.y, r.w, r.h);
     // ui_reusable_quad.render(a);
 }
-// void ui_highlight(ui_rect r) {
-//     u32 white = 0xffffffff;
-//     // have to allocate col now since we're keeping the mem for later
-//     // todo: free this at end of frame
-//     u32 *colmem = (u32*)malloc(sizeof(u32));
-//     *colmem = white;
-//     AddRenderQuad(to_rectf(r), {colmem,1,1}, 0.3, true);
-//     // if (!ui_reusable_quad.created) ui_reusable_quad.create(0,0,1,1);
-//     // ui_reusable_quad.set_texture(&white, 1, 1);
-//     // ui_reusable_quad.set_verts(r.x, r.y, r.w, r.h);
-//     // ui_reusable_quad.render(0.3);
-// }
-
-
-// try hl'ing at same time as render, now that it's deferred
-// void ButtonsHighlight(float mx, float my) {
-//     button top_most = TopMostButtonUnderPoint(mx, my);
-//     rect r = top_most.rect;
-//     if (r.w != 0 && r.h != 0) {
-
-//         if (top_most.highlight)
-//             ui_highlight(r);
-
-//         if (top_most.on_mouseover)
-//             top_most.on_mouseover(top_most.mouseover_arg);
-//     }
-// }
 
 // store our dragging state across multiple frames
 // so we can click and drag on something and move off that thing and still be dragging
@@ -342,27 +315,38 @@ rect ui_text(char *text, float x, float y, int hpos, int vpos, bool render = tru
     // without any changes, bb will be TL
     rect bb = tf_text_bounding_box(text, x, y);
 
-
     // by default here x,y will be left/top
     if (hpos == UI_RIGHT) x -= bb.w;
     if (hpos == UI_CENTER) x -= bb.w/2;
     if (vpos == UI_BOTTOM) y -= UI_TEXT_SIZE;
     if (vpos == UI_CENTER) y -= UI_TEXT_SIZE/2;
 
+
+    // todo: find root cause of this bug
+    // it's ugly but if x is on an exact 0.5 edge,
+    // we seem to get inconsistent rounding somewhere in our rendering pipeline
+    // it wouldn't matter except we draw the same quad twice -- once for the highlight
+    // and if they round differently.. we'll end up with an extra pixel bar
+    // so in that case, add a fudge factor
+    if (x-0.5 == (int)x) {
+        x+=0.01;
+        // assert(false);
+    }
+
+
     // space around actual letters
     int margin = 2;
 
-    // calc rect for background
-    rect background_rect = {x, y, bb.w, UI_TEXT_SIZE};
-    background_rect.x -= margin;
-    background_rect.y -= margin;
-    background_rect.w += margin*2;
-    background_rect.h += margin*1; // really does not seem to need... hmm
 
-    gpu_quad bg_quad = {(float)background_rect.x, (float)background_rect.y,
-                        1/512.0,1/512.0,
-                        (float)background_rect.x+background_rect.w, (float)background_rect.y+background_rect.h,
-                        2/512.0,2/512.0};
+    gpu_quad bg_quad;
+    bg_quad.x0 = x                - margin;
+    bg_quad.y0 = y                - margin;
+    bg_quad.x1 = x + bb.w         + margin;
+    bg_quad.y1 = y + UI_TEXT_SIZE + margin;
+    bg_quad.u0 = 1/512.0;
+    bg_quad.v0 = 2/512.0;
+    bg_quad.u1 = 1/512.0;
+    bg_quad.v1 = 2/512.0;
 
 
     // bg
@@ -378,7 +362,7 @@ rect ui_text(char *text, float x, float y, int hpos, int vpos, bool render = tru
 
         int quadsneeded = tf_how_many_quads_needed_for_text(text);
         gpu_quad *quads = (gpu_quad*)malloc(quadsneeded*sizeof(gpu_quad));
-        tf_create_quad_list_for_text_at_rect(text, (float)x,(float)(y+margin), quads, quadsneeded);
+        tf_create_quad_list_for_text_at_rect(text, x,y+margin, quads, quadsneeded);
 
         AddDeferredTextQuads(quads, quadsneeded);
 
@@ -390,10 +374,10 @@ rect ui_text(char *text, float x, float y, int hpos, int vpos, bool render = tru
     if (render) {
         // seems like a terrible way to do this,
         // but just add an invisible rect above every text
-        // and if highlighted (cheked when rendering), change the alpha up from 0
+        // and if highlighted (checked when rendering), change the alpha up from 0
         gpu_quad invisible_hl_quad = bg_quad;
         invisible_hl_quad.alpha = 0; // will get changed if the highlight quad in ui_RenderDeferredQuads
-        // change uv to bottom right pixel of font atlas (hacked to be white)
+        // change uv to bottom right pixel of font atlas (specially overridden to be white)
         invisible_hl_quad.u0 = 511.0/512.0;
         invisible_hl_quad.v0 = 511.0/512.0;
         invisible_hl_quad.u1 = 1.0;
@@ -401,7 +385,7 @@ rect ui_text(char *text, float x, float y, int hpos, int vpos, bool render = tru
         AddDeferredRectQuad(invisible_hl_quad);
     }
 
-    return background_rect;
+    return bg_quad.to_rect();
 }
 
 
@@ -429,18 +413,6 @@ bool ui_mouse_over_rect(int mx, int my, rect rect) {
     return mx > rect.x && mx < rect.x+rect.w && my > rect.y && my < rect.y+rect.h;
 }
 
-// bool ui_button(char *text, int x, int y, Input i, int hpos, int vpos) {
-//     ui_rect button_rect = ui_text(text, x, y, hpos, vpos);
-//     // if (out_rect) *out_rect = button_rect;
-//     if (ui_mouse_over_rect(i.mouseX, i.mouseY, button_rect)) {
-//         ui_highlight(button_rect);
-//         if (i.mouseL) {
-//             return true;
-//         }
-//     }
-//     return false;
-// }
-
 
 
 
@@ -461,24 +433,6 @@ rect ui_button_invisible_highlight(rect br, void(*effect)(int), int arg=0)
     AddRenderQuad(br, {0}, 0, false); // 0 alpha, button handles any highlighting
     return br;
 }
-
-// // created for drawing tiles basically
-// void ui_draw_bitmap_button(rect r, bitmap img, void(*effect)(int), int arg=0) {
-//     // use this after removing the _invisible buttons on every tile
-//     // AddImageButton(r, img, effect, arg);
-
-//     AddRenderQuad(r, img, 1/*alpha*/, false);
-// }
-
-// rect ui_button(char *text, rect br, bool hpos, bool vpos, void(*effect)(int), int arg=0)
-// {
-//     // todo: test all hpos/vpos paths here, i dont think this will work for all
-//     ttf_rect tr = ui_text(text, br.x, br.y, hpos, vpos); //RenderTextCenter(x, y, text);
-//     // rect r = {(float)rr.x, (float)rr.y, (float)rr.w, (float)rr.h};
-//     AddButton(br, effect, arg);
-//     return br;
-// }
-
 
 
 // note takes two values, for top/bottom of scroll bar indicator (for variable size)

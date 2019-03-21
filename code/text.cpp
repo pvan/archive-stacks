@@ -14,6 +14,7 @@ struct gpu_quad {
                x1==o.x1 && y1==o.y1 && u1==o.u1 && v1==o.v1 &&
                alpha==o.alpha;
     }
+    rect to_rect() { return { x0, y0, x1-x0, y1-y0 }; }
 };
 
 

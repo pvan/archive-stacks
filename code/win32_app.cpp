@@ -494,16 +494,15 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             {
                 if (!tag_menu_open) {
                     ui_button("show tags", cw/2, 0, UI_CENTER,UI_TOP, &ToggleTagMenu);
-                    // if (ui_button("show tags", cw/2, 0, keysDown, UI_CENTER,UI_TOP)) {
-                    //     tag_menu_open = !tag_menu_open;
-                    // }
                 } else {
 
-                    int x = 0;
-                    int y = 0;
+                    float x = 0;
+                    float y = 0;
                     for (int i = 0; i < tag_list.count; i++) {
                         // ui_rect this_rect = get_text_size(tag_list[i].ToUTF8Reusable());
                         rect this_rect = ui_text(tag_list[i].ToUTF8Reusable(), x,y, UI_LEFT,UI_TOP, false);
+                        // this_rect.w+=10;
+                        // this_rect.h+=5;
                         if (x+this_rect.w > cw) { y+=this_rect.h; x=0; }
                         ui_button(tag_list[i].ToUTF8Reusable(), x,y, UI_LEFT,UI_TOP, 0);
                         x += this_rect.w;
@@ -511,9 +510,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                     }
 
                     ui_button("hide tags", cw/2, y/*ch/2*/, UI_CENTER,UI_TOP, &ToggleTagMenu);
-                    // if (ui_button("hide tags", cw/2, y/*ch/2*/, keysDown, UI_CENTER,UI_TOP)) {
-                    //     tag_menu_open = !tag_menu_open;
-                    // }
                 }
             }
 
