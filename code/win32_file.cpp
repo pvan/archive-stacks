@@ -27,14 +27,14 @@ void CreateAllDirectoriesForPathIfNeeded(wchar_t *path)
 
 string_pool win32_GetAllFilesAndFoldersInDir(string path)
 {
-    string_pool results = string_pool::empty();
+    string_pool results = string_pool::new_empty();
 
     string dir_path = path.CopyAndAppend(L"/"); // for use when appending subfolders to this path
     string search_path = dir_path.CopyAndAppend(L"*"); // wildcard for search
 
     WIN32_FIND_DATAW ffd;
     HANDLE hFind = FindFirstFileW(search_path.chars, &ffd);
-    if (hFind == INVALID_HANDLE_VALUE) { return string_pool::empty(); }
+    if (hFind == INVALID_HANDLE_VALUE) { return string_pool::new_empty(); }
     do {
         if(string::Equals(ffd.cFileName, L".") || string::Equals(ffd.cFileName, L"..")) continue;
 

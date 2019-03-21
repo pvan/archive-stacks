@@ -32,7 +32,7 @@
 
 string_pool FindAllItemPaths(string master_path) {
     string_pool top_folders = win32_GetAllFilesAndFoldersInDir(master_path);
-    string_pool result = string_pool::empty();
+    string_pool result = string_pool::new_empty();
 
     string ignore1 = string::Create("~thumbs");  // todo: these should be consts somewhere
     string ignore2 = string::Create("~metadata");
@@ -72,7 +72,7 @@ string_pool FindAllSubfolderPaths(string master_path, wc *subfolder) {
 
     string subfolder_path = master_path.CopyAndAppend(subfolder);
     string_pool top_files = win32_GetAllFilesAndFoldersInDir(subfolder_path);
-    string_pool result = string_pool::empty();
+    string_pool result = string_pool::new_empty();
     for (int folderI = 0; folderI < top_files.count; folderI++) {
         if (win32_IsDirectory(top_files[folderI])) {
             string_pool subfiles = win32_GetAllFilesAndFoldersInDir(top_files[folderI]);
@@ -96,7 +96,7 @@ string_pool FindAllSubfolderPaths(string master_path, wc *subfolder) {
 }
 
 string_pool ItemsInFirstPoolButNotSecond(string_pool p1, string_pool p2) {
-    string_pool result = string_pool::empty();
+    string_pool result = string_pool::new_empty();
     for (int i = 0; i < p1.count; i++) {
         if (!p2.has(p1[i]))
             result.add(p1[i]);
@@ -162,7 +162,7 @@ string_pool ReadTagListFromFileOrSomethingUsableOtherwise(string master_path) {
     // fclose(file);
 
 
-    string_pool result = string_pool::empty();
+    string_pool result = string_pool::new_empty();
     // result.add(string::Create(L"untagged"));  // always have this entry as index 0?? todo: decide
 
     wc *path = master_path.CopyAndAppend(L"/~taglist.txt").chars;
@@ -492,7 +492,7 @@ void LoadMasterDataFileAndPopulateResolutionsAndTagsEtc(
         if (numread < 0) {DEBUGPRINT("e2 %i\n",linesread);goto fileclose;} // eof (or maybe badly formed file?)
 
         // read subpath
-        wc_pool result_string = wc_pool::empty();
+        wc_pool result_string = wc_pool::new_empty();
         wc nextchar;
         do {
             numread = fwscanf(file, L"%c", &nextchar);

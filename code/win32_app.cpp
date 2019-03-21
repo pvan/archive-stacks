@@ -260,7 +260,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     // create item list with fullpath populated
     // just adapt old method for now
     string_pool itempaths = FindAllItemPaths(master_path);
-    items = item_pool::empty();
+    items = item_pool::new_empty();
     for (int i = 0; i < itempaths.count; i++) {
         item newitem = {0};
         newitem.fullpath = itempaths[i];

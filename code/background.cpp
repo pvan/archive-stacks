@@ -45,8 +45,8 @@ DWORD WINAPI RunBackgroundStartupThread( LPVOID lpParam ) {
     }
 
     // create work queue for rest of loading thread (do after reading paths)
-    item_indices_without_thumbs = int_pool::empty();
-    item_indices_without_metadata = int_pool::empty();
+    item_indices_without_thumbs = int_pool::new_empty();
+    item_indices_without_metadata = int_pool::new_empty();
     for (int i = 0; i < items.count; i++) {
         loading_status_msg = "Looking for existing caches...";
         loading_reusable_count = i;
@@ -108,7 +108,7 @@ DWORD WINAPI RunBackgroundStartupThread( LPVOID lpParam ) {
 
     // init tiles
     {
-        tiles = tile_pool::empty();
+        tiles = tile_pool::new_empty();
         for (int i = 0; i < items.count; i++) {
             loading_status_msg = "Reading file paths...";
             loading_reusable_count = i;
@@ -168,7 +168,7 @@ DWORD WINAPI RunBackgroundStartupThread( LPVOID lpParam ) {
             loading_status_msg = "Reading missing resolutions...";
 
             // this is entirely to just get a count of how many we need to do
-            int_pool unset_resolution_indices = int_pool::empty();
+            int_pool unset_resolution_indices = int_pool::new_empty();
             for (int i = 0; i < item_resolutions_valid.count; i++) {
                 if (!item_resolutions_valid[i]) {
                     unset_resolution_indices.add(i);
@@ -199,7 +199,7 @@ DWORD WINAPI RunBackgroundStartupThread( LPVOID lpParam ) {
             loading_status_msg = "Reading missing modified times...";
 
             // this is entirely to just get a count of how many we need to do
-            int_pool unset_times_indices = int_pool::empty();
+            int_pool unset_times_indices = int_pool::new_empty();
             for (int i = 0; i < modifiedTimes.count; i++) {
                 if (modifiedTimes[i] == TIME_NOT_SET) {
                     unset_times_indices.add(i);

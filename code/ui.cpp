@@ -60,7 +60,7 @@ struct ui_element {
         q.u1 = (colorcode+1) / (float)ui_solid_bitmap.w;
         q.v1 = (colorcode+1) / (float)ui_solid_bitmap.h;
         q.alpha = alpha;
-        gpu_quad_pool newquadlist = gpu_quad_pool::empty();
+        gpu_quad_pool newquadlist = gpu_quad_pool::new_empty();
         newquadlist.add(q);
         mesh.add_submesh({newquadlist, ui_solid_tex_id});
     }
