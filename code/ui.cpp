@@ -254,17 +254,21 @@ bool ui_dragging = false;
 ui_clickable ui_drag_element = {0};
 
 // call to update elements that respond to clicking
-void ui_update_clickables(float mx, float my, bool mouse_click) {
-    if (mouse_click) {
-        ui_clickable top_most = ui_find_topmost_clickable_under_point(mx, my);
+void ui_update_clickables(float mx, float my, bool mouse_click, int clientW, int clientH) {
+    // todo: should also ignore when window doesn't have focus right?
+    // ignore out of bounds clicks
+    if (mx>0 && my>0 && mx<clientW && my<clientH) {
+        if (mouse_click) {
+            ui_clickable top_most = ui_find_topmost_clickable_under_point(mx, my);
 
-        if (top_most.is_scrollbar) {
-            ui_drag_element = top_most;
-            ui_dragging = true;
+            if (top_most.is_scrollbar) {
+                ui_drag_element = top_most;
+                ui_dragging = true;
+            }
+
+            if (top_most.on_click)
+                top_most.on_click(top_most.click_arg);
         }
-
-        if (top_most.on_click)
-            top_most.on_click(top_most.click_arg);
     }
 }
 
@@ -342,9 +346,7 @@ rect ui_text(char *text, float x, float y, int hpos, int vpos, bool render = tru
         ui_element gizmo = {0};
         {
             // --bg--
-            srand(x+(y*1024)); // seed by position
-            gizmo.add_solid_quad(bg_quad, rand_col(), 1);
-
+            gizmo.add_solid_quad(bg_quad, 0x0, 1);
 
             // --text--
             y += tf_cached_largest_ascent; // move y to top instead of baseline of text
@@ -362,7 +364,6 @@ rect ui_text(char *text, float x, float y, int hpos, int vpos, bool render = tru
             gizmo.mesh.add_submesh(textsubmesh);
             // AddDeferredTextQuads(quads, quadsneeded);
             free(quads);
-
 
             // --highlight--
             // seems like not a great way to do this,

@@ -544,7 +544,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                 UI_PRINT("tiles: %i", tiles.count);
                 UI_PRINT("items: %i", items.count);
 
-                // UI_PRINT("mouseX: %f", input.mouseX);
+                UI_PRINT("mouse: %f, %f", input.mouseX, input.mouseY);
                 // UI_PRINT("mouseY: %f", input.mouseY);
 
 
@@ -640,7 +640,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 
         ui_update_draggables(input.mouseX, input.mouseY, input.mouseL);
-        ui_update_clickables(input.mouseX, input.mouseY, keysDown.mouseL);
+        ui_update_clickables(input.mouseX, input.mouseY, keysDown.mouseL, cw, ch);
         ui_render_elements(input.mouseX, input.mouseY); // pass mouse pos for highlighting
         ui_reset(); // call at the end or start of every frame so buttons don't carry over between frames
 
