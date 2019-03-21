@@ -18,6 +18,21 @@ struct gpu_quad {
 };
 
 
+gpu_quad gpu_quad_from_rect(rect r, float alpha) {
+    gpu_quad q;
+    q.x0 = r.x;
+    q.y0 = r.y;
+    q.x1 = r.x + r.w;
+    q.y1 = r.y + r.h;
+    q.u0 = 0;
+    q.v0 = 0;
+    q.u1 = 0;
+    q.v1 = 0;
+    q.alpha = alpha;
+    return q;
+}
+
+
 // just using one vao/vbo for everything atm even though it's a little ridiculous
 GLuint gpu_vao;
 GLuint gpu_vbo;
