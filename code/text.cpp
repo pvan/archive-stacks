@@ -9,11 +9,13 @@ struct gpu_quad {
     float x0, y0, u0, v0; // TL
     float x1, y1, u1, v1; // BR
     float alpha;
-    bool operator==(gpu_quad o) {
+    bool equ(gpu_quad o) {
         return x0==o.x0 && y0==o.y0 && u0==o.u0 && v0==o.v0 &&
                x1==o.x1 && y1==o.y1 && u1==o.u1 && v1==o.v1 &&
                alpha==o.alpha;
     }
+    bool operator==(gpu_quad other) { return equ(other); }
+    bool operator!=(gpu_quad other) { return !equ(other); }
     rect to_rect() { return { x0, y0, x1-x0, y1-y0 }; }
 };
 

@@ -236,6 +236,111 @@ void ui_RenderDeferredQuads(float mx, float my) {
 //
 //
 
+// new "element" setup
+
+////
+// move to gpu layer /*
+
+// this is kind of a single-texture submesh object
+// basically a list of quads all sharing the same texture id (with that id attached)
+struct gpu_quad_list_with_texture { // either the best or worst name i've ever come up with..
+    gpu_quad_pool quads;
+    gpu_texture_id texture_id;
+    bool equ(gpu_quad_list_with_texture o) {
+        if (texture_id != o.texture_id) return false;
+        if (quads.count != o.quads.count) return false;
+        for (int i = 0; i < quads.count; i++) {
+            if (quads[i] != o.quads[i]) return false;
+        }
+        return true;
+    }
+    bool operator==(gpu_quad_list_with_texture other) { return equ(other); }
+    bool operator!=(gpu_quad_list_with_texture other) { return !equ(other); }
+};
+
+DEFINE_TYPE_POOL(gpu_quad_list_with_texture);
+
+// basically a list of submeshes
+// "multi_texture_quad_lists" ? too much?
+struct mesh {
+    gpu_quad_list_with_texture_pool submeshes;
+    bool equ(mesh o) {
+        if (submeshes.count != o.submeshes.count) return false;
+        for (int i = 0; i < submeshes.count; i++) {
+            if (submeshes[i] != o.submeshes[i]) return false;
+        }
+        return true;
+    }
+    bool operator==(mesh other) { return equ(other); }
+    bool operator!=(mesh other) { return !equ(other); }
+};
+
+DEFINE_TYPE_POOL(mesh);
+
+void gpu_render_mesh(mesh m) {
+    // we assume all textures have been uploaded already (todo: add way to check/verify)
+    for (int i = 0; i < m.submeshes.count; i++) {
+        gpu_quad_list_with_texture& submesh = m.submeshes[i];
+        gpu_render_quads_with_texture(&submesh.quads.pool[0], submesh.quads.count, submesh.texture_id, 1);
+    }
+}
+
+// */
+////
+
+// the abstractions are getting a little layered... shh bby is ok
+struct ui_element {
+    mesh mesh;
+
+    // bool highlight_on_hover;
+
+    // keep pointer to this when creating so it's easy to activate later
+    // this is also used for mouse picking/detection at the moment...
+    gpu_quad *highlight_quad;
+
+    bool operator==(ui_element o) { return mesh==o.mesh; /* todo: check this is right when done*/ }
+};
+
+
+DEFINE_TYPE_POOL(ui_element);
+
+ui_element_pool ui_elements;
+
+void ui_queue_element(ui_element gizmo) {
+    ui_elements.add(gizmo);
+}
+
+gpu_quad *ui_find_topmost_element_under_point(float mx, float my) {
+    gpu_quad *result = 0;
+    // result.z_level = -99999; // max negative z level
+    bool found_at_least_one = false;
+    for (int i = 0; i < ui_elements.count; i++) {
+        rect r = ui_elements[i].highlight_quad->to_rect();
+        if (mx > r.x && mx <= r.x+r.w && my > r.y && my <= r.y+r.h) {
+            // if (buttons[i].z_level > result.z_level) {
+                // note we keep checking the whole list, so we implicitly get the last/topmost rect
+                result = ui_elements[i].highlight_quad;
+                found_at_least_one = true;
+            // }
+        }
+    }
+    if (found_at_least_one)
+        return result;
+    else
+        return 0;
+}
+
+void ui_render_elements(float mx, float my) {
+    gpu_quad *topmost = ui_find_topmost_element_under_point(mx, my); // oh no i've looked at the word element too long and it's starting to look funny
+    if (topmost) topmost->alpha = 0.3; // defauts to 0 let's say
+    for (int i = 0; i < ui_elements.count; i++) {
+        gpu_render_mesh(ui_elements[i].mesh);
+    }
+}
+
+//
+//
+
 
 void ui_Reset() {  // call every frame
     buttons.empty_out();
@@ -244,6 +349,8 @@ void ui_Reset() {  // call every frame
 
     ClearTextQuads();
     // ClearRectQuads();
+
+    ui_elements.empty_out();
 }
 
 void ui_draw_rect(rect r, u32 col = 0, float a = 1) {
