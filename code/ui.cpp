@@ -322,6 +322,12 @@ struct ui_element {
         gpu_quad_list_with_texture *lastsubmesh = &(mesh.submeshes.pool[mesh.submeshes.count-1]);
         highlight_quad = &(lastsubmesh->quads[lastsubmesh->quads.count-1]);
     }
+    void add_solid_rect(rect r, u32 col, float a) {
+        gpu_quad q = gpu_quad_from_rect(r);
+        int colcode = 1;
+        if (col == 0) colcode = 0;
+        add_solid_quad(q, colcode, a);
+    }
 };
 
 
@@ -333,18 +339,29 @@ void ui_queue_element(ui_element gizmo) {
     ui_elements.add(gizmo);
 }
 
+void ui_queue_solo_rect(rect r, u32 col, float a) {
+    ui_element gizmo = {0};
+    gpu_quad q = gpu_quad_from_rect(r);
+    int colcode = 1;
+    if (col == 0) colcode = 0;
+    gizmo.add_solid_quad(q, colcode, a);
+    ui_elements.add(gizmo);
+}
+
 gpu_quad *ui_find_topmost_element_under_point(float mx, float my) {
     gpu_quad *result = 0;
     // result.z_level = -99999; // max negative z level
     bool found_at_least_one = false;
     for (int i = 0; i < ui_elements.count; i++) {
-        rect r = ui_elements[i].highlight_quad->to_rect();
-        if (mx > r.x && mx <= r.x+r.w && my > r.y && my <= r.y+r.h) {
-            // if (buttons[i].z_level > result.z_level) {
-                // note we keep checking the whole list, so we implicitly get the last/topmost rect
-                result = ui_elements[i].highlight_quad;
-                found_at_least_one = true;
-            // }
+        if (ui_elements[i].highlight_quad) {
+            rect r = ui_elements[i].highlight_quad->to_rect();
+            if (mx > r.x && mx <= r.x+r.w && my > r.y && my <= r.y+r.h) {
+                // if (buttons[i].z_level > result.z_level) {
+                    // note we keep checking the whole list, so we implicitly get the last/topmost rect
+                    result = ui_elements[i].highlight_quad;
+                    found_at_least_one = true;
+                // }
+            }
         }
     }
     if (found_at_least_one)
@@ -364,16 +381,16 @@ void ui_render_elements(float mx, float my) {
 
 
 void ui_init(bitmap baked_font, gpu_texture_id atlas_tex_id) {
-    ui_font_atlas = baked_font;
+    // ui_font_atlas = baked_font;
 
 
-    // force change last pixel to white and reupload
-    // we use this pixel when drawing solid-color quads
-    // (so we can use the same texture as our letters)
-    // uv for this would be 511/512
-    // todo: magic numbers
-    baked_font.data[512*512-1] = 0xffffffff;
-    gpu_upload_texture(baked_font, atlas_tex_id);
+    // // force change last pixel to white and reupload
+    // // we use this pixel when drawing solid-color quads
+    // // (so we can use the same texture as our letters)
+    // // uv for this would be 511/512
+    // // todo: magic numbers
+    // baked_font.data[512*512-1] = 0xffffffff;
+    // gpu_upload_texture(baked_font, atlas_tex_id);
 
     ui_create_solid_color_texture_and_upload();
 }
@@ -385,28 +402,28 @@ void ui_init(bitmap baked_font, gpu_texture_id atlas_tex_id) {
 
 
 void ui_Reset() {  // call every frame
-    buttons.empty_out();
+    // buttons.empty_out();
     // ui_deferred_quads.empty_out();
     // buttons.count = 0; // same thing atm
 
-    ClearTextQuads();
+    // ClearTextQuads();
     // ClearRectQuads();
 
     ui_elements.empty_out();
 }
 
-void ui_draw_rect(rect r, u32 col = 0, float a = 1) {
-    // have to allocate col now since we're keeping the mem for later
-    // todo: free this at end of frame
-    // u32 *colmem = (u32*)malloc(sizeof(u32));
-    // *colmem = col;
-    AddDeferredRectQuad(gpu_quad_from_rect(r, a));
-    // AddRenderQuad(r, {colmem,1,1}, a, true);
-    // if (!ui_reusable_quad.created) ui_reusable_quad.create(0,0,1,1);
-    // ui_reusable_quad.set_texture(&col, 1, 1);
-    // ui_reusable_quad.set_verts(r.x, r.y, r.w, r.h);
-    // ui_reusable_quad.render(a);
-}
+// void ui_draw_rect(rect r, u32 col = 0, float a = 1) {
+//     // have to allocate col now since we're keeping the mem for later
+//     // todo: free this at end of frame
+//     // u32 *colmem = (u32*)malloc(sizeof(u32));
+//     // *colmem = col;
+//     AddDeferredRectQuad(gpu_quad_from_rect(r, a));
+//     // AddRenderQuad(r, {colmem,1,1}, a, true);
+//     // if (!ui_reusable_quad.created) ui_reusable_quad.create(0,0,1,1);
+//     // ui_reusable_quad.set_texture(&col, 1, 1);
+//     // ui_reusable_quad.set_verts(r.x, r.y, r.w, r.h);
+//     // ui_reusable_quad.render(a);
+// }
 
 // store our dragging state across multiple frames
 // so we can click and drag on something and move off that thing and still be dragging
@@ -594,7 +611,7 @@ rect ui_button(char *text, float x, float y, bool hpos, bool vpos, void(*effect)
     rect tr = ui_text(text, x, y, hpos, vpos); //RenderTextCenter(x, y, text);
     rect r = {(float)tr.x, (float)tr.y, (float)tr.w, (float)tr.h};
     AddButton(r, true, effect, arg);
-    return r;
+    return tr;
 }
 
 // kind of a hack so we can highlight tiles without bringing them into our normal system
@@ -604,9 +621,16 @@ rect ui_button_permanent_highlight(rect br, void(*effect)(int), int arg=0)
     // note our button has the normal hl disabled
     AddButton(br, false, effect, arg);
 
-    // instead we have a permanent highlight
-    // (caller only has one of this button and moves it to be under the mouse at all times)
-    AddDeferredRectQuad(gpu_quad_from_rect(br, 0.3));
+    // // instead we have a permanent highlight
+    // // (caller only has one of this button and moves it to be under the mouse at all times)
+    // AddDeferredRectQuad(gpu_quad_from_rect(br, 0.3));
+
+    // ui_queue_rect({r.x, top_pixels, r.w, size}, 0xffffffff, 0.9);
+
+    ui_element gizmo = {0};
+    gpu_quad q = gpu_quad_from_rect(br);
+    gizmo.add_hl_quad(q, 1, 0);
+    ui_elements.add(gizmo);
 
     return br;
 }
@@ -617,8 +641,14 @@ void ui_scrollbar(rect r, float top_percent, float bot_percent,
                   float *callbackvalue, float callbackscale,
                   void(*effect)(int), int arg=0)
 {
+    ui_element gizmo = {0};
+    // gpu_quad q = gpu_quad_from_rect(br);
+    // gizmo.add_hl_quad(q, 1, 0);
+
     // bg
-    ui_draw_rect(r, 0xffbbbbbb, .4); //0xffbbbbbb, .35
+    // ui_draw_rect(r, 0xffbbbbbb, .4); //0xffbbbbbb, .35
+    // ui_queue_rect(r, 0xffffffff, 0.4);
+    gizmo.add_solid_rect(r, 0xffffffff, 0.4);
 
     float top_pixels = top_percent * (float)r.h;
     float bot_pixels = bot_percent * (float)r.h;
@@ -628,8 +658,16 @@ void ui_scrollbar(rect r, float top_percent, float bot_percent,
 
     // indicator
     // todo: round?
-    ui_draw_rect({r.x, top_pixels, r.w, size}, 0xffdddddd, .9); //0xff888888, .75
+
+    // ui_queue_rect({r.x, top_pixels, r.w, size}, 0xffffffff, 0.9);
+    gizmo.add_solid_rect({r.x, top_pixels, r.w, size}, 0xffffffff, 0.9);
+    // ui_draw_rect({r.x, top_pixels, r.w, size}, 0xffdddddd, .9); //0xff888888, .75
     // ui_draw_rect({r.x+1, (int)top_pixels+1, r.w-2, (int)size-2}, 0xff888888, .9); //, .75
+
+
+    gizmo.add_hl_quad(gpu_quad_from_rect(r), 1, 0);
+
+    ui_elements.add(gizmo);
 
     // click handler
     AddScrollbar(r, true, callbackvalue, callbackscale);

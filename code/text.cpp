@@ -20,7 +20,7 @@ struct gpu_quad {
 };
 
 
-gpu_quad gpu_quad_from_rect(rect r, float alpha) {
+gpu_quad gpu_quad_from_rect(rect r, float alpha = 1) {
     gpu_quad q;
     q.x0 = r.x;
     q.y0 = r.y;
