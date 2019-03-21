@@ -17,6 +17,8 @@ md_allocation *md_records;
 uint md_r_count;
 uint md_r_alloc;
 
+uint total_alloc = 0;
+
 void md_record_alloc(md_allocation r) {
     if (md_r_count >= md_r_alloc) {
         if (!md_records) {
@@ -37,6 +39,7 @@ void md_record_free(void *ptr) {
     for (int i = md_r_count-1; i >= 0; i--) {
         if (md_records[i].ptr == ptr) {
             md_records[i].free = true;
+            total_alloc -= md_records[i].size;
             return;
         }
     }
@@ -46,7 +49,9 @@ void md_record_free(void *ptr) {
 void *memdebug_malloc(uint size, char *file, uint line)
 {
     void *result = malloc(size);
+if (strstr(file,"string.cpp")) return result;
     md_record_alloc({result, size, file, line});
+    total_alloc += size;
     return result;
 }
 
@@ -54,6 +59,7 @@ void memdebug_free(void *ptr, char *file, uint line)
 {
     if (ptr) { // ignore free(null) calls for now
         free(ptr);
+if (strstr(file,"string.cpp")) return;
         md_record_free({ptr});
     }
 }
@@ -61,10 +67,15 @@ void memdebug_free(void *ptr, char *file, uint line)
 void memdebug_reset()
 {
     md_r_count = 0;
+    total_alloc = 0;
 }
 
 void memdebug_print()
 {
+    char buf[256];
+    sprintf(buf, "leak since last reset: %u\n", total_alloc);
+    OutputDebugString(buf);
+
     OutputDebugString("--unfree'd memory allocations--\n");
     for (int i = 0; i < md_r_count; i++) {
         if (!md_records[i].free) {

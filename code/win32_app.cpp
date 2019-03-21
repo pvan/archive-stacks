@@ -657,13 +657,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 
 
-        // memdebug_print();
-        // memdebug_reset();
+        memdebug_print();
+        memdebug_reset();
 
 
         // Sleep(16); // we set frame rate above right? or should we here?
     }
-    DEBUGPRINT("HERE");
     memdebug_print();
     return 0;
 }

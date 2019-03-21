@@ -144,7 +144,6 @@ int gpu_upload_vertices(gpu_quad *quads, int quadcount) {
     int floats_per_quad = 3/*verts per tri*/ * 2/*tris*/ * 8/*comps per vert*/;
     int total_floats = quadcount*floats_per_quad;
 
-    if (gpu_cached_verts) free(gpu_cached_verts); // maybe free after using instead of on an as-needed basis?
     gpu_cached_verts = (float*)malloc(total_floats * sizeof(float));
 
     int v = 0;
@@ -179,6 +178,8 @@ int gpu_upload_vertices(gpu_quad *quads, int quadcount) {
     glBindVertexArray(gpu_vao); // need this here or no?
     glBindBuffer(GL_ARRAY_BUFFER, gpu_vbo);
     glBufferData(GL_ARRAY_BUFFER, total_floats*sizeof(float), gpu_cached_verts, GL_STATIC_DRAW);
+
+    if (gpu_cached_verts) free(gpu_cached_verts);
 
     return cached_vert_count;
 }
@@ -261,6 +262,7 @@ struct mesh {
         for (int i = 0; i < submeshes.count; i++) {
             if (submeshes[i].quads.pool) free(submeshes[i].quads.pool);
         }
+        if (submeshes.pool) free(submeshes.pool);
     }
 };
 
