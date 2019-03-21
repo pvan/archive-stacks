@@ -2,35 +2,62 @@
 
 
 // todo: audit this api
-// -float or int rects?
-// -how to pass alignments in
-// -rects or components for size/positions?
-// -and how to pass auto w/h (most funcs defaults to this now)
-// -names
-// -deferred rendering probably
-// -compress call chain?
+// -float or int rects? floats, but some bugs see zxoi
+// -how to pass alignments in? booleans for now
+// -rects or components for size/positions? whatever is more convenient for caller
+// -and how to pass auto w/h (most funcs defaults to this now) reexamine this
+// -names? mostly done, needs another pass or two
+// -deferred rendering probably. done
+// -compress call chain? yes, still needs
+
+//
+// this module meant to be used by our main app for any gui, shape, text drawing
+// it's a layer between the main app and lower level modules like text (tf_*) and gpu (gpu_*)
+// which may also use even lower level constructs like bitmap and rect
+//
+//
+// this is the way it works right now...
+//
+// interacting with and rendering all elements is deferred until the end of frame
+// see
+// ui_update_draggables(input.mouseX, input.mouseY, input.mouseL);
+// ui_update_clickables(input.mouseX, input.mouseY, keysDown.mouseL);
+// ui_render_elements(input.mouseX, input.mouseY); // pass mouse pos for highlighting
+// ui_reset(); // call at the end or start of every frame so buttons don't carry over between frames
+//
+//
+// ui_clickables is a collection of everything that can be clicked on
+//               they are invisible and aren't drawn
+//
+// ui_elements is the collection of elements to render
+//             usually multiple quads and textures will go into one element
+//             including an invisible quad on top of its other quads that
+//             is used to highlight the element on mouse hover (at the moment)
+//
+// most exposed api will end up creating a clickable and an element
+// todo: it might be worth combining these into one thing
+//
+// text is drawn with a collection of quads that have uvs into the texture atlas
+// the quads are created by the text (tf_) module which also owns the text atlas
+//
+// quads are drawn with a single pixel texture handled by this layer
+// todo: color support needed
+//
+//
+// a group of quads that use the same texture are combined into a struct called a submesh
+// a group of submeshes are combined into one mesh (each ui_element has a single mesh attached)
+// (this is so we can have a single object that can use multiple textures)
+// these structs all handle their own memory using dynamically-sized object pools, so be careful with leaks
+//
 
 
 const int UI_TEXT_SIZE = 24;
+
 const int UI_RESUSABLE_BUFFER_SIZE = 256;
-
 char ui_text_reusable_buffer[UI_RESUSABLE_BUFFER_SIZE];
-opengl_quad ui_reusable_quad;
-
-
-
-bitmap ui_font_atlas;
-opengl_quad ui_font_quad;
-
-
-
-// new "element" setup
 
 gpu_texture_id ui_solid_tex_id;
 bitmap ui_solid_bitmap;
-
-
-// new "element" setup
 
 void ui_create_solid_color_texture_and_upload()
 {
@@ -145,14 +172,12 @@ void ui_reset() {  // call every frame
 
 
 //
-// click handling, basically (rename from "button" ?)
+// click handling basically (previously known as "button")
 
 
-// todo: rename to ui_clickable or something ?
-struct button {
+// basically a rect with some callbacks for when it's clicked
+struct ui_clickable {
     rect rect; // same name works huh? seems like trouble
-    float z_level; // todo: remove
-    bool highlight; // todo: remove
 
     bool is_scrollbar; // make into generic "type" var when needed
     float *callbackvalue; // so we can change value with our deferred handling
@@ -164,9 +189,12 @@ struct button {
     void (*on_mouseover)(int);
     int mouseover_arg;
 
-    bool operator==(button o) {
+    bool operator==(ui_clickable o) {
         return rect==o.rect &&
-               z_level==o.z_level &&
+
+               is_scrollbar == o.is_scrollbar &&
+               callbackvalue == o.callbackvalue &&
+               callbackvaluescale == o.callbackvaluescale &&
 
                on_click==o.on_click &&
                click_arg==o.click_arg &&
@@ -175,25 +203,23 @@ struct button {
                mouseover_arg==o.mouseover_arg;
    }
 };
-// button *buttons = 0;
-// int buttonCount = 0;
-// int buttonAlloc = 0;
 
-DEFINE_TYPE_POOL(button);
+DEFINE_TYPE_POOL(ui_clickable);
 
-button_pool buttons;
+ui_clickable_pool ui_clickables;
 
 
-button TopMostButtonUnderPoint(float mx, float my) {
-    button result = {0};
-    result.z_level = -99999; // max negative z level
+ui_clickable ui_find_topmost_clickable_under_point(float mx, float my) {
+    ui_clickable result = {0};
+    // result.z_level = -99999; // max negative z level
     bool found_at_least_one = false;
-    for (int i = 0; i < buttons.count; i++) {
-        rect r = buttons[i].rect;
+    for (int i = 0; i < ui_clickables.count; i++) {
+        rect r = ui_clickables[i].rect;
         if (mx > r.x && mx <= r.x+r.w && my > r.y && my <= r.y+r.h) {
             // if (buttons[i].z_level > result.z_level) {
                 // note we keep checking the whole list, so we implicitly get the last/topmost rect
-                result = buttons[i];
+                // should just search reverse and quit after first
+                result = ui_clickables[i];
                 found_at_least_one = true;
             // }
         }
@@ -212,24 +238,26 @@ bool ui_dragging = false;
 // will persist over multiple frames unlike most elements, so be careful
 // for example, if you are resizing scrollbars dynamically (for some reason)
 // this will only be the scrollbar at the time of the drag start
-button ui_drag_element = {0};
+ui_clickable ui_drag_element = {0};
 
 // call to update elements that respond to clicking
-void ButtonsClick(float mx, float my) {
-    button top_most = TopMostButtonUnderPoint(mx, my);
+void ui_update_clickables(float mx, float my, bool mouse_click) {
+    if (mouse_click) {
+        ui_clickable top_most = ui_find_topmost_clickable_under_point(mx, my);
 
-    if (top_most.is_scrollbar) {
-        ui_drag_element = top_most;
-        ui_dragging = true;
+        if (top_most.is_scrollbar) {
+            ui_drag_element = top_most;
+            ui_dragging = true;
+        }
+
+        if (top_most.on_click)
+            top_most.on_click(top_most.click_arg);
     }
-
-    if (top_most.on_click)
-        top_most.on_click(top_most.click_arg);
 }
 
 // call to update elements that respond to dragging (eg scrollbars)
-void ButtonsDrag(float mx, float my, bool mouseDown) {
-    if (!mouseDown) {
+void ui_update_draggables(float mx, float my, bool mouse_down) {
+    if (!mouse_down) {
         ui_dragging = false;
     } else {
         if (ui_dragging) {
@@ -242,14 +270,12 @@ void ButtonsDrag(float mx, float my, bool mouseDown) {
 }
 
 
-// should call this addbutton callback maybe?
-void AddButton(rect r, bool hl, void(*on_click)(int),int click_arg, void(*on_mouseover)(int)=0,int mouseover_arg=0)
-{
-    buttons.add({r,1, hl, false,0,0, on_click,click_arg, on_mouseover,mouseover_arg});
+void ui_add_clickable(rect r, void(*on_click)(int),int click_arg, void(*on_mouseover)(int)=0,int mouseover_arg=0) {
+    ui_clickables.add({r, false,0,0, on_click,click_arg, on_mouseover,mouseover_arg});
 }
 
-void AddScrollbar(rect r, bool hl, float *callbackvalue, float callbackscale) {
-    buttons.add({r,1, hl, true,callbackvalue,callbackscale, 0,0, 0,0});
+void ui_add_draggable(rect r, float *callbackvalue, float callbackscale) {
+    ui_clickables.add({r, true,callbackvalue,callbackscale, 0,0, 0,0});
 }
 
 
@@ -279,8 +305,7 @@ rect ui_text(char *text, float x, float y, int hpos, int vpos, bool render = tru
     if (vpos == UI_BOTTOM) y -= UI_TEXT_SIZE;
     if (vpos == UI_CENTER) y -= UI_TEXT_SIZE/2;
 
-
-    // todo: find root cause of this bug
+    // todo: find root cause of this bug (id: zxoi)
     // it's ugly but if x is on an exact 0.5 edge,
     // we seem to get inconsistent rounding somewhere in our rendering pipeline
     // it wouldn't matter too much except we draw the same quad twice -- once for the highlight
@@ -291,18 +316,14 @@ rect ui_text(char *text, float x, float y, int hpos, int vpos, bool render = tru
         // assert(false);
     }
 
-
     // space around actual letters
     int margin = 2;
-
 
     gpu_quad bg_quad;
     bg_quad.x0 = x                - margin;
     bg_quad.y0 = y                - margin;
     bg_quad.x1 = x + bb.w         + margin;
     bg_quad.y1 = y + UI_TEXT_SIZE + margin;
-
-
 
     if (render) {
         ui_element gizmo = {0};
@@ -366,7 +387,7 @@ rect ui_button(char *text, float x, float y, bool hpos, bool vpos, void(*effect)
 {
     rect tr = ui_text(text, x, y, hpos, vpos); //RenderTextCenter(x, y, text);
     rect r = {(float)tr.x, (float)tr.y, (float)tr.w, (float)tr.h};
-    AddButton(r, true, effect, arg);
+    ui_add_clickable(r, effect, arg);
     return tr;
 }
 
@@ -375,7 +396,7 @@ rect ui_button(char *text, float x, float y, bool hpos, bool vpos, void(*effect)
 rect ui_button_permanent_highlight(rect br, void(*effect)(int), int arg=0)
 {
     // note our button has the normal hl disabled
-    AddButton(br, false, effect, arg);
+    ui_add_clickable(br, effect, arg);
 
     ui_element gizmo = {0};
     gpu_quad q = gpu_quad_from_rect(br);
@@ -413,7 +434,7 @@ void ui_scrollbar(rect r, float top_percent, float bot_percent,
     ui_elements.add(gizmo);
 
     // click handler
-    AddScrollbar(r, true, callbackvalue, callbackscale);
+    ui_add_draggable(r, callbackvalue, callbackscale);
 }
 
 

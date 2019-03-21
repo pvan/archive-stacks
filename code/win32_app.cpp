@@ -639,14 +639,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         }
 
 
-        // button handling & reset
-        // ButtonsHighlight(input.mouseX, input.mouseY);
-        ButtonsDrag(input.mouseX, input.mouseY, input.mouseL);
-        if (keysDown.mouseL) { // or check this inside buttonsclick?
-            ButtonsClick(input.mouseX, input.mouseY);
-        }
-        ui_render_elements(input.mouseX, input.mouseY);
-        // ui_RenderDeferredQuads(input.mouseX, input.mouseY); // pass mouse pos for highlighting
+        ui_update_draggables(input.mouseX, input.mouseY, input.mouseL);
+        ui_update_clickables(input.mouseX, input.mouseY, keysDown.mouseL);
+        ui_render_elements(input.mouseX, input.mouseY); // pass mouse pos for highlighting
         ui_reset(); // call at the end or start of every frame so buttons don't carry over between frames
 
 
@@ -657,8 +652,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 
 
-        memdebug_print();
-        memdebug_reset();
+        // memdebug_print();
+        // memdebug_reset();
 
 
         // Sleep(16); // we set frame rate above right? or should we here?
