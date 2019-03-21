@@ -28,6 +28,7 @@ void DEBUGPRINT(char *s, float f1, float f2) { sprintf(debugprintbuffer, s, f1, 
 #include "win32_input.cpp"
 #include "win32_icon/icon.h"
 #include "win32_opengl.cpp"
+#include "gpu.cpp"
 #include "win32_file.cpp"
 #include "win32_system.cpp"
 

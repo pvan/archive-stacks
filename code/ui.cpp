@@ -24,70 +24,13 @@ opengl_quad ui_font_quad;
 
 
 
-
-//
-//
-
 // new "element" setup
-
-////
-// move to gpu layer /*
-
-DEFINE_TYPE_POOL(gpu_quad);
-
-// this is kind of a single-texture submesh object
-// basically a list of quads all sharing the same texture id (with that id attached)
-struct gpu_quad_list_with_texture { // either the best or worst name i've ever come up with..
-    gpu_quad_pool quads;
-    gpu_texture_id texture_id;
-    bool equ(gpu_quad_list_with_texture o) {
-        if (texture_id != o.texture_id) return false;
-        if (quads.count != o.quads.count) return false;
-        for (int i = 0; i < quads.count; i++) {
-            if (quads[i] != o.quads[i]) return false;
-        }
-        return true;
-    }
-    bool operator==(gpu_quad_list_with_texture other) { return equ(other); }
-    bool operator!=(gpu_quad_list_with_texture other) { return !equ(other); }
-};
-
-DEFINE_TYPE_POOL(gpu_quad_list_with_texture);
-
-// basically a list of submeshes
-// "multi_texture_quad_lists" ? too much?
-struct mesh {
-    gpu_quad_list_with_texture_pool submeshes;
-    bool equ(mesh o) {
-        if (submeshes.count != o.submeshes.count) return false;
-        for (int i = 0; i < submeshes.count; i++) {
-            if (submeshes[i] != o.submeshes[i]) return false;
-        }
-        return true;
-    }
-    bool operator==(mesh other) { return equ(other); }
-    bool operator!=(mesh other) { return !equ(other); }
-
-    void add_submesh(gpu_quad_list_with_texture newsubmesh) {
-        submeshes.add(newsubmesh);
-    }
-};
-
-DEFINE_TYPE_POOL(mesh);
-
-void gpu_render_mesh(mesh m) {
-    // we assume all textures have been uploaded already (todo: add way to check/verify)
-    for (int i = 0; i < m.submeshes.count; i++) {
-        gpu_quad_list_with_texture& submesh = m.submeshes[i];
-        gpu_render_quads_with_texture(&submesh.quads.pool[0], submesh.quads.count, submesh.texture_id, 1);
-    }
-}
-
-// */
-////
 
 gpu_texture_id ui_solid_tex_id;
 bitmap ui_solid_bitmap;
+
+
+// new "element" setup
 
 void ui_create_solid_color_texture_and_upload()
 {
