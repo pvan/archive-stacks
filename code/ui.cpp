@@ -193,22 +193,25 @@ void ui_RenderDeferredQuads(float mx, float my) {
     // }
 
 
-    // change alpha of the hidden quad above our mouse
-    // go in reverse and stop at the first one,
-    // should give us only the topmost quad
-    for (int i = text_quads.count-1; i >= 0; i--) {
-        if (r.x == text_quads[i].x0 && r.y == text_quads[i].y0 &&
-            r.w == text_quads[i].x1-text_quads[i].x0 &&
-            r.h == text_quads[i].y1-text_quads[i].y0)
-        {
-            text_quads[i].alpha = 0.3;
-            break;
-        }
-    }
+    // // change alpha of the hidden quad above our mouse
+    // // go in reverse and stop at the first one,
+    // // should give us only the topmost quad
+    // for (int i = text_quads.count-1; i >= 0; i--) {
+    //     if (r.x == text_quads[i].x0 && r.y == text_quads[i].y0 &&
+    //         r.w == text_quads[i].x1-text_quads[i].x0 &&
+    //         r.h == text_quads[i].y1-text_quads[i].y0)
+    //     {
+    //         text_quads[i].alpha = 0.3;
+    //         break;
+    //     }
+    // }
 
     // change color of highlighted
 
     gpu_render_quads_with_texture(&text_quads.pool[0], text_quads.count, tf_fonttexture, 1);
+
+
+
 
     // for (int i = 0; i < rect_quads.count; i++) {
     //     // eventually could use col attrib for colors
@@ -431,7 +434,7 @@ rect ui_button_invisible_highlight(rect br, void(*effect)(int), int arg=0)
 {
     // ttf_rect tr = ui_text("#", br.x, br.y, true, true); //RenderTextCenter(x, y, text);
     AddButton(br, true, effect, arg);
-    AddDeferredRectQuad(gpu_quad_from_rect(br, 0));
+    AddDeferredRectQuad(gpu_quad_from_rect(br, 0.3));
     // AddRenderQuad(br, {0}, 0, false); // 0 alpha, button handles any highlighting
     return br;
 }

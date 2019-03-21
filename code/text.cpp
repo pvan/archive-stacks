@@ -24,10 +24,10 @@ gpu_quad gpu_quad_from_rect(rect r, float alpha) {
     q.y0 = r.y;
     q.x1 = r.x + r.w;
     q.y1 = r.y + r.h;
-    q.u0 = 0;
-    q.v0 = 0;
-    q.u1 = 0;
-    q.v1 = 0;
+    q.u0 = 511.0/512.0; // todo: phase out into giving each quad a texture id?
+    q.v0 = 511.0/512.0;
+    q.u1 = 1.0;
+    q.v1 = 1.0;
     q.alpha = alpha;
     return q;
 }
