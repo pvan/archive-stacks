@@ -589,17 +589,17 @@ struct ffmpeg_media {
         if (!vfc->iformat || vfc->iformat==nullptr) { return true; } // assume not a video
 
         // TODO: add to this list all formats we don't want to send to gpu every frame
-        string definitely_static_image_formats[] = {
-            string::Create(L"image2"),
-            string::Create(L"png_pipe"),
-            string::Create(L"bmp_pipe"),
-            string::Create(L"jpeg_pipe"),
+        static string definitely_static_image_formats[] = {
+            string::KeepMemory(L"image2"),
+            string::KeepMemory(L"png_pipe"),
+            string::KeepMemory(L"bmp_pipe"),
+            string::KeepMemory(L"jpeg_pipe"),
             // todo: add way to detect missing formats (e.g. check if getframe is never changing or something)
         };
         int length_of_formats = sizeof(definitely_static_image_formats)/sizeof(definitely_static_image_formats[0]);
 
         for (int i = 0; i < length_of_formats; i++) {
-            if (string::Create((char*)vfc->iformat->name) == definitely_static_image_formats[i]) {
+            if (string::CreateTemporary((char*)vfc->iformat->name) == definitely_static_image_formats[i]) {
                 return true;
             }
         }

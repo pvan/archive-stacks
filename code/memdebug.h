@@ -49,8 +49,8 @@ void md_record_free(void *ptr) {
 void *memdebug_malloc(uint size, char *file, uint line)
 {
     void *result = malloc(size);
-if (strstr(file,"string.cpp")) return result;
-   // md_record_alloc({result, size, file, line});
+// if (strstr(file,"string.cpp")) return result;
+   md_record_alloc({result, size, file, line});
     total_alloc += size;
     return result;
 }
@@ -59,7 +59,7 @@ void memdebug_free(void *ptr, char *file, uint line)
 {
     if (ptr) { // ignore free(null) calls for now
         free(ptr);
-if (strstr(file,"string.cpp")) return;
+// if (strstr(file,"string.cpp")) return;
         md_record_free({ptr});
     }
 }

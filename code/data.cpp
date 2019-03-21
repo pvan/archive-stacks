@@ -168,7 +168,7 @@ string_pool ReadTagListFromFileOrSomethingUsableOtherwise(string master_path) {
     wc *path = master_path.CopyAndAppend(L"/~taglist.txt").chars;
 
     if (!win32_PathExists(path)) {
-        result.add(string::Create(L"untagged"));  // always have this entry as index 0?? todo: decide
+        result.add(string::KeepMemory(L"untagged"));  // always have this entry as index 0?? todo: decide
         return result;
     }
 
@@ -209,7 +209,7 @@ struct item {
     string metadatapath; //cached metadata
     bool operator==(item o) { return fullpath==o.fullpath; } // for now just check fullpath
 
-    string justname() { wc *result = CopyJustFilename(fullpath.chars); return string::Create(result); }
+    string justname() { wc *result = CopyJustFilename(fullpath.chars); return string::KeepMemory(result); }
     // string justsubpath() { wc *result = CopyJustFilename(fullpath.chars); return string::Create(result); }
 
     wc *PointerToJustSubpath(string rootpath) { return PointerToFirstUniqueCharInSecondString(rootpath.chars, fullpath.chars); };
@@ -256,14 +256,14 @@ bool PopulateTagsFromCachedFileIfPossible(item *it) {
     return true;
 }
 
-static string laststr = string::Create(L"empty");
+static string laststr = string::CreateWithNewMem(L"empty");
 bool PopulateTagFromPath(item *it) {
     wc *directory = CopyJustParentDirectoryName(it->fullpath.chars);
     assert(directory);
     assert(directory[0]);
     // if (!directory) return false; //todo: assert these instead?
     // if (directory[0] == 0) return false;
-    string dir = string::Create(directory);
+    string dir = string::KeepMemory(directory);
 
     if (laststr != dir) {
         laststr = dir.Copy();
@@ -514,7 +514,7 @@ void LoadMasterDataFileAndPopulateResolutionsAndTagsEtc(
             }
         }
         if (this_item_i == -1) {
-            DEBUGPRINT("ERROR: subpath in metadata list not found in item list: %s\n", string::Create(subpath).ToUTF8Reusable());
+            DEBUGPRINT("ERROR: subpath in metadata list not found in item list: %s\n", string::KeepMemory(subpath).ToUTF8Reusable());
             assert(false);
         }
         (*progress)++;

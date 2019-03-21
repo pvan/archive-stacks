@@ -56,12 +56,12 @@ struct string
 
 
     // win32
-    char *ToUTF8() {
-        int numChars = WideCharToMultiByte(CP_UTF8,0,  chars,-1,  0,0,  0,0);
-        char *utf8 = (char*)malloc(numChars*sizeof(char));
-        WideCharToMultiByte(CP_UTF8,0,  chars,-1,  utf8,numChars*sizeof(char),  0,0);
-        return utf8;
-    }
+    // char *ToUTF8() {
+    //     int numChars = WideCharToMultiByte(CP_UTF8,0,  chars,-1,  0,0,  0,0);
+    //     char *utf8 = (char*)malloc(numChars*sizeof(char));
+    //     WideCharToMultiByte(CP_UTF8,0,  chars,-1,  utf8,numChars*sizeof(char),  0,0);
+    //     return utf8;
+    // }
 
     char *ToUTF8Reusable() {
         int numChars = WideCharToMultiByte(CP_UTF8,0,  chars,-1,  0,0,  0,0);
@@ -77,11 +77,16 @@ struct string
         return result == 0;
     }
 
-    static string Create(wchar_t *source) {
+    static string CreateWithNewMem(wchar_t *source) {
         string newString = {0};
         newString.length = wcslen(source);
         newString.chars = (wchar_t*)malloc((newString.length+1)*sizeof(wchar_t));
         memcpy(newString.chars, source, (newString.length+1)*sizeof(wchar_t));
+        return newString;
+    }
+
+    static string KeepMemory(wc *source) {
+        string newString = {source, (int)wcslen(source)};
         return newString;
     }
 
@@ -102,6 +107,23 @@ struct string
 
         // memcpy(newString.chars, source, (newString.length+1)*sizeof(wchar_t));
         return newString;
+    }
+
+    // format input char* string to wc* and put in temporary memory
+    // pretty much for one-off comparisons to other strings
+    static string CreateTemporary(char *source) {
+        wchar_t *dest = string_reusable_toggle ? (wchar_t*)&string_reusable_mem1 : (wchar_t*)&string_reusable_mem2;
+        string_reusable_toggle =! string_reusable_toggle;
+
+        string newString = {0};
+
+        newString.length = MultiByteToWideChar(CP_UTF8,0,  source,-1,  0,0);
+        newString.chars = dest;//(wchar_t*)malloc((newString.length+1)*sizeof(wchar_t));
+        MultiByteToWideChar(CP_UTF8,0,  source,-1,  newString.chars,newString.length*sizeof(char));
+
+        // memcpy(newString.chars, source, (newString.length+1)*sizeof(wchar_t));
+        return newString;
+
     }
 
     static wchar_t *CopyIntoReusableMem(wchar_t *source) {

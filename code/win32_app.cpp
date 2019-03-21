@@ -257,7 +257,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 
 
-    master_path = string::Create(L"E:\\inspiration test folder");
+    master_path = string::KeepMemory(L"E:\\inspiration test folder");
 
     // create item list with fullpath populated
     // just adapt old method for now
@@ -559,7 +559,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                         int i = debug_info_tile_index_mouse_was_on;
                         UI_PRINT("tile_index_mouse_was_on: %i", debug_info_tile_index_mouse_was_on);
 
-                        UI_PRINT("name: %s", tiles[i].name.ToUTF8());
+                        UI_PRINT("name: %s", tiles[i].name.ToUTF8Reusable());
 
                         if (tiles[i].media.vfc && tiles[i].media.vfc->iformat)
                             UI_PRINT("format name: %s", (char*)tiles[i].media.vfc->iformat->name);
@@ -573,7 +573,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                             UI_PRINT(tiles[i].media.IsStaticImageBestGuess() ? "image" : "video");
 
                         wc *directory = CopyJustParentDirectoryName(items[i].fullpath.chars);
-                        string temp = string::Create(directory);
+                        string temp = string::KeepMemory(directory);
                         UI_PRINT("folder: %s", temp.ToUTF8Reusable());
                         free(directory);
 
@@ -652,8 +652,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 
 
-        // memdebug_print();
-        // memdebug_reset();
+        memdebug_print();
+        memdebug_reset();
 
 
         // Sleep(16); // we set frame rate above right? or should we here?

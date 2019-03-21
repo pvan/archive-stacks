@@ -105,7 +105,7 @@ struct tile
         // if (win32_IsDirectory(path)) return newTile;
 
         newTile.paths_just_for_comparing_tiles.fullpath = path.Copy();
-        newTile.name = string::Create(CopyJustFilename(path.chars));
+        newTile.name = string::CreateWithNewMem(CopyJustFilename(path.chars));
         // newTile.modifiedTimeSinceLastEpoc = win32_GetModifiedTimeSinceEpoc(path);
         // note getmodified time has to touch the files which means slow on cold hdd
         // todo: consider moving elsewhere? special loop perhaps?
