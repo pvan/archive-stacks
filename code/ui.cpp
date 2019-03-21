@@ -22,19 +22,6 @@ opengl_quad ui_reusable_quad;
 bitmap ui_font_atlas;
 opengl_quad ui_font_quad;
 
-void ui_init(bitmap baked_font, gpu_texture_id atlas_tex_id) {
-    ui_font_atlas = baked_font;
-
-
-    // force change last pixel to white and reupload
-    // we use this pixel when drawing solid-color quads
-    // (so we can use the same texture as our letters)
-    // uv for this would be 511/512
-    // todo: magic numbers
-    baked_font.data[512*512-1] = 0xffffffff;
-    gpu_upload_texture(baked_font, atlas_tex_id);
-}
-
 
 
 //
@@ -273,6 +260,10 @@ struct mesh {
     }
     bool operator==(mesh other) { return equ(other); }
     bool operator!=(mesh other) { return !equ(other); }
+
+    void add_submesh(gpu_quad_list_with_texture newsubmesh) {
+        submeshes.add(newsubmesh);
+    }
 };
 
 DEFINE_TYPE_POOL(mesh);
@@ -288,6 +279,21 @@ void gpu_render_mesh(mesh m) {
 // */
 ////
 
+gpu_texture_id ui_solid_tex_id;
+bitmap ui_solid_bitmap;
+
+void ui_create_solid_color_texture_and_upload()
+{
+    ui_solid_bitmap.data = (u32*)malloc(2 * sizeof(u32));
+    ui_solid_bitmap.data[0] = 0;
+    ui_solid_bitmap.data[1] = 0xffffffff;
+    ui_solid_bitmap.w = 2;
+    ui_solid_bitmap.h = 1;
+
+    ui_solid_tex_id = gpu_create_texture();
+    gpu_upload_texture(ui_solid_bitmap, ui_solid_tex_id);
+}
+
 // the abstractions are getting a little layered... shh bby is ok
 struct ui_element {
     mesh mesh;
@@ -299,6 +305,23 @@ struct ui_element {
     gpu_quad *highlight_quad;
 
     bool operator==(ui_element o) { return mesh==o.mesh; /* todo: check this is right when done*/ }
+
+    void add_solid_quad(gpu_quad q, int colorcode, float alpha) {
+        q.u0 = colorcode / (float)ui_solid_bitmap.w;
+        q.v0 = colorcode / (float)ui_solid_bitmap.h;
+        q.u1 = (colorcode+1) / (float)ui_solid_bitmap.w;
+        q.v1 = (colorcode+1) / (float)ui_solid_bitmap.h;
+        q.alpha = alpha;
+        gpu_quad_pool newquadlist = gpu_quad_pool::empty();
+        newquadlist.add(q);
+        mesh.add_submesh({newquadlist, ui_solid_tex_id});
+    }
+    void add_hl_quad(gpu_quad q, int colorcode, float alpha) {
+        add_solid_quad(q, colorcode, alpha);
+        // HL quad will be last quad entered
+        gpu_quad_list_with_texture *lastsubmesh = &(mesh.submeshes.pool[mesh.submeshes.count-1]);
+        highlight_quad = &(lastsubmesh->quads[lastsubmesh->quads.count-1]);
+    }
 };
 
 
@@ -337,6 +360,25 @@ void ui_render_elements(float mx, float my) {
         gpu_render_mesh(ui_elements[i].mesh);
     }
 }
+
+
+
+void ui_init(bitmap baked_font, gpu_texture_id atlas_tex_id) {
+    ui_font_atlas = baked_font;
+
+
+    // force change last pixel to white and reupload
+    // we use this pixel when drawing solid-color quads
+    // (so we can use the same texture as our letters)
+    // uv for this would be 511/512
+    // todo: magic numbers
+    baked_font.data[512*512-1] = 0xffffffff;
+    gpu_upload_texture(baked_font, atlas_tex_id);
+
+    ui_create_solid_color_texture_and_upload();
+}
+
+
 
 //
 //
@@ -462,46 +504,58 @@ rect ui_text(char *text, float x, float y, int hpos, int vpos, bool render = tru
     bg_quad.y0 = y                - margin;
     bg_quad.x1 = x + bb.w         + margin;
     bg_quad.y1 = y + UI_TEXT_SIZE + margin;
-    bg_quad.u0 = 1/512.0;
-    bg_quad.v0 = 2/512.0;
-    bg_quad.u1 = 1/512.0;
-    bg_quad.v1 = 2/512.0;
 
 
-    // bg
+
     if (render) {
-        bg_quad.alpha = 1;
-        AddDeferredRectQuad(bg_quad);
-    }
 
 
-    // text
-    if (render) {
+        ui_element gizmo = {0};
+
+
+
+        // bg
+        gizmo.add_solid_quad(bg_quad, 0, 1);
+
+
+
+        // text
         y += tf_cached_largest_ascent; // move y to top instead of baseline of text
 
         int quadsneeded = tf_how_many_quads_needed_for_text(text);
         gpu_quad *quads = (gpu_quad*)malloc(quadsneeded*sizeof(gpu_quad));
         tf_create_quad_list_for_text_at_rect(text, x,y+margin, quads, quadsneeded);
 
-        AddDeferredTextQuads(quads, quadsneeded);
+        gpu_quad_list_with_texture textsubmesh = {0};
+        for (int i = 0; i < quadsneeded; i++) {
+            textsubmesh.quads.add(quads[i]);
+        }
+        textsubmesh.texture_id = tf_fonttexture;
+        // gpu_quad_list_with_texture textsubmesh = submesh_from_quads(quads, quadsneeded, tf_fonttexture);
+        gizmo.mesh.add_submesh(textsubmesh);
+        // AddDeferredTextQuads(quads, quadsneeded);
 
         free(quads);
-    }
 
 
-    // highlight
-    if (render) {
-        // seems like a terrible way to do this,
+
+        // highlight
+        // seems like not a great way to do this,
         // but just add an invisible rect above every text
         // and if highlighted (checked when rendering), change the alpha up from 0
-        gpu_quad invisible_hl_quad = bg_quad;
-        invisible_hl_quad.alpha = 0; // will get changed if the highlight quad in ui_RenderDeferredQuads
-        // change uv to bottom right pixel of font atlas (specially overridden to be white)
-        invisible_hl_quad.u0 = 511.0/512.0;
-        invisible_hl_quad.v0 = 511.0/512.0;
-        invisible_hl_quad.u1 = 1.0;
-        invisible_hl_quad.v1 = 1.0;
-        AddDeferredRectQuad(invisible_hl_quad);
+        gizmo.add_hl_quad(bg_quad, 1, 0);
+
+        // gpu_quad invisible_hl_quad = bg_quad;
+        // invisible_hl_quad.alpha = 0; // will get changed if the highlight quad in ui_RenderDeferredQuads
+        // // change uv to bottom right pixel of font atlas (specially overridden to be white)
+        // invisible_hl_quad.u0 = 511.0/512.0;
+        // invisible_hl_quad.v0 = 511.0/512.0;
+        // invisible_hl_quad.u1 = 1.0;
+        // invisible_hl_quad.v1 = 1.0;
+        // AddDeferredRectQuad(invisible_hl_quad);
+
+
+        ui_queue_element(gizmo);
     }
 
     return bg_quad.to_rect();

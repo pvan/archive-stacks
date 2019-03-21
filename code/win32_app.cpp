@@ -644,7 +644,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         if (keysDown.mouseL) { // or check this inside buttonsclick?
             ButtonsClick(input.mouseX, input.mouseY);
         }
-        ui_RenderDeferredQuads(input.mouseX, input.mouseY); // pass mouse pos for highlighting
+        ui_render_elements(input.mouseX, input.mouseY);
+        // ui_RenderDeferredQuads(input.mouseX, input.mouseY); // pass mouse pos for highlighting
         ui_Reset(); // call at the end or start of every frame so buttons don't carry over between frames
 
 
