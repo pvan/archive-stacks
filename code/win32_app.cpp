@@ -7,6 +7,8 @@
 
 #include "types.h"
 
+#include "memdebug.h"
+
 char debugprintbuffer[256];
 void DEBUGPRINT(int i) { sprintf(debugprintbuffer, "%i\n", i); OutputDebugString(debugprintbuffer); }
 void DEBUGPRINT(u64 ui) { sprintf(debugprintbuffer, "%lli\n", ui); OutputDebugString(debugprintbuffer); }
@@ -655,11 +657,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 
 
-
-
+        // memdebug_print();
+        // memdebug_reset();
 
 
         // Sleep(16); // we set frame rate above right? or should we here?
     }
+    DEBUGPRINT("HERE");
+    memdebug_print();
     return 0;
 }
