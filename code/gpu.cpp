@@ -256,6 +256,12 @@ struct mesh {
     void add_submesh(gpu_quad_list_with_texture newsubmesh) {
         submeshes.add(newsubmesh);
     }
+
+    void free_all_mem() {
+        for (int i = 0; i < submeshes.count; i++) {
+            if (submeshes[i].quads.pool) free(submeshes[i].quads.pool);
+        }
+    }
 };
 
 DEFINE_TYPE_POOL(mesh);

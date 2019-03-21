@@ -134,6 +134,11 @@ void ui_init() {
 
 
 void ui_reset() {  // call every frame
+
+    // free all the mem used in the subelements of our ui_elements before clearing it
+    for (int i = 0; i < ui_elements.count; i++) {
+        ui_elements[i].mesh.free_all_mem();
+    }
     ui_elements.empty_out();
 }
 
