@@ -119,11 +119,12 @@ DWORD WINAPI RunBackgroundStartupThread( LPVOID lpParam ) {
         // AddRandomColorToTilePool
         {
             for (int i = 0; i < tiles.count; i++) {
-                u32 col = rand() & 0xff;
-                col |= (rand() & 0xff) << 8;
-                col |= (rand() & 0xff) << 16;
-                col |= (rand() & 0xff) << 24;
-                tiles[i].rand_color = col;//rand();
+                tiles[i].rand_color = rand_col();
+                // u32 col = rand() & 0xff;
+                // col |= (rand() & 0xff) << 8;
+                // col |= (rand() & 0xff) << 16;
+                // col |= (rand() & 0xff) << 24;
+                // tiles[i].rand_color = col;//rand();
             }
         }
 

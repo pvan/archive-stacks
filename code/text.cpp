@@ -127,14 +127,12 @@ rect tf_create_quad_list_for_text_at_rect(char *text, float x, float y, gpu_quad
             assert(quadcountsofar+1 <= quadcount); // just checking ourselves
             stbtt_aligned_quad q;
             stbtt_GetBakedQuad(tf_bakedchars, 512,512, *text-32, &tx,&ty,&q,1);//1=opengl & d3d10+,0=d3d9
-            quadlist[quadcountsofar++] = {q.x0,q.y0,q.s0,q.t0, q.x1,q.y1,q.s1,q.t1, 1}; // 1 for alpha
-            // // DEBUGPRINT("u0: %f  u1: %f \n", q.s0, q.s1);
-            // // DEBUGPRINT("v0: %f  v1: %f \n", q.t0, q.t1);
-            // if (render) {
-            //     render_quad->set_verts_uvs(q.x0, q.y0, q.x1-q.x0, q.y1-q.y0,
-            //                            q.s0, q.s1, q.t0, q.t1);
-            //     render_quad->render(1);
-            // }
+
+            // hmm not sure if i like alpha and color on piggybacking on the quad or not
+            gpu_quad quad = {q.x0,q.y0,q.s0,q.t0, q.x1,q.y1,q.s1,q.t1};
+            quad.alpha = 1;
+            quad.color = 0xffffffff;
+            quadlist[quadcountsofar++] = quad;
 
             // x bounding box
             if (!set_left_most_x) {

@@ -50,7 +50,7 @@ void *memdebug_malloc(uint size, char *file, uint line)
 {
     void *result = malloc(size);
 if (strstr(file,"string.cpp")) return result;
-    md_record_alloc({result, size, file, line});
+   // md_record_alloc({result, size, file, line});
     total_alloc += size;
     return result;
 }

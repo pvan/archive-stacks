@@ -57,15 +57,17 @@ const int UI_RESUSABLE_BUFFER_SIZE = 256;
 char ui_text_reusable_buffer[UI_RESUSABLE_BUFFER_SIZE];
 
 gpu_texture_id ui_solid_tex_id;
+u32 white = 0xffffffff;
 bitmap ui_solid_bitmap;
 
 void ui_create_solid_color_texture_and_upload()
 {
-    ui_solid_bitmap.data = (u32*)malloc(2 * sizeof(u32));
-    ui_solid_bitmap.data[0] = 0;
-    ui_solid_bitmap.data[1] = 0xffffffff;
-    ui_solid_bitmap.w = 2;
-    ui_solid_bitmap.h = 1;
+    // ui_solid_bitmap.data = (u32*)malloc(2 * sizeof(u32));
+    // ui_solid_bitmap.data[0] = 0;
+    // ui_solid_bitmap.data[1] = 0xffffffff;
+    // ui_solid_bitmap.w = 2;
+    // ui_solid_bitmap.h = 1;
+    ui_solid_bitmap = { &white, 1, 1 };
 
     ui_solid_tex_id = gpu_create_texture();
     gpu_upload_texture(ui_solid_bitmap, ui_solid_tex_id);
@@ -81,27 +83,38 @@ struct ui_element {
 
     bool operator==(ui_element o) { return mesh==o.mesh; /* todo: check this is right when done*/ }
 
-    void add_solid_quad(gpu_quad q, int colorcode, float alpha) {
-        q.u0 = colorcode / (float)ui_solid_bitmap.w;
-        q.v0 = colorcode / (float)ui_solid_bitmap.h;
-        q.u1 = (colorcode+1) / (float)ui_solid_bitmap.w;
-        q.v1 = (colorcode+1) / (float)ui_solid_bitmap.h;
+    // a little awkward since quad has color/alpha in it atm
+    // and we just overwrite it with new
+    // todo: maybe keep color/alpha out of gpu_quad?
+    // or maybe make gpu_quad constructor that takes color/alpha and
+    // chagne these functions to jsut take a single gpu_quad
+    void add_solid_quad(gpu_quad q, u32 color, float alpha) {
+        // int colorcode = 1;
+        // q.u0 = colorcode / (float)ui_solid_bitmap.w;
+        // q.v0 = colorcode / (float)ui_solid_bitmap.h;
+        // q.u1 = (colorcode+1) / (float)ui_solid_bitmap.w;
+        // q.v1 = (colorcode+1) / (float)ui_solid_bitmap.h;
+        q.u0 = 0;
+        q.v0 = 0;
+        q.u1 = 1;
+        q.v1 = 1;
         q.alpha = alpha;
+        q.color = color;
         gpu_quad_pool newquadlist = gpu_quad_pool::new_empty();
         newquadlist.add(q);
         mesh.add_submesh({newquadlist, ui_solid_tex_id});
     }
-    void add_hl_quad(gpu_quad q, int colorcode, float alpha) {
-        add_solid_quad(q, colorcode, alpha);
+    void add_hl_quad(gpu_quad q, u32 col = 0xffffffff, float a = 0) {
+        add_solid_quad(q, col, a);
         // HL quad will be last quad entered
         gpu_quad_list_with_texture *lastsubmesh = &(mesh.submeshes.pool[mesh.submeshes.count-1]);
         highlight_quad = &(lastsubmesh->quads[lastsubmesh->quads.count-1]);
     }
     void add_solid_rect(rect r, u32 col, float a) {
         gpu_quad q = gpu_quad_from_rect(r);
-        int colcode = 1;
-        if (col == 0) colcode = 0;
-        add_solid_quad(q, colcode, a);
+        // int colcode = 1;
+        // if (col == 0) colcode = 0;
+        add_solid_quad(q, col, a);
     }
 };
 
@@ -114,14 +127,14 @@ void ui_queue_element(ui_element gizmo) {
     ui_elements.add(gizmo);
 }
 
-void ui_queue_solo_rect(rect r, u32 col, float a) {
-    ui_element gizmo = {0};
-    gpu_quad q = gpu_quad_from_rect(r);
-    int colcode = 1;
-    if (col == 0) colcode = 0;
-    gizmo.add_solid_quad(q, colcode, a);
-    ui_elements.add(gizmo);
-}
+// void ui_queue_solo_rect(rect r, u32 col, float a) {
+//     ui_element gizmo = {0};
+//     gpu_quad q = gpu_quad_from_rect(r);
+//     int colcode = 1;
+//     if (col == 0) colcode = 0;
+//     gizmo.add_solid_quad(q, colcode, a);
+//     ui_elements.add(gizmo);
+// }
 
 gpu_quad *ui_find_topmost_element_under_point(float mx, float my) {
     gpu_quad *result = 0;
@@ -329,7 +342,8 @@ rect ui_text(char *text, float x, float y, int hpos, int vpos, bool render = tru
         ui_element gizmo = {0};
         {
             // --bg--
-            gizmo.add_solid_quad(bg_quad, 0, 1);
+            srand(x+(y*1024)); // seed by position
+            gizmo.add_solid_quad(bg_quad, rand_col(), 1);
 
 
             // --text--
@@ -354,7 +368,7 @@ rect ui_text(char *text, float x, float y, int hpos, int vpos, bool render = tru
             // seems like not a great way to do this,
             // but just add an invisible rect above every text
             // and if highlighted (checked when rendering), change the alpha up from 0
-            gizmo.add_hl_quad(bg_quad, 1, 0);
+            gizmo.add_hl_quad(bg_quad);
 
         }
         ui_queue_element(gizmo);
@@ -400,7 +414,7 @@ rect ui_button_permanent_highlight(rect br, void(*effect)(int), int arg=0)
 
     ui_element gizmo = {0};
     gpu_quad q = gpu_quad_from_rect(br);
-    gizmo.add_hl_quad(q, 1, 0);
+    gizmo.add_hl_quad(q);
     ui_elements.add(gizmo);
 
     return br;
@@ -414,9 +428,14 @@ void ui_scrollbar(rect r, float top_percent, float bot_percent,
 {
     ui_element gizmo = {0};
     {
+        // lets try something funny, put the hl below the others as a kind of optional "less opacity"
+        // todo: could have variable opacity settings on our hl instead of always going to .3 or w/e
+        // --hl--
+        gizmo.add_hl_quad(gpu_quad_from_rect(r), 0, 0);
+
         // --bg--
         // ui_draw_rect(r, 0xffbbbbbb, .4); //0xffbbbbbb, .35
-        gizmo.add_solid_rect(r, 0xffffffff, 0.4);
+        gizmo.add_solid_rect(r, 0xffbbbbbb, 0.4);
 
         float top_pixels = top_percent * (float)r.h;
         float bot_pixels = bot_percent * (float)r.h;
@@ -426,10 +445,8 @@ void ui_scrollbar(rect r, float top_percent, float bot_percent,
 
         // --indicator--
         // ui_draw_rect({r.x, top_pixels, r.w, size}, 0xffdddddd, .9); //0xff888888, .75
-        gizmo.add_solid_rect({r.x, top_pixels, r.w, size}, 0xffffffff, 0.9);
+        gizmo.add_solid_rect({r.x, top_pixels, r.w, size}, 0xffeeeeeeee, 0.9);
 
-        // --hl--
-        gizmo.add_hl_quad(gpu_quad_from_rect(r), 1, 0);
     }
     ui_elements.add(gizmo);
 

@@ -29,5 +29,13 @@
 
 
 
+u32 rand_col() {
+    u32 col = rand() & 0xff;
+    col |= (rand() & 0xff) << 8;
+    col |= (rand() & 0xff) << 16;
+    col |= (rand() & 0xff) << 24;
+    return col;
+}
+
 
 

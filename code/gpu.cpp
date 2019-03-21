@@ -8,10 +8,12 @@ struct gpu_quad {
     float x0, y0, u0, v0; // TL
     float x1, y1, u1, v1; // BR
     float alpha;
+    u32 color; // single color for entire quad
     bool equ(gpu_quad o) {
         return x0==o.x0 && y0==o.y0 && u0==o.u0 && v0==o.v0 &&
                x1==o.x1 && y1==o.y1 && u1==o.u1 && v1==o.v1 &&
-               alpha==o.alpha;
+               alpha == o.alpha &&
+               color == o.color;
     }
     bool operator==(gpu_quad other) { return equ(other); }
     bool operator!=(gpu_quad other) { return !equ(other); }
@@ -25,11 +27,12 @@ gpu_quad gpu_quad_from_rect(rect r, float alpha = 1) {
     q.y0 = r.y;
     q.x1 = r.x + r.w;
     q.y1 = r.y + r.h;
-    q.u0 = 511.0/512.0; // todo: phase out into giving each quad a texture id?
-    q.v0 = 511.0/512.0;
+    q.u0 = 0.0;
+    q.v0 = 0.0;
     q.u1 = 1.0;
     q.v1 = 1.0;
     q.alpha = alpha;
+    q.color = 0xffffffff;
     return q;
 }
 
@@ -150,24 +153,28 @@ int gpu_upload_vertices(gpu_quad *quads, int quadcount) {
     for (int i = 0; i < quadcount; i++) {
         gpu_quad q = quads[i];
 
+        float r = (float)(q.color>>16 & 0xff) / 255.0;
+        float g = (float)(q.color>>8 & 0xff) / 255.0;
+        float b = (float)(q.color>>0 & 0xff) / 255.0;
+
         // TL
-        gpu_cached_verts[v++]=q.x0; gpu_cached_verts[v++]=q.y0; gpu_cached_verts[v++]=1; gpu_cached_verts[v++]=1; gpu_cached_verts[v++]=1;
+        gpu_cached_verts[v++]=q.x0; gpu_cached_verts[v++]=q.y0; gpu_cached_verts[v++]=r; gpu_cached_verts[v++]=g; gpu_cached_verts[v++]=b;
         gpu_cached_verts[v++]=q.u0; gpu_cached_verts[v++]=q.v0; gpu_cached_verts[v++]=q.alpha;
         // TR
-        gpu_cached_verts[v++]=q.x1; gpu_cached_verts[v++]=q.y0; gpu_cached_verts[v++]=1; gpu_cached_verts[v++]=1; gpu_cached_verts[v++]=1;
+        gpu_cached_verts[v++]=q.x1; gpu_cached_verts[v++]=q.y0; gpu_cached_verts[v++]=r; gpu_cached_verts[v++]=g; gpu_cached_verts[v++]=b;
         gpu_cached_verts[v++]=q.u1; gpu_cached_verts[v++]=q.v0; gpu_cached_verts[v++]=q.alpha;
         // BR
-        gpu_cached_verts[v++]=q.x1; gpu_cached_verts[v++]=q.y1; gpu_cached_verts[v++]=1; gpu_cached_verts[v++]=1; gpu_cached_verts[v++]=1;
+        gpu_cached_verts[v++]=q.x1; gpu_cached_verts[v++]=q.y1; gpu_cached_verts[v++]=r; gpu_cached_verts[v++]=g; gpu_cached_verts[v++]=b;
         gpu_cached_verts[v++]=q.u1; gpu_cached_verts[v++]=q.v1; gpu_cached_verts[v++]=q.alpha;
 
         // BR
-        gpu_cached_verts[v++]=q.x1; gpu_cached_verts[v++]=q.y1; gpu_cached_verts[v++]=1; gpu_cached_verts[v++]=1; gpu_cached_verts[v++]=1;
+        gpu_cached_verts[v++]=q.x1; gpu_cached_verts[v++]=q.y1; gpu_cached_verts[v++]=r; gpu_cached_verts[v++]=g; gpu_cached_verts[v++]=b;
         gpu_cached_verts[v++]=q.u1; gpu_cached_verts[v++]=q.v1; gpu_cached_verts[v++]=q.alpha;
         // TL
-        gpu_cached_verts[v++]=q.x0; gpu_cached_verts[v++]=q.y0; gpu_cached_verts[v++]=1; gpu_cached_verts[v++]=1; gpu_cached_verts[v++]=1;
+        gpu_cached_verts[v++]=q.x0; gpu_cached_verts[v++]=q.y0; gpu_cached_verts[v++]=r; gpu_cached_verts[v++]=g; gpu_cached_verts[v++]=b;
         gpu_cached_verts[v++]=q.u0; gpu_cached_verts[v++]=q.v0; gpu_cached_verts[v++]=q.alpha;
         // BL
-        gpu_cached_verts[v++]=q.x0; gpu_cached_verts[v++]=q.y1; gpu_cached_verts[v++]=1; gpu_cached_verts[v++]=1; gpu_cached_verts[v++]=1;
+        gpu_cached_verts[v++]=q.x0; gpu_cached_verts[v++]=q.y1; gpu_cached_verts[v++]=r; gpu_cached_verts[v++]=g; gpu_cached_verts[v++]=b;
         gpu_cached_verts[v++]=q.u0; gpu_cached_verts[v++]=q.v1; gpu_cached_verts[v++]=q.alpha;
 
     }
