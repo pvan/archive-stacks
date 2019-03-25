@@ -29,7 +29,9 @@ void md_record_alloc(md_allocation r) {
         }
         else {
             md_r_alloc *= 2;
-            // this realloc throws exception sometimes? maybe some kind of heap corruption?
+            // this realloc throws exception sometimes?
+            // larger starting allocation (1<<16) set above seems to help with realloc crashing here?
+            // todo: pull out gflags to debug this
             md_records = (md_allocation*)realloc(md_records, md_r_alloc * sizeof(md_allocation));
             assert(md_records);
         }

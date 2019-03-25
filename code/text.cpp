@@ -169,7 +169,11 @@ rect tf_create_quad_list_for_text_at_rect(char *text, float x, float y, gpu_quad
 // used to positition drawn text by top edge
 int tf_cached_largest_ascent = 0;
 
-// todo: add largest descent, to get an accurate estimate of how big our text could ever get
+// so we know how big the text will ever get
+int tf_cached_largest_descent = 0;
+
+// the above are both stored as positive values, so this is basically them added together
+int tf_cached_largest_total_height;
 
 // ran once when baking and cached
 int tf_largest_baked_ascent() {
@@ -180,6 +184,18 @@ int tf_largest_baked_ascent() {
         if (tf_bakedchars[i].yoff < smallest_y) smallest_y = tf_bakedchars[i].yoff;
     }
     return -smallest_y; // y0s are negative, return the farthest as a distance basically
+}
+
+// ran once when baking and cached
+int tf_largest_baked_descent() {
+    // float scale = stbtt_ScaleForPixelHeight(&ttfont, pixel_size);
+    int largest_y = 0;
+    for (int i = 0; i < 96; i++) {
+        // we want what y1 is from stbtt_GetBakedQuad (basically it's yoff+h = yoff+y1-y0)
+        float descent = tf_bakedchars[i].yoff + (tf_bakedchars[i].y1 - tf_bakedchars[i].y0);
+        if (descent > largest_y) largest_y = descent;
+    }
+    return largest_y;
 }
 
 // returns bounding box of rendered text
@@ -236,6 +252,8 @@ void tf_init(int fontsize) {
     gpu_upload_texture(tf_fontatlas.data, tf_fontatlas.w, tf_fontatlas.h, tf_fonttexture);
 
     tf_cached_largest_ascent = tf_largest_baked_ascent();
+    tf_cached_largest_descent = tf_largest_baked_descent();
+    tf_cached_largest_total_height = tf_cached_largest_ascent + tf_cached_largest_descent;
 }
 
 

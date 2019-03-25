@@ -324,7 +324,9 @@ rect ui_text(char *text, float x, float y, int hpos, int vpos, bool render = tru
     bg_quad.x0 = x;
     bg_quad.y0 = y;
     bg_quad.x1 = x + textbb.w+1 + margin*2;  // note fencepost error with w/h.. don't include last edge
-    bg_quad.y1 = y + UI_TEXT_SIZE+1 + margin*2; // todo: check if correct
+    bg_quad.y1 = y + tf_cached_largest_total_height+1 + margin*2; // todo: check if correct
+
+    bg_quad.y1 -= 1; // a little hand-tweaking (tbh not sure if +1 in the y1 above is correct, x1 def correct tho)
 
     // adjust for alignment
     if (hpos == UI_RIGHT) bg_quad.move(-bg_quad.width(), 0);
@@ -332,20 +334,9 @@ rect ui_text(char *text, float x, float y, int hpos, int vpos, bool render = tru
     if (vpos == UI_BOTTOM) bg_quad.move(0, -bg_quad.height());
     if (vpos == UI_CENTER) bg_quad.move(0, -bg_quad.height()/2);
 
-    // bg_quad.x0 = x                - margin;
-    // bg_quad.y0 = y                - margin;
-    // bg_quad.x1 = x + bb.w         + margin;
-    // bg_quad.y1 = y + UI_TEXT_SIZE + margin;
-
-    // text position
+    // text position (inside the larger quad)
     float textx = bg_quad.x0 + margin;
     float texty = bg_quad.y0 + margin + tf_cached_largest_ascent; // text is drawn from the baseline todo: let text module handle this offset?
-
-    // // by default here x,y will be left/top
-    // if (hpos == UI_RIGHT) x -= bb.w;
-    // if (hpos == UI_CENTER) x -= bb.w/2;
-    // if (vpos == UI_BOTTOM) y -= UI_TEXT_SIZE;
-    // if (vpos == UI_CENTER) y -= UI_TEXT_SIZE/2;
 
     // fixed?
     // // todo: find root cause of this bug (id: zxoi)
@@ -368,8 +359,6 @@ rect ui_text(char *text, float x, float y, int hpos, int vpos, bool render = tru
             gizmo.add_solid_quad(bg_quad, 0x0, 1);
 
             // --text--
-            // y += tf_cached_largest_ascent; // move y to top instead of baseline of text
-
             int quadsneeded = tf_how_many_quads_needed_for_text(text);
             gpu_quad *quads = (gpu_quad*)malloc(quadsneeded*sizeof(gpu_quad));
             tf_create_quad_list_for_text_at_rect(text, textx,texty, quads, quadsneeded);

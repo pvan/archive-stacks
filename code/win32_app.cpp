@@ -676,13 +676,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             char buf[256];
             sprintf(buf, "%i", items[viewing_file_index].tags.count);
             ui_text(buf, cw,ch, UI_RIGHT,UI_BOTTOM);
-            ui_text(buf, cw-10,ch-(UI_TEXT_SIZE+2), UI_LEFT,UI_BOTTOM);
             for (int i = 0; i < items[viewing_file_index].tags.count; i++) {
                 ui_text(tag_list[i].ToUTF8Reusable(), 1,ch, UI_LEFT,UI_BOTTOM);
             }
-
-            ui_text(buf, cw/2,ch, UI_RIGHT,UI_BOTTOM);
-            ui_text(buf, cw/2,ch-(UI_TEXT_SIZE+2), UI_LEFT,UI_BOTTOM);
 
 
         }
