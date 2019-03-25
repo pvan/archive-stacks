@@ -96,6 +96,16 @@ void ToggleTagMenu(int) { tag_menu_open = !tag_menu_open; }
 bool tag_select_open = false;  // is tag menu open in viewing mode?
 void ToggleTagSelectMenu(int) { tag_select_open = !tag_select_open; }
 
+// we assume we're affecting the open / "viewing" file here
+void ToggleTagSelection(int tagindex) {
+    if (items[viewing_file_index].tags.has(tagindex)) {
+        items[viewing_file_index].tags.remove(tagindex);
+    } else
+    {
+        items[viewing_file_index].tags.add(tagindex);
+    }
+}
+
 void OpenFileToView(int item_index) {
     app_mode = VIEWING_FILE;
 
@@ -655,12 +665,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                         // this_rect.w+=10;
                         // this_rect.h+=5;
                         if (x+this_rect.w > cw) { y+=this_rect.h; x=0; }
-                        ui_button(tag_list[i].ToUTF8Reusable(), x,y, UI_LEFT,UI_TOP, 0);
+                        ui_button(tag_list[i].ToUTF8Reusable(), x,y, UI_LEFT,UI_TOP, &ToggleTagSelection, i);
 
                         // color selected tags...
                         {
                             if (items[viewing_file_index].tags.has(i)) {
-                                ui_rect(x,y,this_rect.w,this_rect.h, 0xffff00ff, 1);
+                                ui_rect(x,y,this_rect.w,this_rect.h, 0xffff00ff, 0.3);
                             }
                         }
 
@@ -676,8 +686,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             char buf[256];
             sprintf(buf, "%i", items[viewing_file_index].tags.count);
             ui_text(buf, cw,ch, UI_RIGHT,UI_BOTTOM);
+
+            float x = 0;
             for (int i = 0; i < items[viewing_file_index].tags.count; i++) {
-                ui_text(tag_list[i].ToUTF8Reusable(), 1,ch, UI_LEFT,UI_BOTTOM);
+                rect lastrect = ui_text(tag_list[items[viewing_file_index].tags[i]].ToUTF8Reusable(), x,ch, UI_LEFT,UI_BOTTOM);
+                x+=lastrect.w;
             }
 
 

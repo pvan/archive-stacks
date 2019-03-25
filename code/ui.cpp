@@ -433,6 +433,7 @@ void ui_rect(float x, float y, float w, float h, u32 col, float a) {
     // feels like this internal api needs some work but it's functional for now
     ui_element gizmo = {0};
     gizmo.add_solid_rect({x,y,w,h}, col, a);
+    ui_elements.add(gizmo);
 }
 
 
