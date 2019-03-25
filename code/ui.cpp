@@ -40,8 +40,7 @@
 // text is drawn with a collection of quads that have uvs into the texture atlas
 // the quads are created by the text (tf_) module which also owns the text atlas
 //
-// quads are drawn with a single pixel texture handled by this layer
-// todo: color support needed
+// solid-color quads are drawn with a single-pixel texture handled by this layer
 //
 //
 // a group of quads that use the same texture are combined into a struct called a submesh
@@ -421,6 +420,12 @@ rect ui_button_permanent_highlight(rect br, void(*effect)(int), int arg=0)
     return br;
 }
 
+void ui_rect(float x, float y, float w, float h, u32 col, float a) {
+    // feels like this internal api needs some work but it's functional for now
+    ui_element gizmo = {0};
+    gizmo.add_solid_rect({x,y,w,h}, col, a);
+}
+
 
 // note takes two values, for top/bottom of scroll bar indicator (for variable size)
 void ui_scrollbar(rect r, float top_percent, float bot_percent,
@@ -435,7 +440,6 @@ void ui_scrollbar(rect r, float top_percent, float bot_percent,
         gizmo.add_hl_quad(gpu_quad_from_rect(r), 0, 0);
 
         // --bg--
-        // ui_draw_rect(r, 0xffbbbbbb, .4); //0xffbbbbbb, .35
         gizmo.add_solid_rect(r, 0xffbbbbbb, 0.4);
 
         float top_pixels = top_percent * (float)r.h;
@@ -445,7 +449,6 @@ void ui_scrollbar(rect r, float top_percent, float bot_percent,
         if (size < 10) size = 10;
 
         // --indicator--
-        // ui_draw_rect({r.x, top_pixels, r.w, size}, 0xffdddddd, .9); //0xff888888, .75
         gizmo.add_solid_rect({r.x, top_pixels, r.w, size}, 0xffeeeeeeee, 0.9);
 
     }

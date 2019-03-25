@@ -7,7 +7,7 @@
 
 #include "types.h"
 
-#include "memdebug.h"
+// #include "memdebug.h"
 
 char debugprintbuffer[256];
 void DEBUGPRINT(int i) { sprintf(debugprintbuffer, "%i\n", i); OutputDebugString(debugprintbuffer); }
@@ -90,8 +90,11 @@ tile viewing_tile; // tile for our open file (created from fullpath rather than 
 
 
 // button click handlers
-bool tag_menu_open = false;
+bool tag_menu_open = false;  // is tag menu open in browsing mode?
 void ToggleTagMenu(int) { tag_menu_open = !tag_menu_open; }
+
+bool tag_select_open = false;  // is tag menu open in viewing mode?
+void ToggleTagSelectMenu(int) { tag_select_open = !tag_select_open; }
 
 void OpenFileToView(int item_index) {
     app_mode = VIEWING_FILE;
@@ -610,6 +613,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             // }
             tile *t = &viewing_tile;
 
+            // render tile
+            {
                 if (!t->display_quad_created) {
                     t->display_quad.create(0,0,1,1);
                     t->display_quad_created = true;
@@ -633,6 +638,47 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
                 t->display_quad.set_verts(t->pos.x, t->pos.y, t->size.w, t->size.h);
                 t->display_quad.render(1);
+            }
+
+
+            // select tag menu
+            {
+
+                if (!tag_select_open) {
+                    ui_button("show tags", cw/2, 0, UI_CENTER,UI_TOP, &ToggleTagSelectMenu);
+                } else {
+                    float x = 0;
+                    float y = 0;
+                    for (int i = 0; i < tag_list.count; i++) {
+                        // ui_rect this_rect = get_text_size(tag_list[i].ToUTF8Reusable());
+                        rect this_rect = ui_text(tag_list[i].ToUTF8Reusable(), x,y, UI_LEFT,UI_TOP, false);
+                        // this_rect.w+=10;
+                        // this_rect.h+=5;
+                        if (x+this_rect.w > cw) { y+=this_rect.h; x=0; }
+                        ui_button(tag_list[i].ToUTF8Reusable(), x,y, UI_LEFT,UI_TOP, 0);
+
+                        // color selected tags...
+                        {
+                            if (items[viewing_file_index].tags.has(i)) {
+                                ui_rect(x,y,this_rect.w,this_rect.h, 0xffff00ff, 1);
+                            }
+                        }
+
+                        x += this_rect.w;
+                        if (i == tag_list.count-1) y += this_rect.h; // \n for hide tag button
+                    }
+
+                    ui_button("hide tags", cw/2, y/*ch/2*/, UI_CENTER,UI_TOP, &ToggleTagSelectMenu);
+                }
+            }
+
+
+            char buf[256];
+            sprintf(buf, "%i", items[viewing_file_index].tags.count);
+            ui_text(buf, cw,ch, UI_RIGHT,UI_BOTTOM);
+            for (int i = 0; i < items[viewing_file_index].tags.count; i++) {
+                ui_text(tag_list[i].ToUTF8Reusable(), 0,ch, UI_LEFT,UI_BOTTOM);
+            }
 
 
 
@@ -652,8 +698,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 
 
-        memdebug_print();
-        memdebug_reset();
+        // memdebug_print();
+        // memdebug_reset();
 
 
         // Sleep(16); // we set frame rate above right? or should we here?
