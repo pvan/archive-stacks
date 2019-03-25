@@ -2,7 +2,7 @@
 
 
 // todo: audit this api
-// -float or int rects? floats, but some bugs see zxoi
+// -float or int rects? floats, but some bugs see zxoi (fixed?)
 // -how to pass alignments in? booleans for now
 // -rects or components for size/positions? whatever is more convenient for caller
 // -and how to pass auto w/h (most funcs defaults to this now) reexamine this
@@ -313,33 +313,53 @@ const int UI_BOTTOM = 4;
 rect ui_text(char *text, float x, float y, int hpos, int vpos, bool render = true) {
 
     // without any changes, bb will be TL
-    rect bb = tf_text_bounding_box(text, x, y);
+    rect textbb = tf_text_bounding_box(text, x, y);
 
-    // by default here x,y will be left/top
-    if (hpos == UI_RIGHT) x -= bb.w;
-    if (hpos == UI_CENTER) x -= bb.w/2;
-    if (vpos == UI_BOTTOM) y -= UI_TEXT_SIZE;
-    if (vpos == UI_CENTER) y -= UI_TEXT_SIZE/2;
+    // pad beyond just our letter-tight bb
+    int margin = 2;
 
-    // todo: find root cause of this bug (id: zxoi)
-    // it's ugly but if x is on an exact 0.5 edge,
-    // we seem to get inconsistent rounding somewhere in our rendering pipeline
-    // it wouldn't matter too much except we draw the same quad twice -- once for the highlight
-    // and if they round differently.. we'll end up with an extra pixel bar where they don't match perfectly
-    // so in that case, add a fudge factor
-    if (x-0.5 == (int)x) {
-        x+=0.01;
-        // assert(false);
-    }
-
-    // space around actual letters
-    int margin = 0;
-
+    // bg (and hl) quad
+    // setup for TL coords as default
     gpu_quad bg_quad;
-    bg_quad.x0 = x                - margin;
-    bg_quad.y0 = y                - margin;
-    bg_quad.x1 = x + bb.w         + margin;
-    bg_quad.y1 = y + UI_TEXT_SIZE + margin;
+    bg_quad.x0 = x;
+    bg_quad.y0 = y;
+    bg_quad.x1 = x + textbb.w+1 + margin*2;  // note fencepost error with w/h.. don't include last edge
+    bg_quad.y1 = y + UI_TEXT_SIZE+1 + margin*2; // todo: check if correct
+
+    // adjust for alignment
+    if (hpos == UI_RIGHT) bg_quad.move(-bg_quad.width(), 0);
+    if (hpos == UI_CENTER) bg_quad.move(-bg_quad.width()/2, 0);
+    if (vpos == UI_BOTTOM) bg_quad.move(0, -bg_quad.height());
+    if (vpos == UI_CENTER) bg_quad.move(0, -bg_quad.height()/2);
+
+    // bg_quad.x0 = x                - margin;
+    // bg_quad.y0 = y                - margin;
+    // bg_quad.x1 = x + bb.w         + margin;
+    // bg_quad.y1 = y + UI_TEXT_SIZE + margin;
+
+    // text position
+    float textx = bg_quad.x0 + margin;
+    float texty = bg_quad.y0 + margin + tf_cached_largest_ascent; // text is drawn from the baseline todo: let text module handle this offset?
+
+    // // by default here x,y will be left/top
+    // if (hpos == UI_RIGHT) x -= bb.w;
+    // if (hpos == UI_CENTER) x -= bb.w/2;
+    // if (vpos == UI_BOTTOM) y -= UI_TEXT_SIZE;
+    // if (vpos == UI_CENTER) y -= UI_TEXT_SIZE/2;
+
+    // fixed?
+    // // todo: find root cause of this bug (id: zxoi)
+    // // (this is maybe related to some inconsistent kerning.. need subpixel rendering?)
+    // // it's ugly but if x is on an exact 0.5 edge,
+    // // we seem to get inconsistent rounding somewhere in our rendering pipeline
+    // // it wouldn't matter too much except we draw the same quad twice -- once for the highlight
+    // // and if they round differently.. we'll end up with an extra pixel bar where they don't match perfectly
+    // // so in that case, add a fudge factor
+    // if (x-0.5 == (int)x) {
+    //     x+=0.01;
+    //     // assert(false);
+    // }
+
 
     if (render) {
         ui_element gizmo = {0};
@@ -348,11 +368,11 @@ rect ui_text(char *text, float x, float y, int hpos, int vpos, bool render = tru
             gizmo.add_solid_quad(bg_quad, 0x0, 1);
 
             // --text--
-            y += tf_cached_largest_ascent; // move y to top instead of baseline of text
+            // y += tf_cached_largest_ascent; // move y to top instead of baseline of text
 
             int quadsneeded = tf_how_many_quads_needed_for_text(text);
             gpu_quad *quads = (gpu_quad*)malloc(quadsneeded*sizeof(gpu_quad));
-            tf_create_quad_list_for_text_at_rect(text, x,y+margin, quads, quadsneeded);
+            tf_create_quad_list_for_text_at_rect(text, textx,texty, quads, quadsneeded);
 
             gpu_quad_list_with_texture textsubmesh = {0};
             for (int i = 0; i < quadsneeded; i++) {

@@ -128,7 +128,7 @@ rect tf_create_quad_list_for_text_at_rect(char *text, float x, float y, gpu_quad
             stbtt_aligned_quad q;
             stbtt_GetBakedQuad(tf_bakedchars, 512,512, *text-32, &tx,&ty,&q,1);//1=opengl & d3d10+,0=d3d9
 
-            // hmm not sure if i like alpha and color on piggybacking on the quad or not
+            // hmm not sure if i like alpha and color piggybacking on the quad or not
             gpu_quad quad = {q.x0,q.y0,q.s0,q.t0, q.x1,q.y1,q.s1,q.t1};
             quad.alpha = 1;
             quad.color = 0xffffffff;
@@ -168,6 +168,8 @@ rect tf_create_quad_list_for_text_at_rect(char *text, float x, float y, gpu_quad
 // basically how far above the baseline a glyph can go
 // used to positition drawn text by top edge
 int tf_cached_largest_ascent = 0;
+
+// todo: add largest descent, to get an accurate estimate of how big our text could ever get
 
 // ran once when baking and cached
 int tf_largest_baked_ascent() {

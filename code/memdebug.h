@@ -22,7 +22,8 @@ uint total_alloc = 0;
 void md_record_alloc(md_allocation r) {
     if (md_r_count >= md_r_alloc) {
         if (!md_records) {
-            md_r_alloc = 32;
+            // md_r_alloc = 32;
+            md_r_alloc = 1<<16;
             md_records = (md_allocation*)malloc(md_r_alloc * sizeof(md_allocation));
             assert(md_records);
         }

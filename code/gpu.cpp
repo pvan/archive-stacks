@@ -18,6 +18,9 @@ struct gpu_quad {
     bool operator==(gpu_quad other) { return equ(other); }
     bool operator!=(gpu_quad other) { return !equ(other); }
     rect to_rect() { return { x0, y0, x1-x0, y1-y0 }; }
+    void move(float dx, float dy) { x0+=dx; x1+=dx;  y0+=dy; y1+=dy; }
+    float width() { return x1-x0; }
+    float height() { return y1-y0; }
 };
 
 
