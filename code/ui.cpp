@@ -333,7 +333,7 @@ rect ui_text(char *text, float x, float y, int hpos, int vpos, bool render = tru
     }
 
     // space around actual letters
-    int margin = 2;
+    int margin = 0;
 
     gpu_quad bg_quad;
     bg_quad.x0 = x                - margin;

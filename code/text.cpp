@@ -216,9 +216,9 @@ rect tf_text_bounding_box(char *text, float screenX = 0, float screenY = 0) {
     }
     rect bb;
     bb.x = left_most_x;
-    bb.w = right_most_x-left_most_x;
+    bb.w = right_most_x-left_most_x +1; // fencepost issue here, eg 3-1=2 but we want w=3
     bb.y = smallest_y;
-    bb.h = largest_y-smallest_y;
+    bb.h = largest_y-smallest_y +1; // +1 here too, although i don't think this value is used anywhere atm to test
 
     return bb;
 }
