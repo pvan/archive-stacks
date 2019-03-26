@@ -566,3 +566,14 @@ void LoadMasterDataFileAndPopulateResolutionsAndTagsEtc(
 }
 
 
+
+// master list of item indices for items currently selected for display
+// ordered in the display order we want
+int_pool display_list;
+
+
+
+// master list of tag indices that are selected for browsing
+int_pool browse_tags;
+
+

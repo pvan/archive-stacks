@@ -93,6 +93,16 @@ tile viewing_tile; // tile for our open file (created from fullpath rather than 
 bool tag_menu_open = false;  // is tag menu open in browsing mode?
 void ToggleTagMenu(int) { tag_menu_open = !tag_menu_open; }
 
+void ToggleTagBrowse(int tagindex) {
+    if (browse_tags.has(tagindex)) {
+        browse_tags.remove(tagindex);
+    } else
+    {
+        browse_tags.add(tagindex);
+    }
+    // update display list here
+}
+
 bool tag_select_open = false;  // is tag menu open in viewing mode?
 void ToggleTagSelectMenu(int) { tag_select_open = !tag_select_open; }
 
@@ -131,6 +141,10 @@ float master_desired_tile_width = 200;
 
 // done once after startup loading is done
 void init_app(item_pool all_items, int cw, int ch) {
+
+    for (int i = 0; i < tag_list.count; i++) {
+        browse_tags.add(i);
+    }
 
     // SortTilePoolByDate(&tiles);
     ArrangeTilesInOrder(&tiles, master_desired_tile_width, cw); // requires resolutions to be set
@@ -363,6 +377,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
         // --UPDATE--
 
+        static bool show_debug_console = false;
+        if (keysDown.tilde) show_debug_console = !show_debug_console;
+
         static int debug_info_tile_index_mouse_was_on = 0;
 
         static float last_scroll_pos = 0;
@@ -519,7 +536,15 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                         // this_rect.w+=10;
                         // this_rect.h+=5;
                         if (x+this_rect.w > cw) { y+=this_rect.h; x=0; }
-                        ui_button(tag_list[i].ToUTF8Reusable(), x,y, UI_LEFT,UI_TOP, 0);
+                        ui_button(tag_list[i].ToUTF8Reusable(), x,y, UI_LEFT,UI_TOP, &ToggleTagBrowse, i);
+
+                        // color selected tags...
+                        {
+                            if (browse_tags.has(i)) {
+                                ui_rect(x,y,this_rect.w,this_rect.h, 0xffff00ff, 0.3);
+                            }
+                        }
+
                         x += this_rect.w;
                         if (i == tag_list.count-1) y += this_rect.h; // \n for hide tag button
                     }
@@ -530,8 +555,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 
             // debug display metrics
-            static bool show_debug_console = true;
-            if (keysDown.tilde) show_debug_console = !show_debug_console;
             if (show_debug_console)
             {
                 UI_PRINTRESET();
@@ -586,25 +609,27 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                         if (tiles[i].media.vfc && tiles[i].media.vfc->iformat)
                             UI_PRINT(tiles[i].media.IsStaticImageBestGuess() ? "image" : "video");
 
-                        wc *directory = CopyJustParentDirectoryName(items[i].fullpath.chars);
-                        string temp = string::KeepMemory(directory);
-                        UI_PRINT("folder: %s", temp.ToUTF8Reusable());
-                        free(directory);
+                        // wc *directory = CopyJustParentDirectoryName(items[i].fullpath.chars);
+                        // string temp = string::KeepMemory(directory);
+                        // UI_PRINT("folder: %s", temp.ToUTF8Reusable());
+                        // free(directory);
 
-                        UI_PRINT("tile size: %f, %f", tiles[i].size.w, tiles[i].size.h);
+                        // UI_PRINT("tile size: %f, %f", tiles[i].size.w, tiles[i].size.h);
 
-                        // i *thinl* items and tiles share a common index??
-                        // UI_PRINT("item[i] path: %s", items[i].fullpath.ToUTF8Reusable());
-                        if (items[i].tags.count>0) {
-                            int firsttagI = items[i].tags[0];
-                            if (tag_list.count>0) {
-                                UI_PRINT("tag0: %s", tag_list[firsttagI].ToUTF8Reusable());
-                            } else {
-                                UI_PRINT("tag0: [no master list?!]");
-                            }
-                        } else {
-                            UI_PRINT("tag0: none");
-                        }
+                        // // items and tiles share a common index
+                        // if (items[i].tags.count>0) {
+                        //     int firsttagI = items[i].tags[0];
+                        //     if (tag_list.count>0) {
+                        //         UI_PRINT("tag0: %s", tag_list[firsttagI].ToUTF8Reusable());
+                        //     } else {
+                        //         UI_PRINT("tag0: [no master list?!]");
+                        //     }
+                        // } else {
+                        //     UI_PRINT("tag0: none");
+                        // }
+
+                        UI_PRINT("browse tags: %i", browse_tags.count);
+                        UI_PRINT("display list: %i", display_list.count);
 
 
                 //     }
@@ -680,23 +705,25 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             }
 
 
-            // debug tag count on right
-            char buf[256];
-            sprintf(buf, "%i", items[viewing_file_index].tags.count);
-            ui_text(buf, cw,ch, UI_RIGHT,UI_BOTTOM);
+            if (show_debug_console) {
 
-            // debug tag list on left
-            float x = 0;
-            for (int i = 0; i < items[viewing_file_index].tags.count; i++) {
-                rect lastrect = ui_text(tag_list[items[viewing_file_index].tags[i]].ToUTF8Reusable(), x,ch, UI_LEFT,UI_BOTTOM);
-                x+=lastrect.w;
+                // debug tag count on right
+                char buf[256];
+                sprintf(buf, "%i", items[viewing_file_index].tags.count);
+                ui_text(buf, cw,ch, UI_RIGHT,UI_BOTTOM);
+
+                // debug tag list on left
+                float x = 0;
+                for (int i = 0; i < items[viewing_file_index].tags.count; i++) {
+                    rect lastrect = ui_text(tag_list[items[viewing_file_index].tags[i]].ToUTF8Reusable(), x,ch, UI_LEFT,UI_BOTTOM);
+                    x+=lastrect.w;
+                }
+
+
+                UI_PRINTRESET();
+                UI_PRINT("dt: %f", actual_dt);
+                UI_PRINT("max dt: %f", metric_max_dt);
             }
-
-
-            UI_PRINTRESET();
-            UI_PRINT("dt: %f", actual_dt);
-            UI_PRINT("max dt: %f", metric_max_dt);
-
 
         }
 
