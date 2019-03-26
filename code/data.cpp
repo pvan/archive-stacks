@@ -431,7 +431,8 @@ void InitAllDataLists(int count) {
 
 void SaveMetadataFile()
 {
-    wc *path = L"D:\\Users\\phil\\Desktop\\meta.txt";
+    // wc *path = L"D:\\Users\\phil\\Desktop\\meta.txt";
+    wc *path = L"E:\\inspiration test folder\\~meta.txt";
 
     FILE *file = _wfopen(path, L"w, ccs=UTF-16LE");
     if (!file) {
@@ -466,7 +467,8 @@ void LoadMasterDataFileAndPopulateResolutionsAndTagsEtc(
                                                      // bool_pool *res_are_valid,
                                                      int *progress)
 {
-    wc *path = L"D:\\Users\\phil\\Desktop\\meta.txt";
+    // wc *path = L"D:\\Users\\phil\\Desktop\\meta.txt";
+    wc *path = L"E:\\inspiration test folder\\~meta.txt";
     if (!win32_PathExists(path)) {
         DEBUGPRINT("master metadata cache file doesn't exist");
         return;

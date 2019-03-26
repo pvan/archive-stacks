@@ -104,6 +104,7 @@ void ToggleTagSelection(int tagindex) {
     {
         items[viewing_file_index].tags.add(tagindex);
     }
+    SaveMetadataFile(); // keep close eye on this, if it gets too slow to do inline we can move to background thread
 }
 
 void OpenFileToView(int item_index) {
@@ -616,11 +617,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         }
 
         else if (app_mode == VIEWING_FILE) {
-            //viewing_file_index
 
-            // if (viewing_file_loaded) {
-            //     viewing_file_media
-            // }
             tile *t = &viewing_tile;
 
             // render tile
@@ -683,15 +680,22 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             }
 
 
+            // debug tag count on right
             char buf[256];
             sprintf(buf, "%i", items[viewing_file_index].tags.count);
             ui_text(buf, cw,ch, UI_RIGHT,UI_BOTTOM);
 
+            // debug tag list on left
             float x = 0;
             for (int i = 0; i < items[viewing_file_index].tags.count; i++) {
                 rect lastrect = ui_text(tag_list[items[viewing_file_index].tags[i]].ToUTF8Reusable(), x,ch, UI_LEFT,UI_BOTTOM);
                 x+=lastrect.w;
             }
+
+
+            UI_PRINTRESET();
+            UI_PRINT("dt: %f", actual_dt);
+            UI_PRINT("max dt: %f", metric_max_dt);
 
 
         }
