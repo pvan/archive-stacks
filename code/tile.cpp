@@ -194,6 +194,12 @@ int ArrangeTilesForDisplayList(int_pool displaylist, tile_pool *tiles, float des
     for (int c = 0; c < cols; c++)
         colbottoms[c] = 0;
 
+    // do something like this?
+    // for (int i = 0; i < tiles->count; i++) {
+    //     tiles->pool[i].pos={-1000,-1000};
+    //     tiles->pool[i].size={0,0};
+    // }
+
     // for (int j = 0; j < stubRectCount; j++) {
     for (int i = 0; i < tiles->count; i++) {
 
@@ -313,6 +319,7 @@ int ArrangeTilesForDisplayList(int_pool displaylist, tile_pool *tiles, float des
 
 int TileIndexMouseIsOver(tile_pool ts, int mouseX, int mouseY) {
     for (int i = 0; i < ts.count; i++) {
+        if (ts[i].skip_rendering) continue; // this is set when tile is not selected for display
         rect tile_rect = {ts[i].pos.x, ts[i].pos.y, ts[i].size.w, ts[i].size.h};
         if (tile_rect.ContainsPoint(mouseX, mouseY)) {
             return i;

@@ -125,7 +125,7 @@ void ToggleTagBrowse(int tagindex) {
     }
 
     // do in loop for now, just before rendering (or, well, in the update portion)
-    // ArrangeTilesForDisplayList(browse_tags, &tiles, master_desired_tile_width, g_cw); // requires resolutions to be set
+    // ArrangeTilesForDisplayList(display_list, &tiles, master_desired_tile_width, g_cw); // requires resolutions to be set
 
 }
 
@@ -180,7 +180,7 @@ void init_app(item_pool all_items, int cw, int ch) {
         }
     }
 
-    ArrangeTilesForDisplayList(browse_tags, &tiles, master_desired_tile_width, cw); // requires resolutions to be set
+    ArrangeTilesForDisplayList(display_list, &tiles, master_desired_tile_width, cw); // requires resolutions to be set
 
     // SortTilePoolByDate(&tiles);
     // ArrangeTilesInOrder(&tiles, master_desired_tile_width, cw); // requires resolutions to be set
@@ -435,7 +435,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                 if (master_ctrl_scroll_delta < 0) { col_count--; master_desired_tile_width = CalcWidthToFitXColumns(col_count, cw); }
                 master_ctrl_scroll_delta = 0; // done using this in this frame
 
-                tiles_height = ArrangeTilesForDisplayList(browse_tags, &tiles, master_desired_tile_width, g_cw); // requires resolutions to be set
+                tiles_height = ArrangeTilesForDisplayList(display_list, &tiles, master_desired_tile_width, g_cw); // requires resolutions to be set
                 // tiles_height = ArrangeTilesInOrder(&tiles, master_desired_tile_width, cw); // requires resolutions to be set
 
                 int scroll_pos = CalculateScrollPosition(last_scroll_pos, master_scroll_delta, keysDown, ch, tiles_height);
@@ -668,8 +668,17 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                         //     UI_PRINT("tag0: none");
                         // }
 
-                        UI_PRINT("browse tags: %i", browse_tags.count);
-                        UI_PRINT("display list: %i", display_list.count);
+                    UI_PRINT("browse tags: %i", browse_tags.count);
+                    UI_PRINT("display list: %i", display_list.count);
+
+                    int skiprender_count = 0;
+                    // for (int j = 0; j < stubRectCount; j++) {
+                    for (int i = 0; i < tiles.count; i++) {
+                        if (tiles[i].skip_rendering)
+                            skiprender_count++;
+                    }
+
+                    UI_PRINT("skiprend: %i", skiprender_count);
 
 
                 //     }
@@ -763,6 +772,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                 UI_PRINTRESET();
                 UI_PRINT("dt: %f", actual_dt);
                 UI_PRINT("max dt: %f", metric_max_dt);
+
+
+
+
             }
 
         }
