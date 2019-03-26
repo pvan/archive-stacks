@@ -89,6 +89,14 @@ tile viewing_tile; // tile for our open file (created from fullpath rather than 
 #include "background.cpp"
 
 
+int master_scroll_delta = 0;
+int master_ctrl_scroll_delta = 0;
+
+float master_desired_tile_width = 200;
+
+int g_cw;
+int g_ch;
+
 // button click handlers
 bool tag_menu_open = false;  // is tag menu open in browsing mode?
 void ToggleTagMenu(int) { tag_menu_open = !tag_menu_open; }
@@ -100,7 +108,25 @@ void ToggleTagBrowse(int tagindex) {
     {
         browse_tags.add(tagindex);
     }
+
     // update display list here
+
+    display_list.empty_out();
+
+    // setup display list
+    for (int i = 0; i < items.count; i++) {
+        // could iterate through item's tags or browse tags here first
+        for (int t = 0; t < items[i].tags.count; t++) {
+            if (browse_tags.has(items[i].tags[t])) {
+                display_list.add(i);
+                break; // next item
+            }
+        }
+    }
+
+    // do in loop for now, just before rendering (or, well, in the update portion)
+    // ArrangeTilesForDisplayList(browse_tags, &tiles, master_desired_tile_width, g_cw); // requires resolutions to be set
+
 }
 
 bool tag_select_open = false;  // is tag menu open in viewing mode?
@@ -133,21 +159,31 @@ void OpenFileToView(int item_index) {
 }
 
 
-int master_scroll_delta = 0;
-int master_ctrl_scroll_delta = 0;
-
-float master_desired_tile_width = 200;
 
 
 // done once after startup loading is done
 void init_app(item_pool all_items, int cw, int ch) {
 
+    // set all tags as selected
     for (int i = 0; i < tag_list.count; i++) {
         browse_tags.add(i);
     }
 
+    // setup display list
+    for (int i = 0; i < items.count; i++) {
+        // could iterate through item's tags or browse tags here first
+        for (int t = 0; t < items[i].tags.count; t++) {
+            if (browse_tags.has(items[i].tags[t])) {
+                display_list.add(i);
+                break; // next item
+            }
+        }
+    }
+
+    ArrangeTilesForDisplayList(browse_tags, &tiles, master_desired_tile_width, cw); // requires resolutions to be set
+
     // SortTilePoolByDate(&tiles);
-    ArrangeTilesInOrder(&tiles, master_desired_tile_width, cw); // requires resolutions to be set
+    // ArrangeTilesInOrder(&tiles, master_desired_tile_width, cw); // requires resolutions to be set
 
     // constant-churning loop to load items on screen, and unlod those off the screen
     LaunchBackgroundLoadingLoop();
@@ -346,6 +382,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         int ch = clientRect.bottom-clientRect.top;
         opengl_resize_if_change(cw, ch);
 
+        g_cw = cw; // right now only used to arrange tiles when changing browsing tag selection
+        g_ch = ch;
+
 
 
 
@@ -396,8 +435,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                 if (master_ctrl_scroll_delta < 0) { col_count--; master_desired_tile_width = CalcWidthToFitXColumns(col_count, cw); }
                 master_ctrl_scroll_delta = 0; // done using this in this frame
 
-
-                tiles_height = ArrangeTilesInOrder(&tiles, master_desired_tile_width, cw); // requires resolutions to be set
+                tiles_height = ArrangeTilesForDisplayList(browse_tags, &tiles, master_desired_tile_width, g_cw); // requires resolutions to be set
+                // tiles_height = ArrangeTilesInOrder(&tiles, master_desired_tile_width, cw); // requires resolutions to be set
 
                 int scroll_pos = CalculateScrollPosition(last_scroll_pos, master_scroll_delta, keysDown, ch, tiles_height);
                 last_scroll_pos = (float)scroll_pos;
@@ -461,6 +500,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         if (app_mode == BROWSING_THUMBS) {
             for (int tileI = 0; tileI < tiles.count; tileI++) {
                 tile *t = &tiles[tileI];
+                if (t->skip_rendering) continue; // this is set when tile is not selected for display
                 if (t->IsOnScreen(ch)) { // only render if on screen
 
                     if (!t->display_quad_created) {

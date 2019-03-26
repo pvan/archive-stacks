@@ -24,6 +24,7 @@ struct tile
     v2 pos;
     v2 size;
 
+    bool skip_rendering; // created for not drawing unselected tiles
 
     // file data
     // string fullpath;
@@ -181,7 +182,9 @@ int CalcColumnsNeededForDesiredWidth(float desired_width, int container_width, f
     return cols;
 }
 
-int ArrangeTilesInOrder(tile_pool *pool, float desired_tile_width, int dest_width) {
+// position tiles selected in display list
+// tiles not selected... do what with them? set flag to ignore when rendering?
+int ArrangeTilesForDisplayList(int_pool displaylist, tile_pool *tiles, float desired_tile_width, int dest_width) {
 
     desired_tile_width = fmax(desired_tile_width, MIN_TILE_WIDTH);
     float realWidth;
@@ -192,8 +195,16 @@ int ArrangeTilesInOrder(tile_pool *pool, float desired_tile_width, int dest_widt
         colbottoms[c] = 0;
 
     // for (int j = 0; j < stubRectCount; j++) {
-    for (int i = 0; i < pool->count; i++) {
-        tile& thisTile = pool->pool[i];
+    for (int i = 0; i < tiles->count; i++) {
+
+        if (!displaylist.has(i)) {
+            // make sure we force unselected tiles to not render
+            tiles->pool[i].skip_rendering = true;
+            continue; // next tile
+        }
+        tiles->pool[i].skip_rendering = false;
+
+        tile& thisTile = tiles->pool[i];
         v2& thisRes = item_resolutions[i];
 
         // todo: should be set to min of 10 from trying to find resolution originally
@@ -237,8 +248,66 @@ int ArrangeTilesInOrder(tile_pool *pool, float desired_tile_width, int dest_widt
 
 
     return total_height;
-
 }
+
+// int ArrangeTilesInOrder(tile_pool *pool, float desired_tile_width, int dest_width) {
+
+//     desired_tile_width = fmax(desired_tile_width, MIN_TILE_WIDTH);
+//     float realWidth;
+//     int cols = CalcColumnsNeededForDesiredWidth(desired_tile_width, dest_width, &realWidth);
+
+//     float *colbottoms = (float*)malloc(cols*sizeof(float));
+//     for (int c = 0; c < cols; c++)
+//         colbottoms[c] = 0;
+
+//     // for (int j = 0; j < stubRectCount; j++) {
+//     for (int i = 0; i < pool->count; i++) {
+//         tile& thisTile = pool->pool[i];
+//         v2& thisRes = item_resolutions[i];
+
+//         // todo: should be set to min of 10 from trying to find resolution originally
+//         // assert(thisTile.size.w >= 10 && thisTile.size.h >= 10);
+//         if (thisRes.w < 10) thisRes.w = 10;
+//         if (thisRes.h < 10) thisRes.h = 10;
+
+//         float aspect_ratio = thisRes.w / thisRes.h;
+
+//         thisTile.size.w = realWidth;
+//         thisTile.size.h = realWidth / aspect_ratio;
+
+//         // if (thisTile.size.w > 3000 || thisTile.size.h > 3000) {
+//         //     assert(false);
+//         // }
+
+//         int shortestCol = 0;
+//         for (int c = 1; c < cols; c++)
+//             if (colbottoms[c] < colbottoms[shortestCol])
+//                 shortestCol = c;
+
+//         float x = shortestCol * realWidth;
+//         float y = colbottoms[shortestCol];
+
+//         thisTile.pos = {x, y};
+
+//         colbottoms[shortestCol] += thisTile.size.h;
+//     }
+
+
+
+//     float total_height;
+//     total_height = 0;
+//     int longestCol = 0;
+//     for (int c = 1; c < cols; c++)
+//         if (colbottoms[c] > colbottoms[longestCol])
+//             longestCol = c;
+//     total_height = colbottoms[longestCol];
+
+//     free(colbottoms);
+
+
+//     return total_height;
+
+// }
 
 
 
