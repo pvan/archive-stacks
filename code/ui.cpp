@@ -406,7 +406,7 @@ rect ui_textf(char *text, float f1, float f2, int x, int y, int hpos, int vpos) 
 }
 
 
-rect ui_button(char *text, float x, float y, bool hpos, bool vpos, void(*effect)(int), int arg=0)
+rect ui_button(char *text, float x, float y, int hpos, int vpos, void(*effect)(int), int arg=0)
 {
     rect tr = ui_text(text, x, y, hpos, vpos); //RenderTextCenter(x, y, text);
     rect r = {(float)tr.x, (float)tr.y, (float)tr.w, (float)tr.h};

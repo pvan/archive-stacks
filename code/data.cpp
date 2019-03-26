@@ -567,13 +567,39 @@ void LoadMasterDataFileAndPopulateResolutionsAndTagsEtc(
 
 
 
-// master list of item indices for items currently selected for display
-// ordered in the display order we want
-int_pool display_list;
-
-
 
 // master list of tag indices that are selected for browsing
 int_pool browse_tags;
 
+void SelectAllTags() {
+    // set all tags as selected
+    browse_tags.empty_out();
+    for (int i = 0; i < tag_list.count; i++) {
+        browse_tags.add(i);
+    }
+}
 
+void DeselectAllTags() {
+    browse_tags.empty_out();
+}
+
+
+
+
+// master list of item indices for items currently selected for display
+// ordered in the display order we want
+int_pool display_list;
+
+void CreateDisplayListFromBrowseSelection() {
+    display_list.empty_out();
+    // setup display list
+    for (int i = 0; i < items.count; i++) {
+        // could iterate through item's tags or browse tags here first
+        for (int t = 0; t < items[i].tags.count; t++) {
+            if (browse_tags.has(items[i].tags[t])) {
+                display_list.add(i);
+                break; // next item
+            }
+        }
+    }
+}

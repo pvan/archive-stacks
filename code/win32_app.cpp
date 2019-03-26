@@ -104,30 +104,19 @@ void ToggleTagMenu(int) { tag_menu_open = !tag_menu_open; }
 void ToggleTagBrowse(int tagindex) {
     if (browse_tags.has(tagindex)) {
         browse_tags.remove(tagindex);
-    } else
-    {
+    } else {
         browse_tags.add(tagindex);
     }
 
     // update display list here
-
-    display_list.empty_out();
-
-    // setup display list
-    for (int i = 0; i < items.count; i++) {
-        // could iterate through item's tags or browse tags here first
-        for (int t = 0; t < items[i].tags.count; t++) {
-            if (browse_tags.has(items[i].tags[t])) {
-                display_list.add(i);
-                break; // next item
-            }
-        }
-    }
+    CreateDisplayListFromBrowseSelection();
 
     // do in loop for now, just before rendering (or, well, in the update portion)
     // ArrangeTilesForDisplayList(display_list, &tiles, master_desired_tile_width, g_cw); // requires resolutions to be set
-
 }
+
+void SelectBrowseTagsAll(int) { SelectAllTags(); CreateDisplayListFromBrowseSelection(); }
+void SelectBrowseTagsNone(int) { DeselectAllTags(); CreateDisplayListFromBrowseSelection(); }
 
 bool tag_select_open = false;  // is tag menu open in viewing mode?
 void ToggleTagSelectMenu(int) { tag_select_open = !tag_select_open; }
@@ -164,21 +153,9 @@ void OpenFileToView(int item_index) {
 // done once after startup loading is done
 void init_app(item_pool all_items, int cw, int ch) {
 
-    // set all tags as selected
-    for (int i = 0; i < tag_list.count; i++) {
-        browse_tags.add(i);
-    }
+    SelectAllTags();
 
-    // setup display list
-    for (int i = 0; i < items.count; i++) {
-        // could iterate through item's tags or browse tags here first
-        for (int t = 0; t < items[i].tags.count; t++) {
-            if (browse_tags.has(items[i].tags[t])) {
-                display_list.add(i);
-                break; // next item
-            }
-        }
-    }
+    CreateDisplayListFromBrowseSelection();
 
     ArrangeTilesForDisplayList(display_list, &tiles, master_desired_tile_width, cw); // requires resolutions to be set
 
@@ -568,8 +545,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                     ui_button("show tags", cw/2, 0, UI_CENTER,UI_TOP, &ToggleTagMenu);
                 } else {
 
+                    ui_button("select none", 0,0, UI_LEFT,UI_TOP, &SelectBrowseTagsNone);
+                    ui_button("select all", cw,0, UI_RIGHT,UI_TOP, &SelectBrowseTagsAll);
+
                     float x = 0;
-                    float y = 0;
+                    float y = UI_TEXT_SIZE;
                     for (int i = 0; i < tag_list.count; i++) {
                         // ui_rect this_rect = get_text_size(tag_list[i].ToUTF8Reusable());
                         rect this_rect = ui_text(tag_list[i].ToUTF8Reusable(), x,y, UI_LEFT,UI_TOP, false);
