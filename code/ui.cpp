@@ -356,7 +356,7 @@ rect ui_text(char *text, float x, float y, int hpos, int vpos, bool render = tru
         ui_element gizmo = {0};
         {
             // --bg--
-            gizmo.add_solid_quad(bg_quad, 0x0, 1);
+            gizmo.add_solid_quad(bg_quad, 0x0, 0.5);
 
             // --text--
             int quadsneeded = tf_how_many_quads_needed_for_text(text);
@@ -365,6 +365,7 @@ rect ui_text(char *text, float x, float y, int hpos, int vpos, bool render = tru
 
             gpu_quad_list_with_texture textsubmesh = {0};
             for (int i = 0; i < quadsneeded; i++) {
+                quads[i].alpha = 0.5;
                 textsubmesh.quads.add(quads[i]);
             }
             textsubmesh.texture_id = tf_fonttexture;
@@ -408,7 +409,7 @@ rect ui_textf(char *text, float f1, float f2, int x, int y, int hpos, int vpos) 
 
 rect ui_button(char *text, float x, float y, int hpos, int vpos, void(*effect)(int), int arg=0)
 {
-    rect tr = ui_text(text, x, y, hpos, vpos); //RenderTextCenter(x, y, text);
+    rect tr = ui_text(text, x, y, hpos, vpos);
     rect r = {(float)tr.x, (float)tr.y, (float)tr.w, (float)tr.h};
     ui_add_clickable(r, effect, arg);
     return tr;
