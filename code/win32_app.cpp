@@ -549,6 +549,21 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             }
             if (keysDown.space)
                 ToggleTagSelectMenu(0);
+
+
+            if (master_scroll_delta != 0) {
+
+                float scaleFactor = 1.2f;
+                if (master_scroll_delta < 0) scaleFactor = 0.8f;
+                viewing_tile.size.w *= scaleFactor;
+                viewing_tile.size.h *= scaleFactor;
+                viewing_tile.pos.x -= (input.mouseX - viewing_tile.pos.x) * (scaleFactor - 1);
+                viewing_tile.pos.y -= (input.mouseY - viewing_tile.pos.y) * (scaleFactor - 1);
+
+                master_scroll_delta = 0; // done using this this frame (todo: should put mousewheel in Input class)
+            }
+
+
         }
 
 
