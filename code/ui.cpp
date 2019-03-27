@@ -88,11 +88,6 @@ struct ui_element {
     // or maybe make gpu_quad constructor that takes color/alpha and
     // chagne these functions to jsut take a single gpu_quad
     void add_solid_quad(gpu_quad q, u32 color, float alpha) {
-        // int colorcode = 1;
-        // q.u0 = colorcode / (float)ui_solid_bitmap.w;
-        // q.v0 = colorcode / (float)ui_solid_bitmap.h;
-        // q.u1 = (colorcode+1) / (float)ui_solid_bitmap.w;
-        // q.v1 = (colorcode+1) / (float)ui_solid_bitmap.h;
         q.u0 = 0;
         q.v0 = 0;
         q.u1 = 1;
@@ -320,13 +315,15 @@ rect ui_text(char *text, float x, float y, int hpos, int vpos, bool render = tru
 
     // bg (and hl) quad
     // setup for TL coords as default
-    gpu_quad bg_quad;
+    gpu_quad bg_quad = gpu_quad::default_new();
     bg_quad.x0 = x;
     bg_quad.y0 = y;
     bg_quad.x1 = x + textbb.w+1 + margin*2;  // note fencepost error with w/h.. don't include last edge
     bg_quad.y1 = y + tf_cached_largest_total_height+1 + margin*2; // todo: check if correct
 
     bg_quad.y1 -= 1; // a little hand-tweaking (tbh not sure if +1 in the y1 above is correct, x1 def correct tho)
+
+    bg_quad.z = 0;
 
     // adjust for alignment
     if (hpos == UI_RIGHT) bg_quad.move(-bg_quad.width(), 0);
@@ -356,6 +353,7 @@ rect ui_text(char *text, float x, float y, int hpos, int vpos, bool render = tru
         ui_element gizmo = {0};
         {
             // --bg--
+            bg_quad.z = 0.2;
             gizmo.add_solid_quad(bg_quad, 0x0, 0.66);
 
             // --text--
@@ -366,6 +364,7 @@ rect ui_text(char *text, float x, float y, int hpos, int vpos, bool render = tru
             gpu_quad_list_with_texture textsubmesh = {0};
             for (int i = 0; i < quadsneeded; i++) {
                 // quads[i].alpha = 0.5;
+                quads[i].z = 0.3;
                 textsubmesh.quads.add(quads[i]);
             }
             textsubmesh.texture_id = tf_fonttexture;
@@ -378,6 +377,7 @@ rect ui_text(char *text, float x, float y, int hpos, int vpos, bool render = tru
             // seems like not a great way to do this,
             // but just add an invisible rect above every text
             // and if highlighted (checked when rendering), change the alpha up from 0
+            bg_quad.z = 0.4;
             gizmo.add_hl_quad(bg_quad);
 
         }
@@ -424,13 +424,14 @@ rect ui_button_permanent_highlight(rect br, void(*effect)(int), int arg=0)
 
     ui_element gizmo = {0};
     gpu_quad q = gpu_quad_from_rect(br);
+    q.z = 0.0001;
     gizmo.add_hl_quad(q);
     ui_elements.add(gizmo);
 
     return br;
 }
 
-void ui_rect(float x, float y, float w, float h, u32 col, float a) {
+void ui_rect(float x, float y, float w, float h, u32 col, float a, float z=0) {
     // feels like this internal api needs some work but it's functional for now
     ui_element gizmo = {0};
     gizmo.add_solid_rect({x,y,w,h}, col, a);

@@ -602,6 +602,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                     }
 
                     ui_button("hide tags", cw/2, y/*ch/2*/, UI_CENTER,UI_TOP, &ToggleTagMenu);
+
+                    ui_rect(0,0, cw,y, 0xffffffff, 0.3, 0.1);
                 }
             }
 
@@ -683,14 +685,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                     UI_PRINT("browse tags: %i", browse_tags.count);
                     UI_PRINT("display list: %i", display_list.count);
 
-                    int skiprender_count = 0;
-                    // for (int j = 0; j < stubRectCount; j++) {
-                    for (int i = 0; i < tiles.count; i++) {
-                        if (tiles[i].skip_rendering)
-                            skiprender_count++;
-                    }
-
-                    UI_PRINT("skiprend: %i", skiprender_count);
+                    // int skiprender_count = 0;
+                    // // for (int j = 0; j < stubRectCount; j++) {
+                    // for (int i = 0; i < tiles.count; i++) {
+                    //     if (tiles[i].skip_rendering)
+                    //         skiprender_count++;
+                    // }
+                    // UI_PRINT("skiprend: %i", skiprender_count);
 
 
                 //     }
