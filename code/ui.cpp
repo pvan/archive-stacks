@@ -11,7 +11,7 @@
 // -compress call chain? yes, still needs
 
 //
-// this module meant to be used by our main app for any gui, shape, text drawing
+// this module is meant to be used by our main app for any gui, shape, text drawing, etc
 // it's a layer between the main app and lower level modules like text (tf_*) and gpu (gpu_*)
 // which may also use even lower level constructs like bitmap and rect
 //
@@ -356,7 +356,7 @@ rect ui_text(char *text, float x, float y, int hpos, int vpos, bool render = tru
         ui_element gizmo = {0};
         {
             // --bg--
-            // gizmo.add_solid_quad(bg_quad, 0x0, 0.5);
+            gizmo.add_solid_quad(bg_quad, 0x0, 1);
 
             // --text--
             int quadsneeded = tf_how_many_quads_needed_for_text(text);

@@ -296,7 +296,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     ui_init();
 
 
-    bitmap test = tf_bakefont(UI_TEXT_SIZE);
 
 
     master_path = string::KeepMemory(L"E:\\inspiration test folder");
@@ -803,8 +802,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         ui_render_elements(input.mouseX, input.mouseY); // pass mouse pos for highlighting
         ui_reset(); // call at the end or start of every frame so buttons don't carry over between frames
 
-
-        ui_bitmap(test, 0,0);
 
 
         opengl_swap();

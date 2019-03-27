@@ -75,13 +75,13 @@ bitmap tf_bakefont(float pixel_height)
             u8 *a = color_bitmap + ((py*bitmapW)+px)*4 + 3;
 
             int sx = px;// + first_non_blank_column;
-            *r = *(gray_bitmap + ((py*bitmapW)+sx));
-            *g = *(gray_bitmap + ((py*bitmapW)+sx));
-            *b = *(gray_bitmap + ((py*bitmapW)+sx));
-            // *a = *(gray_bitmap + ((py*bitmapW)+sx));
-            // if (bgA != 0) *a = bgA;
-            // *a = 255;
-            *a = 0;
+            // *r = *(gray_bitmap + ((py*bitmapW)+sx)); // this would be using the greyscale for
+            // *g = *(gray_bitmap + ((py*bitmapW)+sx)); // color and alpha, basically doubling
+            // *b = *(gray_bitmap + ((py*bitmapW)+sx)); // the fade on faded pixels
+            *r = 255; // set all pixels white and let alpha determine value
+            *g = 255;
+            *b = 255;
+            *a = *(gray_bitmap + ((py*bitmapW)+sx));
         }
     }
     free(gray_bitmap);
