@@ -455,6 +455,42 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         }
 
         else if (app_mode == VIEWING_FILE) {
+            if (keysDown.right) {
+                // seems a little awkward...
+
+                // find position in display list
+                int display_index_of_view_item;
+                for (int i = 0; i < display_list.count; i++) {
+                    if (viewing_file_index == display_list[i]) {
+                        display_index_of_view_item = i;
+                    }
+                }
+
+                // increment
+                display_index_of_view_item = (display_index_of_view_item+1) % display_list.count;
+
+                // set new item
+                //viewing_file_index = display_list[display_index_of_view_item];
+                OpenFileToView(display_list[display_index_of_view_item]);
+            }
+            if (keysDown.left) {
+                // seems a little awkward...
+
+                // find position in display list
+                int display_index_of_view_item;
+                for (int i = 0; i < display_list.count; i++) {
+                    if (viewing_file_index == display_list[i]) {
+                        display_index_of_view_item = i;
+                    }
+                }
+
+                // increment
+                display_index_of_view_item = (display_index_of_view_item-1+display_list.count) % display_list.count;
+
+                // set new item
+                //viewing_file_index = display_list[display_index_of_view_item];
+                OpenFileToView(display_list[display_index_of_view_item]);
+            }
             float aspect_ratio = item_resolutions[viewing_file_index].aspect_ratio();
             rect fit_to_screen = calc_pixel_letterbox_subrect(cw, ch, aspect_ratio);
             // note rect seems to be TLBR not XYWH
