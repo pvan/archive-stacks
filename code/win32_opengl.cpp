@@ -13,7 +13,7 @@ char *vertex_shader = MULTILINE_STRING
 (
     #version 330 \n
 
-    layout (location = 0) in vec3 aPos;
+    layout (location = 0) in vec2 aPos;
     layout (location = 1) in vec3 aColor;
     layout (location = 2) in vec2 aUV;
     layout (location = 3) in float aAlpha;
@@ -30,11 +30,9 @@ char *vertex_shader = MULTILINE_STRING
         vertColor = vec4(aColor,1);
         // vertColor = vec4(1,1,1,1);
         vertUV = aUV;
-        vec4 ppp = vec4(aPos, 1);
+        vec4 ppp = vec4(aPos.x, aPos.y, 1, 1);
         ppp.xy = (ppp.xy / camera.zw)*2.0 - 1.0;
         ppp.y *= -1;  // move origin to top
-        ppp.z *= -1;  // reverse z so + is on top of -
-        ppp.z = (ppp.z+100)/200; // map -100,100 to 0,1
         gl_Position = ppp;
     }
 );
@@ -213,8 +211,6 @@ void opengl_init(HDC hdc)
     glEnable(GL_DEBUG_OUTPUT);
     glDebugMessageCallback(opengl_message_callback, 0);
 
-    // enable depth buffer
-    glEnable(GL_DEPTH_TEST);
 
     // on trying this, it seems lke maybe we need a vao for every vbo?
     // // i think we can just set up a vao here since we're only using one vert/attrib style

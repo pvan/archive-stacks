@@ -9,13 +9,11 @@ struct gpu_quad {
     float x1, y1, u1, v1; // BR
     float alpha;
     u32 color; // single color for entire quad
-    float z; // z level for whole quad, for creating quads under previously-created quads, basically
     bool equ(gpu_quad o) {
         return x0==o.x0 && y0==o.y0 && u0==o.u0 && v0==o.v0 &&
                x1==o.x1 && y1==o.y1 && u1==o.u1 && v1==o.v1 &&
                alpha == o.alpha &&
-               color == o.color &&
-               z == o.z;
+               color == o.color;
     }
     bool operator==(gpu_quad other) { return equ(other); }
     bool operator!=(gpu_quad other) { return !equ(other); }
@@ -23,19 +21,11 @@ struct gpu_quad {
     void move(float dx, float dy) { x0+=dx; x1+=dx;  y0+=dy; y1+=dy; }
     float width() { return x1-x0; }
     float height() { return y1-y0; }
-    static gpu_quad default_new() {
-        gpu_quad q = {0};
-        q.alpha = 1;
-        q.color = 0xffffffff;
-        q.z = 0;
-        return q;
-    }
 };
 
 
 gpu_quad gpu_quad_from_rect(rect r, float alpha = 1) {
-    gpu_quad q = gpu_quad::default_new();
-    // gpu_quad q;
+    gpu_quad q;
     q.x0 = r.x;
     q.y0 = r.y;
     q.x1 = r.x + r.w;
@@ -45,8 +35,7 @@ gpu_quad gpu_quad_from_rect(rect r, float alpha = 1) {
     q.u1 = 1.0;
     q.v1 = 1.0;
     q.alpha = alpha;
-    // q.color = 0xffffffff;
-    // q.z = 0;
+    q.color = 0xffffffff;
     return q;
 }
 
@@ -66,31 +55,17 @@ void gpu_create_and_setup_global_vert_buffers() {
     glBindBuffer(GL_ARRAY_BUFFER, gpu_vbo);
 
     // pos attrib
-    glVertexAttribPointer(0/*loc*/, 3/*comps*/, GL_FLOAT, GL_FALSE, 9*sizeof(GLfloat), NULL);
+    glVertexAttribPointer(0/*loc*/, 2/*comps*/, GL_FLOAT, GL_FALSE, 8*sizeof(GLfloat), NULL);
     glEnableVertexAttribArray(0/*loc*/); // enable this attribute
     // color attrib
-    glVertexAttribPointer(1/*loc*/, 3/*comps*/, GL_FLOAT, GL_FALSE, 9*sizeof(GLfloat), (void*)(3*sizeof(float)));
+    glVertexAttribPointer(1/*loc*/, 3/*comps*/, GL_FLOAT, GL_FALSE, 8*sizeof(GLfloat), (void*)(2*sizeof(float)));
     glEnableVertexAttribArray(1/*loc*/); // enable this attribute
     // uv attrib
-    glVertexAttribPointer(2/*loc*/, 2/*comps*/, GL_FLOAT, GL_FALSE, 9*sizeof(GLfloat), (void*)(6*sizeof(float)));
+    glVertexAttribPointer(2/*loc*/, 2/*comps*/, GL_FLOAT, GL_FALSE, 8*sizeof(GLfloat), (void*)(5*sizeof(float)));
     glEnableVertexAttribArray(2/*loc*/); // enable this attribute
     // alpha attrib
-    glVertexAttribPointer(3/*loc*/, 1/*comps*/, GL_FLOAT, GL_FALSE, 9*sizeof(GLfloat), (void*)(8*sizeof(float)));
+    glVertexAttribPointer(3/*loc*/, 1/*comps*/, GL_FLOAT, GL_FALSE, 8*sizeof(GLfloat), (void*)(7*sizeof(float)));
     glEnableVertexAttribArray(3/*loc*/); // enable this attribute
-
-    // without z
-    // // pos attrib
-    // glVertexAttribPointer(0/*loc*/, 2/*comps*/, GL_FLOAT, GL_FALSE, 8*sizeof(GLfloat), NULL);
-    // glEnableVertexAttribArray(0/*loc*/); // enable this attribute
-    // // color attrib
-    // glVertexAttribPointer(1/*loc*/, 3/*comps*/, GL_FLOAT, GL_FALSE, 8*sizeof(GLfloat), (void*)(2*sizeof(float)));
-    // glEnableVertexAttribArray(1/*loc*/); // enable this attribute
-    // // uv attrib
-    // glVertexAttribPointer(2/*loc*/, 2/*comps*/, GL_FLOAT, GL_FALSE, 8*sizeof(GLfloat), (void*)(5*sizeof(float)));
-    // glEnableVertexAttribArray(2/*loc*/); // enable this attribute
-    // // alpha attrib
-    // glVertexAttribPointer(3/*loc*/, 1/*comps*/, GL_FLOAT, GL_FALSE, 8*sizeof(GLfloat), (void*)(7*sizeof(float)));
-    // glEnableVertexAttribArray(3/*loc*/); // enable this attribute
 
     // // without color attrib
     // // pos attrib
@@ -172,7 +147,7 @@ int gpu_upload_vertices(gpu_quad *quads, int quadcount) {
 
 
 
-    int floats_per_quad = 3/*verts per tri*/ * 2/*tris*/ * 9/*comps per vert*/;
+    int floats_per_quad = 3/*verts per tri*/ * 2/*tris*/ * 8/*comps per vert*/;
     int total_floats = quadcount*floats_per_quad;
 
     gpu_cached_verts = (float*)malloc(total_floats * sizeof(float));
@@ -181,51 +156,34 @@ int gpu_upload_vertices(gpu_quad *quads, int quadcount) {
     for (int i = 0; i < quadcount; i++) {
         gpu_quad q = quads[i];
 
-        // for color, alpha and z...
-        // would it be better to pass some other way?
-        // as uniforms, or some other buffer type?
-        // since they are the same for the whole quad.. passing them 5 times more than needed
-
         float r = (float)(q.color>>16 & 0xff) / 255.0;
         float g = (float)(q.color>>8 & 0xff) / 255.0;
         float b = (float)(q.color>>0 & 0xff) / 255.0;
 
         // TL
-        gpu_cached_verts[v++]=q.x0; gpu_cached_verts[v++]=q.y0; gpu_cached_verts[v++]=q.z;
-        gpu_cached_verts[v++]=r; gpu_cached_verts[v++]=g; gpu_cached_verts[v++]=b;
-        gpu_cached_verts[v++]=q.u0; gpu_cached_verts[v++]=q.v0;
-        gpu_cached_verts[v++]=q.alpha;
+        gpu_cached_verts[v++]=q.x0; gpu_cached_verts[v++]=q.y0; gpu_cached_verts[v++]=r; gpu_cached_verts[v++]=g; gpu_cached_verts[v++]=b;
+        gpu_cached_verts[v++]=q.u0; gpu_cached_verts[v++]=q.v0; gpu_cached_verts[v++]=q.alpha;
         // TR
-        gpu_cached_verts[v++]=q.x1; gpu_cached_verts[v++]=q.y0; gpu_cached_verts[v++]=q.z;
-        gpu_cached_verts[v++]=r; gpu_cached_verts[v++]=g; gpu_cached_verts[v++]=b;
-        gpu_cached_verts[v++]=q.u1; gpu_cached_verts[v++]=q.v0;
-        gpu_cached_verts[v++]=q.alpha;
+        gpu_cached_verts[v++]=q.x1; gpu_cached_verts[v++]=q.y0; gpu_cached_verts[v++]=r; gpu_cached_verts[v++]=g; gpu_cached_verts[v++]=b;
+        gpu_cached_verts[v++]=q.u1; gpu_cached_verts[v++]=q.v0; gpu_cached_verts[v++]=q.alpha;
         // BR
-        gpu_cached_verts[v++]=q.x1; gpu_cached_verts[v++]=q.y1; gpu_cached_verts[v++]=q.z;
-        gpu_cached_verts[v++]=r; gpu_cached_verts[v++]=g; gpu_cached_verts[v++]=b;
-        gpu_cached_verts[v++]=q.u1; gpu_cached_verts[v++]=q.v1;
-        gpu_cached_verts[v++]=q.alpha;
+        gpu_cached_verts[v++]=q.x1; gpu_cached_verts[v++]=q.y1; gpu_cached_verts[v++]=r; gpu_cached_verts[v++]=g; gpu_cached_verts[v++]=b;
+        gpu_cached_verts[v++]=q.u1; gpu_cached_verts[v++]=q.v1; gpu_cached_verts[v++]=q.alpha;
 
         // BR
-        gpu_cached_verts[v++]=q.x1; gpu_cached_verts[v++]=q.y1; gpu_cached_verts[v++]=q.z;
-        gpu_cached_verts[v++]=r; gpu_cached_verts[v++]=g; gpu_cached_verts[v++]=b;
-        gpu_cached_verts[v++]=q.u1; gpu_cached_verts[v++]=q.v1;
-        gpu_cached_verts[v++]=q.alpha;
+        gpu_cached_verts[v++]=q.x1; gpu_cached_verts[v++]=q.y1; gpu_cached_verts[v++]=r; gpu_cached_verts[v++]=g; gpu_cached_verts[v++]=b;
+        gpu_cached_verts[v++]=q.u1; gpu_cached_verts[v++]=q.v1; gpu_cached_verts[v++]=q.alpha;
         // TL
-        gpu_cached_verts[v++]=q.x0; gpu_cached_verts[v++]=q.y0; gpu_cached_verts[v++]=q.z;
-        gpu_cached_verts[v++]=r; gpu_cached_verts[v++]=g; gpu_cached_verts[v++]=b;
-        gpu_cached_verts[v++]=q.u0; gpu_cached_verts[v++]=q.v0;
-        gpu_cached_verts[v++]=q.alpha;
+        gpu_cached_verts[v++]=q.x0; gpu_cached_verts[v++]=q.y0; gpu_cached_verts[v++]=r; gpu_cached_verts[v++]=g; gpu_cached_verts[v++]=b;
+        gpu_cached_verts[v++]=q.u0; gpu_cached_verts[v++]=q.v0; gpu_cached_verts[v++]=q.alpha;
         // BL
-        gpu_cached_verts[v++]=q.x0; gpu_cached_verts[v++]=q.y1; gpu_cached_verts[v++]=q.z;
-        gpu_cached_verts[v++]=r; gpu_cached_verts[v++]=g; gpu_cached_verts[v++]=b;
-        gpu_cached_verts[v++]=q.u0; gpu_cached_verts[v++]=q.v1;
-        gpu_cached_verts[v++]=q.alpha;
+        gpu_cached_verts[v++]=q.x0; gpu_cached_verts[v++]=q.y1; gpu_cached_verts[v++]=r; gpu_cached_verts[v++]=g; gpu_cached_verts[v++]=b;
+        gpu_cached_verts[v++]=q.u0; gpu_cached_verts[v++]=q.v1; gpu_cached_verts[v++]=q.alpha;
 
     }
 
     assert(v == total_floats);
-    int cached_vert_count = total_floats / 9/*comps per vert*/;
+    int cached_vert_count = total_floats / 8/*comps per vert*/;
 
     glBindVertexArray(gpu_vao); // need this here or no?
     glBindBuffer(GL_ARRAY_BUFFER, gpu_vbo);

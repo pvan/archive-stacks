@@ -133,7 +133,6 @@ rect tf_create_quad_list_for_text_at_rect(char *text, float x, float y, gpu_quad
             gpu_quad quad = {q.x0,q.y0,q.s0,q.t0, q.x1,q.y1,q.s1,q.t1};
             quad.alpha = 1;
             quad.color = 0xffffffff;
-            quad.z = 0; // what to use here?
             quadlist[quadcountsofar++] = quad;
 
             // x bounding box
