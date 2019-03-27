@@ -443,21 +443,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                 }
             }
 
-
-            // if (keysDown.mouseL && input.point_in_client_area(cw,ch)) {
-            //     app_mode = VIEWING_FILE;
-
-            //     viewing_file_index = TileIndexMouseIsOver(tiles, input.mouseX, input.mouseY);
-
-            //     // // note shallow copy, not pointer or deep copy
-            //     // viewing_tile = tiles[viewing_file_index];
-
-            //     viewing_tile = tile::CreateFromItem(items[viewing_file_index]);
-
-            //     viewing_tile.needs_loading = true;
-            //     viewing_tile.needs_unloading = false; // these are init to false in tile::Create,
-            //     viewing_tile.is_media_loaded = false; // but just to make it explicit here..
-            // }
+            if (keysDown.space)
+                ToggleTagMenu(0);
 
 
         }
@@ -509,8 +496,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                 app_mode = BROWSING_THUMBS;
                 // todo: remove tile stuff from memory or gpu ?
             }
+            if (keysDown.space)
+                ToggleTagSelectMenu(0);
         }
-
 
 
         // --RENDER-- (any reason to keep update/render loops split out?)
