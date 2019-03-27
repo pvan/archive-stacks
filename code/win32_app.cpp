@@ -97,6 +97,13 @@ float master_desired_tile_width = 200;
 int g_cw;
 int g_ch;
 
+// for panning VIEW mode
+bool mouse_up_once_since_loading = false;
+float clickMouseX;
+float clickMouseY;
+float clickRectX;
+float clickRectY;
+
 //
 // button click handlers
 
@@ -159,6 +166,8 @@ void OpenFileToView(int item_index) {
     // note rect seems to be TLBR not XYWH
     viewing_tile.pos = {fit_to_screen.x, fit_to_screen.y};
     viewing_tile.size = {fit_to_screen.w-fit_to_screen.x, fit_to_screen.h-fit_to_screen.y};
+
+    mouse_up_once_since_loading = false;
 }
 
 
@@ -551,10 +560,26 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                 ToggleTagSelectMenu(0);
 
 
+            // pan
+            if (!input.mouseL) mouse_up_once_since_loading = true;
+            if (keysDown.mouseM || keysDown.mouseL) {
+                clickMouseX = input.mouseX;
+                clickMouseY = input.mouseY;
+                clickRectX = viewing_tile.pos.x;
+                clickRectY = viewing_tile.pos.y;
+            }
+            if ((input.mouseM || input.mouseL) && mouse_up_once_since_loading) {
+                float deltaX = input.mouseX - clickMouseX;
+                float deltaY = input.mouseY - clickMouseY;
+                viewing_tile.pos.x = clickRectX + deltaX;
+                viewing_tile.pos.y = clickRectY + deltaY;
+            }
+
+            // zoom
             if (master_scroll_delta != 0) {
 
-                float scaleFactor = 1.2f;
-                if (master_scroll_delta < 0) scaleFactor = 0.8f;
+                float scaleFactor = 0.8f;
+                if (master_scroll_delta < 0) scaleFactor = 1.2f;
                 viewing_tile.size.w *= scaleFactor;
                 viewing_tile.size.h *= scaleFactor;
                 viewing_tile.pos.x -= (input.mouseX - viewing_tile.pos.x) * (scaleFactor - 1);
