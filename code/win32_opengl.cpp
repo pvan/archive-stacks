@@ -29,7 +29,6 @@ char *vertex_shader = MULTILINE_STRING
         vertA = aAlpha;
         vertColor = vec4(aColor,1);
         // vertColor = vec4(1,1,1,1);
-        // vertColor = vec4(1,1,1,aColor.x); // todo: hijacking color to pass an alpha in atm
         vertUV = aUV;
         vec4 ppp = vec4(aPos.x, aPos.y, 1, 1);
         ppp.xy = (ppp.xy / camera.zw)*2.0 - 1.0;

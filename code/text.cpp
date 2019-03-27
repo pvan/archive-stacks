@@ -78,9 +78,10 @@ bitmap tf_bakefont(float pixel_height)
             *r = *(gray_bitmap + ((py*bitmapW)+sx));
             *g = *(gray_bitmap + ((py*bitmapW)+sx));
             *b = *(gray_bitmap + ((py*bitmapW)+sx));
-            // *a = *(gray_bitmap);// + ((py*sourceW)+sx));
+            // *a = *(gray_bitmap + ((py*bitmapW)+sx));
             // if (bgA != 0) *a = bgA;
-            *a = 255;
+            // *a = 255;
+            *a = 0;
         }
     }
     free(gray_bitmap);

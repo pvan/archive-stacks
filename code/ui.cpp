@@ -356,7 +356,7 @@ rect ui_text(char *text, float x, float y, int hpos, int vpos, bool render = tru
         ui_element gizmo = {0};
         {
             // --bg--
-            gizmo.add_solid_quad(bg_quad, 0x0, 0.5);
+            // gizmo.add_solid_quad(bg_quad, 0x0, 0.5);
 
             // --text--
             int quadsneeded = tf_how_many_quads_needed_for_text(text);
@@ -365,7 +365,7 @@ rect ui_text(char *text, float x, float y, int hpos, int vpos, bool render = tru
 
             gpu_quad_list_with_texture textsubmesh = {0};
             for (int i = 0; i < quadsneeded; i++) {
-                quads[i].alpha = 0.5;
+                // quads[i].alpha = 0.5;
                 textsubmesh.quads.add(quads[i]);
             }
             textsubmesh.texture_id = tf_fonttexture;
@@ -467,6 +467,20 @@ void ui_scrollbar(rect r, float top_percent, float bot_percent,
 
     // click handler
     ui_add_draggable(r, callbackvalue, callbackscale);
+}
+
+
+gpu_texture_id reusable_texture_id_for_bitmap = -1;
+void ui_bitmap(bitmap img, float x, float y) {
+
+    if (reusable_texture_id_for_bitmap == -1) {
+        reusable_texture_id_for_bitmap = gpu_create_texture();
+    }
+
+    gpu_upload_texture(img, reusable_texture_id_for_bitmap);
+
+    gpu_quad quad = gpu_quad_from_rect({0,0, (float)img.w, (float)img.h}, 1);
+    gpu_render_quads_with_texture(&quad, 1, reusable_texture_id_for_bitmap, 1);
 }
 
 
