@@ -576,24 +576,42 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                 if (!tag_menu_open) {
                     ui_button("show tags", cw/2, 0, UI_CENTER,UI_TOP, &ToggleTagMenu);
                 } else {
-
-                    rect lastr = ui_button("select none", 0,0, UI_LEFT,UI_TOP, &SelectBrowseTagsNone);
-                    ui_button("select all", lastr.w,0, UI_LEFT,UI_TOP, &SelectBrowseTagsAll);
+                    float hgap = 10;
+                    float vgap = 5;
 
                     float x = 0;
-                    float y = UI_TEXT_SIZE;
+                    float y = UI_TEXT_SIZE + vgap;
+
+                    // get total size
+                    {
+                        for (int i = 0; i < tag_list.count; i++) {
+                            rect this_rect = ui_text(tag_list[i].ToUTF8Reusable(), x,y, UI_LEFT,UI_TOP, false);
+                            this_rect.w+=hgap;
+                            this_rect.h+=vgap;
+                            if (x+this_rect.w > cw) { y+=this_rect.h; x=0; }
+                            x += this_rect.w;
+                            if (i == tag_list.count-1) y += this_rect.h; // \n for last row
+                        }
+                    }
+                    ui_rect({0,0,(float)cw,y+UI_TEXT_SIZE+vgap}, 0xffffffff, 0.5); // menu bg
+
+                    rect lastr = ui_button("select none", 0,0, UI_LEFT,UI_TOP, &SelectBrowseTagsNone);
+                    ui_button("select all", lastr.w+hgap,0, UI_LEFT,UI_TOP, &SelectBrowseTagsAll);
+
+                    x = 0;
+                    y = UI_TEXT_SIZE+vgap;
                     for (int i = 0; i < tag_list.count; i++) {
                         // ui_rect this_rect = get_text_size(tag_list[i].ToUTF8Reusable());
                         rect this_rect = ui_text(tag_list[i].ToUTF8Reusable(), x,y, UI_LEFT,UI_TOP, false);
-                        // this_rect.w+=10;
-                        // this_rect.h+=5;
+                        this_rect.w+=10;
+                        this_rect.h+=vgap;
                         if (x+this_rect.w > cw) { y+=this_rect.h; x=0; }
-                        ui_button(tag_list[i].ToUTF8Reusable(), x,y, UI_LEFT,UI_TOP, &ToggleTagBrowse, i);
+                        rect brect = ui_button(tag_list[i].ToUTF8Reusable(), x,y, UI_LEFT,UI_TOP, &ToggleTagBrowse, i);
 
                         // color selected tags...
                         {
                             if (browse_tags.has(i)) {
-                                ui_rect(x,y,this_rect.w,this_rect.h, 0xffff00ff, 0.3);
+                                ui_rect(brect, 0xffff00ff, 0.3);
                             }
                         }
 
@@ -740,23 +758,41 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                 if (!tag_select_open) {
                     ui_button("show tags", cw/2, 0, UI_CENTER,UI_TOP, &ToggleTagSelectMenu);
                 } else {
-                    rect lastr = ui_button("select none", 0,0, UI_LEFT,UI_TOP, &SelectItemTagsNone);
-                    ui_button("select all", lastr.w,0, UI_LEFT,UI_TOP, &SelectItemTagsAll);
+                    float hgap = 10;
+                    float vgap = 5;
 
                     float x = 0;
-                    float y = UI_TEXT_SIZE;
+                    float y = UI_TEXT_SIZE + vgap;
+
+                    // get total size
+                    {
+                        for (int i = 0; i < tag_list.count; i++) {
+                            rect this_rect = ui_text(tag_list[i].ToUTF8Reusable(), x,y, UI_LEFT,UI_TOP, false);
+                            this_rect.w+=hgap;
+                            this_rect.h+=vgap;
+                            if (x+this_rect.w > cw) { y+=this_rect.h; x=0; }
+                            x += this_rect.w;
+                            if (i == tag_list.count-1) y += this_rect.h; // \n for last row
+                        }
+                    }
+                    ui_rect({0,0,(float)cw,y+UI_TEXT_SIZE+vgap}, 0xffffffff, 0.5); // menu bg
+
+                    rect lastr = ui_button("select none", 0,0, UI_LEFT,UI_TOP, &SelectItemTagsNone);
+                    ui_button("select all", lastr.w+hgap,0, UI_LEFT,UI_TOP, &SelectItemTagsAll);
+
+                    x = 0;
+                    y = UI_TEXT_SIZE + vgap;
                     for (int i = 0; i < tag_list.count; i++) {
-                        // ui_rect this_rect = get_text_size(tag_list[i].ToUTF8Reusable());
                         rect this_rect = ui_text(tag_list[i].ToUTF8Reusable(), x,y, UI_LEFT,UI_TOP, false);
-                        // this_rect.w+=10;
-                        // this_rect.h+=5;
+                        this_rect.w+=hgap;
+                        this_rect.h+=vgap;
                         if (x+this_rect.w > cw) { y+=this_rect.h; x=0; }
-                        ui_button(tag_list[i].ToUTF8Reusable(), x,y, UI_LEFT,UI_TOP, &ToggleTagSelection, i);
+                        rect brect = ui_button(tag_list[i].ToUTF8Reusable(), x,y, UI_LEFT,UI_TOP, &ToggleTagSelection, i);
 
                         // color selected tags...
                         {
                             if (items[viewing_file_index].tags.has(i)) {
-                                ui_rect(x,y,this_rect.w,this_rect.h, 0xffff00ff, 0.3);
+                                ui_rect(brect, 0xffff00ff, 0.3);
                             }
                         }
 

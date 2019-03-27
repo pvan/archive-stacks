@@ -430,10 +430,11 @@ rect ui_button_permanent_highlight(rect br, void(*effect)(int), int arg=0)
     return br;
 }
 
-void ui_rect(float x, float y, float w, float h, u32 col, float a) {
+// void ui_rect(float x, float y, float w, float h, u32 col, float a) {
+void ui_rect(rect r, u32 col, float a) {
     // feels like this internal api needs some work but it's functional for now
     ui_element gizmo = {0};
-    gizmo.add_solid_rect({x,y,w,h}, col, a);
+    gizmo.add_solid_rect(r, col, a);
     ui_elements.add(gizmo);
 }
 
