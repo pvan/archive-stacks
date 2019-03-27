@@ -153,11 +153,19 @@ void OpenFileToView(int item_index) {
     viewing_tile.needs_loading = true;
     viewing_tile.needs_unloading = false; // these are init to false in tile::Create,
     viewing_tile.is_media_loaded = false; // but just to make it explicit here..
+
+    float aspect_ratio = item_resolutions[viewing_file_index].aspect_ratio();
+    rect fit_to_screen = calc_pixel_letterbox_subrect(g_cw, g_ch, aspect_ratio);
+    // note rect seems to be TLBR not XYWH
+    viewing_tile.pos = {fit_to_screen.x, fit_to_screen.y};
+    viewing_tile.size = {fit_to_screen.w-fit_to_screen.x, fit_to_screen.h-fit_to_screen.y};
 }
 
 
 // can use for tag menu in browse mode (selecting what to browse)
 // and tag menu in view mode (for selecting an item's tags)
+// pass in the click handlers for the buttons
+// and a list of ints which are the indices of the tags that are marked "selected" (color pink)
 void DrawTagMenu(int cw, int ch,
                  void (*selectNone)(int),
                  void (*selectAll)(int),
@@ -512,10 +520,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         }
 
         else if (app_mode == VIEWING_FILE) {
-            if (keysDown.right) {
-                // seems a little awkward...
-
+            if (keysDown.right || keysDown.left) {
                 // find position in display list
+                // (seems a little awkward...)
                 int display_index_of_view_item;
                 for (int i = 0; i < display_list.count; i++) {
                     if (viewing_file_index == display_list[i]) {
@@ -524,35 +531,17 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                 }
 
                 // increment
-                display_index_of_view_item = (display_index_of_view_item+1) % display_list.count;
-
-                // set new item
-                //viewing_file_index = display_list[display_index_of_view_item];
-                OpenFileToView(display_list[display_index_of_view_item]);
-            }
-            if (keysDown.left) {
-                // seems a little awkward...
-
-                // find position in display list
-                int display_index_of_view_item;
-                for (int i = 0; i < display_list.count; i++) {
-                    if (viewing_file_index == display_list[i]) {
-                        display_index_of_view_item = i;
-                    }
+                if (keysDown.right) {
+                    display_index_of_view_item = (display_index_of_view_item+1) % display_list.count;
+                }
+                if (keysDown.left) {
+                    display_index_of_view_item = (display_index_of_view_item-1+display_list.count) % display_list.count;
                 }
 
-                // increment
-                display_index_of_view_item = (display_index_of_view_item-1+display_list.count) % display_list.count;
-
                 // set new item
                 //viewing_file_index = display_list[display_index_of_view_item];
                 OpenFileToView(display_list[display_index_of_view_item]);
             }
-            float aspect_ratio = item_resolutions[viewing_file_index].aspect_ratio();
-            rect fit_to_screen = calc_pixel_letterbox_subrect(cw, ch, aspect_ratio);
-            // note rect seems to be TLBR not XYWH
-            viewing_tile.pos = {fit_to_screen.x, fit_to_screen.y};
-            viewing_tile.size = {fit_to_screen.w-fit_to_screen.x, fit_to_screen.h-fit_to_screen.y};
 
             if (keysDown.mouseR) {
                 app_mode = BROWSING_THUMBS;
@@ -638,7 +627,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                 if (!tag_menu_open) {
                     ui_button("show tags", cw/2, 0, UI_CENTER,UI_TOP, &ToggleTagMenu);
                 } else {
-                    // how does this feel... hmm
                     DrawTagMenu(cw, ch,
                                 &SelectBrowseTagsNone,
                                 &SelectBrowseTagsAll,
@@ -782,7 +770,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                 if (!tag_select_open) {
                     ui_button("show tags", cw/2, 0, UI_CENTER,UI_TOP, &ToggleTagSelectMenu);
                 } else {
-                    // how does this feel... hmm
                     DrawTagMenu(cw, ch,
                                 &SelectItemTagsNone,
                                 &SelectItemTagsAll,
