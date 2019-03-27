@@ -356,7 +356,7 @@ rect ui_text(char *text, float x, float y, int hpos, int vpos, bool render = tru
         ui_element gizmo = {0};
         {
             // --bg--
-            gizmo.add_solid_quad(bg_quad, 0x0, 1);
+            gizmo.add_solid_quad(bg_quad, 0x0, 0.66);
 
             // --text--
             int quadsneeded = tf_how_many_quads_needed_for_text(text);

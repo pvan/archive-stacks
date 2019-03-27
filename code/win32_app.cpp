@@ -232,7 +232,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
-    RECT win_rect = {0,0,600,400};
+    RECT win_rect = {0,0,800,600};
     int cw = win_rect.right;
     int ch = win_rect.bottom;
 
@@ -581,8 +581,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                     ui_button("show tags", cw/2, 0, UI_CENTER,UI_TOP, &ToggleTagMenu);
                 } else {
 
-                    ui_button("select none", 0,0, UI_LEFT,UI_TOP, &SelectBrowseTagsNone);
-                    ui_button("select all", cw,0, UI_RIGHT,UI_TOP, &SelectBrowseTagsAll);
+                    rect lastr = ui_button("select none", 0,0, UI_LEFT,UI_TOP, &SelectBrowseTagsNone);
+                    ui_button("select all", lastr.w,0, UI_LEFT,UI_TOP, &SelectBrowseTagsAll);
 
                     float x = 0;
                     float y = UI_TEXT_SIZE;
