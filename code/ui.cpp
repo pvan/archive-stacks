@@ -80,6 +80,8 @@ struct ui_element {
     // this is also used for mouse picking/detection at the moment...
     gpu_quad *highlight_quad;
 
+    float hl_alpha = 0; // what alpha to use when mouse over (usually 0.3)
+
     bool operator==(ui_element o) { return mesh==o.mesh; /* todo: check this is right when done*/ }
 
     // a little awkward since quad has color/alpha in it atm
@@ -103,8 +105,9 @@ struct ui_element {
         newquadlist.add(q);
         mesh.add_submesh({newquadlist, ui_solid_tex_id});
     }
-    void add_hl_quad(gpu_quad q, u32 col = 0xffffffff, float a = 0) {
-        add_solid_quad(q, col, a);
+    void add_hl_quad(gpu_quad q, u32 col = 0xffffffff, float mouseOnAlpha = 0.3,  float mouseOffAlpha = 0) {
+        add_solid_quad(q, col, mouseOffAlpha);
+        hl_alpha = mouseOnAlpha;
         // HL quad will be last quad entered
         gpu_quad_list_with_texture *lastsubmesh = &(mesh.submeshes.pool[mesh.submeshes.count-1]);
         highlight_quad = &(lastsubmesh->quads[lastsubmesh->quads.count-1]);
@@ -126,6 +129,7 @@ void ui_queue_element(ui_element gizmo) {
     ui_elements.add(gizmo);
 }
 
+
 // void ui_queue_solo_rect(rect r, u32 col, float a) {
 //     ui_element gizmo = {0};
 //     gpu_quad q = gpu_quad_from_rect(r);
@@ -135,8 +139,8 @@ void ui_queue_element(ui_element gizmo) {
 //     ui_elements.add(gizmo);
 // }
 
-gpu_quad *ui_find_topmost_element_under_point(float mx, float my) {
-    gpu_quad *result = 0;
+ui_element *ui_find_topmost_element_under_point(float mx, float my) {
+    ui_element *result = 0;
     // result.z_level = -99999; // max negative z level
     bool found_at_least_one = false;
     for (int i = 0; i < ui_elements.count; i++) {
@@ -145,7 +149,7 @@ gpu_quad *ui_find_topmost_element_under_point(float mx, float my) {
             if (mx > r.x && mx <= r.x+r.w && my > r.y && my <= r.y+r.h) {
                 // if (buttons[i].z_level > result.z_level) {
                     // note we keep checking the whole list, so we implicitly get the last/topmost rect
-                    result = ui_elements[i].highlight_quad;
+                    result = &ui_elements.pool[i];
                     found_at_least_one = true;
                 // }
             }
@@ -158,8 +162,8 @@ gpu_quad *ui_find_topmost_element_under_point(float mx, float my) {
 }
 
 void ui_render_elements(float mx, float my) {
-    gpu_quad *topmost = ui_find_topmost_element_under_point(mx, my); // oh no i've looked at the word element too long and it's starting to look funny
-    if (topmost) topmost->alpha = 0.3; // defauts to 0 let's say
+    ui_element *topmost = ui_find_topmost_element_under_point(mx, my); // oh no i've looked at the word element too long and it's starting to look funny
+    if (topmost) topmost->highlight_quad->alpha = topmost->hl_alpha; // otherwise 0 (usually)
     for (int i = 0; i < ui_elements.count; i++) {
         gpu_render_mesh(ui_elements[i].mesh);
     }
@@ -440,7 +444,14 @@ void ui_rect(rect r, u32 col, float a) {
 // what to name this?
 // will absorbe clicks/hl events (and won't pass below this)
 void ui_rect_solid(rect r, u32 col, float a) {
-    ui_add_clickable(r, 0, 0);
+
+    ui_element gizmo = {0};
+    gpu_quad q = gpu_quad_from_rect(r);
+    gizmo.add_hl_quad(q, 0, 0); // pass 0 in for alpha to use when being highlighted (basically, don't highlight)
+    ui_elements.add(gizmo);  // ignore highlight
+
+    ui_add_clickable(r, 0, 0);  // ignore clicks
+
     ui_rect(r, col, a);
 }
 
@@ -453,9 +464,8 @@ void ui_scrollbar(rect r, float top_percent, float bot_percent,
     ui_element gizmo = {0};
     {
         // lets try something funny, put the hl below the others as a kind of optional "less opacity"
-        // todo: could have variable opacity settings on our hl instead of always going to .3 or w/e
         // --hl--
-        gizmo.add_hl_quad(gpu_quad_from_rect(r), 0, 0);
+        gizmo.add_hl_quad(gpu_quad_from_rect(r), 0);
 
         // --bg--
         gizmo.add_solid_rect(r, 0xffbbbbbb, 0.4);
