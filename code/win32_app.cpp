@@ -156,6 +156,68 @@ void OpenFileToView(int item_index) {
 }
 
 
+// can use for tag menu in browse mode (selecting what to browse)
+// and tag menu in view mode (for selecting an item's tags)
+void DrawTagMenu(int cw, int ch,
+                 void (*selectNone)(int),
+                 void (*selectAll)(int),
+                 void (*tagSelect)(int),
+                 void (*hideMenu)(int),
+                 int_pool *selected_tags_pool)
+{
+    float hgap = 3;
+    float vgap = 3;
+
+    float x = hgap;
+    float y = UI_TEXT_SIZE + vgap*2;
+
+    // get total size
+    {
+        for (int i = 0; i < tag_list.count; i++) {
+            rect this_rect = ui_text(tag_list[i].ToUTF8Reusable(), x,y, UI_LEFT,UI_TOP, false);
+            this_rect.w+=hgap;
+            this_rect.h+=vgap;
+            if (x+this_rect.w > cw) { y+=this_rect.h; x=hgap; }
+            x += this_rect.w;
+            if (i == tag_list.count-1) y += this_rect.h; // \n for last row
+        }
+    }
+    ui_rect_solid({0,0,(float)cw,y+UI_TEXT_SIZE+vgap}, 0xffffffff, 0.5); // menu bg
+
+    rect lastr = ui_button("select none", hgap,vgap, UI_LEFT,UI_TOP, selectNone);
+    ui_button("select all", lastr.w+hgap*2,vgap, UI_LEFT,UI_TOP, selectAll);
+    // could also do something like this
+    // if (mode == BROWSING_THUMBS) {
+    //     rect lastr = ui_button("select none", hgap,vgap, UI_LEFT,UI_TOP, &SelectItemTagsNone);
+    //     ui_button("select all", lastr.w+hgap*2,vgap, UI_LEFT,UI_TOP, &SelectItemTagsAll);
+    // } else if (mode == VIEWING_FILE) {
+    //     rect lastr = ui_button("select none", 0,0, UI_LEFT,UI_TOP, &SelectBrowseTagsNone);
+    //     ui_button("select all", lastr.w+hgap,0, UI_LEFT,UI_TOP, &SelectBrowseTagsAll);
+    // }
+
+    x = hgap;
+    y = UI_TEXT_SIZE + vgap*2;
+    for (int i = 0; i < tag_list.count; i++) {
+        rect this_rect = ui_text(tag_list[i].ToUTF8Reusable(), x,y, UI_LEFT,UI_TOP, false);
+        this_rect.w+=hgap;
+        this_rect.h+=vgap;
+        if (x+this_rect.w > cw) { y+=this_rect.h; x=hgap; }
+        rect brect = ui_button(tag_list[i].ToUTF8Reusable(), x,y, UI_LEFT,UI_TOP, tagSelect, i);
+
+        // color selected tags...
+        {
+            // if (items[viewing_file_index].tags.has(i)) {
+            if (selected_tags_pool->has(i)) {
+                ui_rect(brect, 0xffff00ff, 0.3);
+            }
+        }
+
+        x += this_rect.w;
+        if (i == tag_list.count-1) y += this_rect.h; // \n for hide tag button
+    }
+
+    ui_button("hide tags", cw/2, y/*ch/2*/, UI_CENTER,UI_TOP, hideMenu);
+}
 
 
 // done once after startup loading is done
@@ -576,50 +638,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                 if (!tag_menu_open) {
                     ui_button("show tags", cw/2, 0, UI_CENTER,UI_TOP, &ToggleTagMenu);
                 } else {
-                    float hgap = 10;
-                    float vgap = 5;
-
-                    float x = 0;
-                    float y = UI_TEXT_SIZE + vgap;
-
-                    // get total size
-                    {
-                        for (int i = 0; i < tag_list.count; i++) {
-                            rect this_rect = ui_text(tag_list[i].ToUTF8Reusable(), x,y, UI_LEFT,UI_TOP, false);
-                            this_rect.w+=hgap;
-                            this_rect.h+=vgap;
-                            if (x+this_rect.w > cw) { y+=this_rect.h; x=0; }
-                            x += this_rect.w;
-                            if (i == tag_list.count-1) y += this_rect.h; // \n for last row
-                        }
-                    }
-                    ui_rect_solid({0,0,(float)cw,y+UI_TEXT_SIZE+vgap}, 0xffffffff, 0.5); // menu bg
-
-                    rect lastr = ui_button("select none", 0,0, UI_LEFT,UI_TOP, &SelectBrowseTagsNone);
-                    ui_button("select all", lastr.w+hgap,0, UI_LEFT,UI_TOP, &SelectBrowseTagsAll);
-
-                    x = 0;
-                    y = UI_TEXT_SIZE+vgap;
-                    for (int i = 0; i < tag_list.count; i++) {
-                        // ui_rect this_rect = get_text_size(tag_list[i].ToUTF8Reusable());
-                        rect this_rect = ui_text(tag_list[i].ToUTF8Reusable(), x,y, UI_LEFT,UI_TOP, false);
-                        this_rect.w+=10;
-                        this_rect.h+=vgap;
-                        if (x+this_rect.w > cw) { y+=this_rect.h; x=0; }
-                        rect brect = ui_button(tag_list[i].ToUTF8Reusable(), x,y, UI_LEFT,UI_TOP, &ToggleTagBrowse, i);
-
-                        // color selected tags...
-                        {
-                            if (browse_tags.has(i)) {
-                                ui_rect(brect, 0xffff00ff, 0.3);
-                            }
-                        }
-
-                        x += this_rect.w;
-                        if (i == tag_list.count-1) y += this_rect.h; // \n for hide tag button
-                    }
-
-                    ui_button("hide tags", cw/2, y/*ch/2*/, UI_CENTER,UI_TOP, &ToggleTagMenu);
+                    // how does this feel... hmm
+                    DrawTagMenu(cw, ch,
+                                &SelectBrowseTagsNone,
+                                &SelectBrowseTagsAll,
+                                &ToggleTagBrowse,
+                                &ToggleTagMenu,
+                                &browse_tags);
                 }
             }
 
@@ -701,14 +726,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                     UI_PRINT("browse tags: %i", browse_tags.count);
                     UI_PRINT("display list: %i", display_list.count);
 
-                    int skiprender_count = 0;
-                    // for (int j = 0; j < stubRectCount; j++) {
-                    for (int i = 0; i < tiles.count; i++) {
-                        if (tiles[i].skip_rendering)
-                            skiprender_count++;
-                    }
-
-                    UI_PRINT("skiprend: %i", skiprender_count);
+                    // int skiprender_count = 0;
+                    // // for (int j = 0; j < stubRectCount; j++) {
+                    // for (int i = 0; i < tiles.count; i++) {
+                    //     if (tiles[i].skip_rendering)
+                    //         skiprender_count++;
+                    // }
+                    // UI_PRINT("skiprend: %i", skiprender_count);
 
 
                 //     }
@@ -758,49 +782,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                 if (!tag_select_open) {
                     ui_button("show tags", cw/2, 0, UI_CENTER,UI_TOP, &ToggleTagSelectMenu);
                 } else {
-                    float hgap = 10;
-                    float vgap = 5;
-
-                    float x = 0;
-                    float y = UI_TEXT_SIZE + vgap;
-
-                    // get total size
-                    {
-                        for (int i = 0; i < tag_list.count; i++) {
-                            rect this_rect = ui_text(tag_list[i].ToUTF8Reusable(), x,y, UI_LEFT,UI_TOP, false);
-                            this_rect.w+=hgap;
-                            this_rect.h+=vgap;
-                            if (x+this_rect.w > cw) { y+=this_rect.h; x=0; }
-                            x += this_rect.w;
-                            if (i == tag_list.count-1) y += this_rect.h; // \n for last row
-                        }
-                    }
-                    ui_rect_solid({0,0,(float)cw,y+UI_TEXT_SIZE+vgap}, 0xffffffff, 0.5); // menu bg
-
-                    rect lastr = ui_button("select none", 0,0, UI_LEFT,UI_TOP, &SelectItemTagsNone);
-                    ui_button("select all", lastr.w+hgap,0, UI_LEFT,UI_TOP, &SelectItemTagsAll);
-
-                    x = 0;
-                    y = UI_TEXT_SIZE + vgap;
-                    for (int i = 0; i < tag_list.count; i++) {
-                        rect this_rect = ui_text(tag_list[i].ToUTF8Reusable(), x,y, UI_LEFT,UI_TOP, false);
-                        this_rect.w+=hgap;
-                        this_rect.h+=vgap;
-                        if (x+this_rect.w > cw) { y+=this_rect.h; x=0; }
-                        rect brect = ui_button(tag_list[i].ToUTF8Reusable(), x,y, UI_LEFT,UI_TOP, &ToggleTagSelection, i);
-
-                        // color selected tags...
-                        {
-                            if (items[viewing_file_index].tags.has(i)) {
-                                ui_rect(brect, 0xffff00ff, 0.3);
-                            }
-                        }
-
-                        x += this_rect.w;
-                        if (i == tag_list.count-1) y += this_rect.h; // \n for hide tag button
-                    }
-
-                    ui_button("hide tags", cw/2, y/*ch/2*/, UI_CENTER,UI_TOP, &ToggleTagSelectMenu);
+                    // how does this feel... hmm
+                    DrawTagMenu(cw, ch,
+                                &SelectItemTagsNone,
+                                &SelectItemTagsAll,
+                                &ToggleTagSelection,
+                                &ToggleTagSelectMenu,
+                                &items[viewing_file_index].tags);
                 }
             }
 
