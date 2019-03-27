@@ -34,6 +34,7 @@ char *vertex_shader = MULTILINE_STRING
         ppp.xy = (ppp.xy / camera.zw)*2.0 - 1.0;
         ppp.y *= -1;  // move origin to top
         ppp.z *= -1;  // reverse z so + is on top of -
+        ppp.z = (ppp.z+100)/200; // map -100,100 to 0,1
         gl_Position = ppp;
     }
 );

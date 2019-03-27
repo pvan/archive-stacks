@@ -27,7 +27,7 @@ struct gpu_quad {
         gpu_quad q = {0};
         q.alpha = 1;
         q.color = 0xffffffff;
-        q.z = 0.001;
+        q.z = 0;
         return q;
     }
 };

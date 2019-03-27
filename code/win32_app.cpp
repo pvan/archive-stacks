@@ -578,22 +578,22 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                 } else {
 
                     rect lastr = ui_button("select none", 0,0, UI_LEFT,UI_TOP, &SelectBrowseTagsNone);
-                    ui_button("select all", lastr.w,0, UI_LEFT,UI_TOP, &SelectBrowseTagsAll);
+                    ui_button("select all", lastr.w+10,0, UI_LEFT,UI_TOP, &SelectBrowseTagsAll);
 
                     float x = 0;
-                    float y = UI_TEXT_SIZE;
+                    float y = UI_TEXT_SIZE+5;
                     for (int i = 0; i < tag_list.count; i++) {
                         // ui_rect this_rect = get_text_size(tag_list[i].ToUTF8Reusable());
                         rect this_rect = ui_text(tag_list[i].ToUTF8Reusable(), x,y, UI_LEFT,UI_TOP, false);
-                        // this_rect.w+=10;
-                        // this_rect.h+=5;
+                        this_rect.w+=10;
+                        this_rect.h+=5;
                         if (x+this_rect.w > cw) { y+=this_rect.h; x=0; }
-                        ui_button(tag_list[i].ToUTF8Reusable(), x,y, UI_LEFT,UI_TOP, &ToggleTagBrowse, i);
+                        rect brect = ui_button(tag_list[i].ToUTF8Reusable(), x,y, UI_LEFT,UI_TOP, &ToggleTagBrowse, i);
 
                         // color selected tags...
                         {
                             if (browse_tags.has(i)) {
-                                ui_rect(x,y,this_rect.w,this_rect.h, 0xffff00ff, 0.3);
+                                ui_rect(brect.x,brect.y,brect.w,brect.h, 0xffff00ff, 0.3);
                             }
                         }
 
@@ -603,7 +603,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
                     ui_button("hide tags", cw/2, y/*ch/2*/, UI_CENTER,UI_TOP, &ToggleTagMenu);
 
-                    ui_rect(0,0, cw,y, 0xffffffff, 0.3, 0.1);
+                    ui_solid_rect(0,0, cw,y, 0xffffffff, 0.8, 5.1);
                 }
             }
 

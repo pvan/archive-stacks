@@ -104,8 +104,9 @@ struct ui_element {
         gpu_quad_list_with_texture *lastsubmesh = &(mesh.submeshes.pool[mesh.submeshes.count-1]);
         highlight_quad = &(lastsubmesh->quads[lastsubmesh->quads.count-1]);
     }
-    void add_solid_rect(rect r, u32 col, float a) {
+    void add_solid_rect(rect r, u32 col, float a, float z) {
         gpu_quad q = gpu_quad_from_rect(r);
+        q.z = z;
         // int colcode = 1;
         // if (col == 0) colcode = 0;
         add_solid_quad(q, col, a);
@@ -132,17 +133,21 @@ void ui_queue_element(ui_element gizmo) {
 
 gpu_quad *ui_find_topmost_element_under_point(float mx, float my) {
     gpu_quad *result = 0;
-    // result.z_level = -99999; // max negative z level
+    // float highestZ = -99999;
     bool found_at_least_one = false;
     for (int i = 0; i < ui_elements.count; i++) {
         if (ui_elements[i].highlight_quad) {
             rect r = ui_elements[i].highlight_quad->to_rect();
             if (mx > r.x && mx <= r.x+r.w && my > r.y && my <= r.y+r.h) {
-                // if (buttons[i].z_level > result.z_level) {
-                    // note we keep checking the whole list, so we implicitly get the last/topmost rect
-                    result = ui_elements[i].highlight_quad;
-                    found_at_least_one = true;
+                // if (ui_elements[i].highlight_quad->z > highestZ) { // find highest hl
+                //     result = ui_elements[i].highlight_quad;
+                //     highestZ = ui_elements[i].highlight_quad->z;
+                //     found_at_least_one = true;
                 // }
+
+                // note we keep checking the whole list, so we implicitly get the last/topmost rect
+                result = ui_elements[i].highlight_quad;
+                found_at_least_one = true;
             }
         }
     }
@@ -153,8 +158,11 @@ gpu_quad *ui_find_topmost_element_under_point(float mx, float my) {
 }
 
 void ui_render_elements(float mx, float my) {
+
+    // feels a little weird we're determining highlight/focus in render, not clickable
     gpu_quad *topmost = ui_find_topmost_element_under_point(mx, my); // oh no i've looked at the word element too long and it's starting to look funny
     if (topmost) topmost->alpha = 0.3; // defauts to 0 let's say
+
     for (int i = 0; i < ui_elements.count; i++) {
         gpu_render_mesh(ui_elements[i].mesh);
     }
@@ -323,8 +331,6 @@ rect ui_text(char *text, float x, float y, int hpos, int vpos, bool render = tru
 
     bg_quad.y1 -= 1; // a little hand-tweaking (tbh not sure if +1 in the y1 above is correct, x1 def correct tho)
 
-    bg_quad.z = 0;
-
     // adjust for alignment
     if (hpos == UI_RIGHT) bg_quad.move(-bg_quad.width(), 0);
     if (hpos == UI_CENTER) bg_quad.move(-bg_quad.width()/2, 0);
@@ -353,7 +359,7 @@ rect ui_text(char *text, float x, float y, int hpos, int vpos, bool render = tru
         ui_element gizmo = {0};
         {
             // --bg--
-            bg_quad.z = 0.2;
+            bg_quad.z = 5.2;
             gizmo.add_solid_quad(bg_quad, 0x0, 0.66);
 
             // --text--
@@ -364,7 +370,7 @@ rect ui_text(char *text, float x, float y, int hpos, int vpos, bool render = tru
             gpu_quad_list_with_texture textsubmesh = {0};
             for (int i = 0; i < quadsneeded; i++) {
                 // quads[i].alpha = 0.5;
-                quads[i].z = 0.3;
+                quads[i].z = 5.3;
                 textsubmesh.quads.add(quads[i]);
             }
             textsubmesh.texture_id = tf_fonttexture;
@@ -377,7 +383,7 @@ rect ui_text(char *text, float x, float y, int hpos, int vpos, bool render = tru
             // seems like not a great way to do this,
             // but just add an invisible rect above every text
             // and if highlighted (checked when rendering), change the alpha up from 0
-            bg_quad.z = 0.4;
+            bg_quad.z = 5.4;
             gizmo.add_hl_quad(bg_quad);
 
         }
@@ -419,25 +425,31 @@ rect ui_button(char *text, float x, float y, int hpos, int vpos, void(*effect)(i
 // (they have their own opengl_quads so they don't have to re-send textures to the gpu every frame)
 rect ui_button_permanent_highlight(rect br, void(*effect)(int), int arg=0)
 {
-    // note our button has the normal hl disabled
     ui_add_clickable(br, effect, arg);
 
     ui_element gizmo = {0};
     gpu_quad q = gpu_quad_from_rect(br);
-    q.z = 0.0001;
+    q.z = 0.5; // looks like tiles are defaulting to z=0, so hl above that slightly
     gizmo.add_hl_quad(q);
     ui_elements.add(gizmo);
 
     return br;
 }
 
-void ui_rect(float x, float y, float w, float h, u32 col, float a, float z=0) {
+rect ui_rect(float x, float y, float w, float h, u32 col, float a, float z=0) {
     // feels like this internal api needs some work but it's functional for now
     ui_element gizmo = {0};
-    gizmo.add_solid_rect({x,y,w,h}, col, a);
+    gizmo.add_solid_rect({x,y,w,h}, col, a, z);
     ui_elements.add(gizmo);
+    return {x,y,w,h};
 }
 
+// solid rect will block hl/clicks on things below it (unlike ui_rect)
+// todo: not intended: still highlighting tiles behind this
+void ui_solid_rect(float x, float y, float w, float h, u32 col, float a, float z=0) {
+    rect r = ui_rect(x, y, w, h, col, a, z);
+    ui_add_clickable(r, 0, 0);
+}
 
 // note takes two values, for top/bottom of scroll bar indicator (for variable size)
 void ui_scrollbar(rect r, float top_percent, float bot_percent,
@@ -449,10 +461,12 @@ void ui_scrollbar(rect r, float top_percent, float bot_percent,
         // lets try something funny, put the hl below the others as a kind of optional "less opacity"
         // todo: could have variable opacity settings on our hl instead of always going to .3 or w/e
         // --hl--
-        gizmo.add_hl_quad(gpu_quad_from_rect(r), 0, 0);
+        gpu_quad q = gpu_quad_from_rect(r);
+        q.z = 3.1;
+        gizmo.add_hl_quad(q, 0, 0);
 
         // --bg--
-        gizmo.add_solid_rect(r, 0xffbbbbbb, 0.4);
+        gizmo.add_solid_rect(r, 0xffbbbbbb, 0.4, 3.2);
 
         float top_pixels = top_percent * (float)r.h;
         float bot_pixels = bot_percent * (float)r.h;
@@ -461,7 +475,7 @@ void ui_scrollbar(rect r, float top_percent, float bot_percent,
         if (size < 10) size = 10;
 
         // --indicator--
-        gizmo.add_solid_rect({r.x, top_pixels, r.w, size}, 0xffeeeeeeee, 0.9);
+        gizmo.add_solid_rect({r.x, top_pixels, r.w, size}, 0xffeeeeeeee, 0.9, 3.3);
 
     }
     ui_elements.add(gizmo);
