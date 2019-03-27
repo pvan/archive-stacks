@@ -593,7 +593,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                             if (i == tag_list.count-1) y += this_rect.h; // \n for last row
                         }
                     }
-                    ui_rect({0,0,(float)cw,y+UI_TEXT_SIZE+vgap}, 0xffffffff, 0.5); // menu bg
+                    ui_rect_solid({0,0,(float)cw,y+UI_TEXT_SIZE+vgap}, 0xffffffff, 0.5); // menu bg
 
                     rect lastr = ui_button("select none", 0,0, UI_LEFT,UI_TOP, &SelectBrowseTagsNone);
                     ui_button("select all", lastr.w+hgap,0, UI_LEFT,UI_TOP, &SelectBrowseTagsAll);
@@ -775,7 +775,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                             if (i == tag_list.count-1) y += this_rect.h; // \n for last row
                         }
                     }
-                    ui_rect({0,0,(float)cw,y+UI_TEXT_SIZE+vgap}, 0xffffffff, 0.5); // menu bg
+                    ui_rect_solid({0,0,(float)cw,y+UI_TEXT_SIZE+vgap}, 0xffffffff, 0.5); // menu bg
 
                     rect lastr = ui_button("select none", 0,0, UI_LEFT,UI_TOP, &SelectItemTagsNone);
                     ui_button("select all", lastr.w+hgap,0, UI_LEFT,UI_TOP, &SelectItemTagsAll);

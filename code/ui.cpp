@@ -419,7 +419,6 @@ rect ui_button(char *text, float x, float y, int hpos, int vpos, void(*effect)(i
 // (they have their own opengl_quads so they don't have to re-send textures to the gpu every frame)
 rect ui_button_permanent_highlight(rect br, void(*effect)(int), int arg=0)
 {
-    // note our button has the normal hl disabled
     ui_add_clickable(br, effect, arg);
 
     ui_element gizmo = {0};
@@ -430,12 +429,19 @@ rect ui_button_permanent_highlight(rect br, void(*effect)(int), int arg=0)
     return br;
 }
 
-// void ui_rect(float x, float y, float w, float h, u32 col, float a) {
+// ignores clicks (will pass to whatever is below this)
 void ui_rect(rect r, u32 col, float a) {
     // feels like this internal api needs some work but it's functional for now
     ui_element gizmo = {0};
     gizmo.add_solid_rect(r, col, a);
     ui_elements.add(gizmo);
+}
+
+// what to name this?
+// will absorbe clicks/hl events (and won't pass below this)
+void ui_rect_solid(rect r, u32 col, float a) {
+    ui_add_clickable(r, 0, 0);
+    ui_rect(r, col, a);
 }
 
 
