@@ -97,10 +97,11 @@ float master_desired_tile_width = 200;
 int g_cw;
 int g_ch;
 
+//
 // button click handlers
+
 bool tag_menu_open = false;  // is tag menu open in browsing mode?
 void ToggleTagMenu(int) { tag_menu_open = !tag_menu_open; }
-
 void ToggleTagBrowse(int tagindex) {
     if (browse_tags.has(tagindex)) {
         browse_tags.remove(tagindex);
@@ -114,13 +115,11 @@ void ToggleTagBrowse(int tagindex) {
     // do in loop for now, just before rendering (or, well, in the update portion)
     // ArrangeTilesForDisplayList(display_list, &tiles, master_desired_tile_width, g_cw); // requires resolutions to be set
 }
-
-void SelectBrowseTagsAll(int) { SelectAllTags(); CreateDisplayListFromBrowseSelection(); }
-void SelectBrowseTagsNone(int) { DeselectAllTags(); CreateDisplayListFromBrowseSelection(); }
+void SelectBrowseTagsAll(int) { SelectAllBrowseTags(); CreateDisplayListFromBrowseSelection(); }
+void SelectBrowseTagsNone(int) { DeselectAllBrowseTags(); CreateDisplayListFromBrowseSelection(); }
 
 bool tag_select_open = false;  // is tag menu open in viewing mode?
 void ToggleTagSelectMenu(int) { tag_select_open = !tag_select_open; }
-
 // we assume we're affecting the open / "viewing" file here
 void ToggleTagSelection(int tagindex) {
     if (items[viewing_file_index].tags.has(tagindex)) {
@@ -130,6 +129,15 @@ void ToggleTagSelection(int tagindex) {
         items[viewing_file_index].tags.add(tagindex);
     }
     SaveMetadataFile(); // keep close eye on this, if it gets too slow to do inline we can move to background thread
+}
+void SelectItemTagsAll(int) {
+    items[viewing_file_index].tags.empty_out();
+    for (int i = 0; i < tag_list.count; i++) {
+        items[viewing_file_index].tags.add(i);
+    }
+}
+void SelectItemTagsNone(int) {
+    items[viewing_file_index].tags.empty_out();
 }
 
 void OpenFileToView(int item_index) {
@@ -153,7 +161,7 @@ void OpenFileToView(int item_index) {
 // done once after startup loading is done
 void init_app(item_pool all_items, int cw, int ch) {
 
-    SelectAllTags();
+    SelectAllBrowseTags();
 
     CreateDisplayListFromBrowseSelection();
 
@@ -744,8 +752,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                 if (!tag_select_open) {
                     ui_button("show tags", cw/2, 0, UI_CENTER,UI_TOP, &ToggleTagSelectMenu);
                 } else {
+                    rect lastr = ui_button("select none", 0,0, UI_LEFT,UI_TOP, &SelectItemTagsNone);
+                    ui_button("select all", lastr.w,0, UI_LEFT,UI_TOP, &SelectItemTagsAll);
+
                     float x = 0;
-                    float y = 0;
+                    float y = UI_TEXT_SIZE;
                     for (int i = 0; i < tag_list.count; i++) {
                         // ui_rect this_rect = get_text_size(tag_list[i].ToUTF8Reusable());
                         rect this_rect = ui_text(tag_list[i].ToUTF8Reusable(), x,y, UI_LEFT,UI_TOP, false);

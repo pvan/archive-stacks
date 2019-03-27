@@ -571,7 +571,7 @@ void LoadMasterDataFileAndPopulateResolutionsAndTagsEtc(
 // master list of tag indices that are selected for browsing
 int_pool browse_tags;
 
-void SelectAllTags() {
+void SelectAllBrowseTags() {
     // set all tags as selected
     browse_tags.empty_out();
     for (int i = 0; i < tag_list.count; i++) {
@@ -579,7 +579,7 @@ void SelectAllTags() {
     }
 }
 
-void DeselectAllTags() {
+void DeselectAllBrowseTags() {
     browse_tags.empty_out();
 }
 
