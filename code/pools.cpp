@@ -94,6 +94,25 @@ void sort_int_pool(int_pool *ints) {
         ints->pool[j + 1] = key;
     }
 }
+// kind of a terrible name
+// sort the second list (floats) and keep first (ints) in same re-ordering
+void sort_int_pool_by_float_pool(int_pool *indices, float_pool *floats) {
+    int i, key, ikey, j;
+    for (i = 1; i < floats->count; i++) {
+        key = floats->pool[i];
+        ikey = indices->pool[i];
+        j = i - 1;
+
+        // move forward all and only the elements > key
+        while (j >= 0 && floats->pool[j] > key) {
+            floats->pool[j + 1] = floats->pool[j];
+            indices->pool[j + 1] = indices->pool[j];
+            j = j - 1;
+        }
+        floats->pool[j + 1] = key;
+        indices->pool[j + 1] = ikey;
+    }
+}
 
 
 // todo: are we using this?
