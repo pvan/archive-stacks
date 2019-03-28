@@ -205,7 +205,7 @@ void DrawTagMenu(int cw, int ch,
 
     // upperbound is 1 col for every tag
     // for (int totalcols = 1; totalcols < tag_list.count; totalcols++) {
-    int totalcols = 4;
+    int totalcols = 5;
         int maxrowspercol = (tag_list.count / totalcols) + 1; // round up
         int maxoverrun = 2;
 
@@ -218,6 +218,18 @@ void DrawTagMenu(int cw, int ch,
         for (int i = 0; i < tag_list.count; i++, row++) { // note row++
 
             if (row >= maxrowspercol) {
+                // end of a row
+
+                // first check if our col width has grown larger than any overrun item widths
+                sort_intfloatpair_pool_high_to_low(&skips);
+                for (int o = 0; o < skips.count; o++) {
+                    if (colwidths[col] > skips[o].f) {
+                        // if so, just remove them from skips list
+                        skips.count = o;
+                        break;
+                    }
+                }
+
                 row = 0;
                 col++;
             }
@@ -252,7 +264,7 @@ void DrawTagMenu(int cw, int ch,
             // track column width and overrun items
             if (widths[i] > colwidths[col]) {
                 float delta = widths[i] - colwidths[col];
-                if (delta < 20) {
+                if (delta < 20) { // larger this is, the more gap between overrun and non-overrun items, but the less overrun items there will be total
                     // if small increment, just include the larger in this col
                     colwidths[col] = widths[i];
                 } else {

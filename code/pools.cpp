@@ -148,6 +148,21 @@ void sort_intfloatpair_pool(intfloatpair_pool *pairs) {
         pairs->pool[j + 1] = key;
     }
 }
+void sort_intfloatpair_pool_high_to_low(intfloatpair_pool *pairs) {
+    int i, j;
+    intfloatpair key;
+    for (i = 1; i < pairs->count; i++) {
+        key = pairs->pool[i];
+        j = i - 1;
+
+        // move forward all and only the elements < key
+        while (j >= 0 && pairs->pool[j].f < key.f) {
+            pairs->pool[j + 1] = pairs->pool[j];
+            j = j - 1;
+        }
+        pairs->pool[j + 1] = key;
+    }
+}
 // getting messy
 bool intfloatpair_pool_has(intfloatpair_pool pairs, int i) {
     for (int s = 0; s < pairs.count; s++) {
