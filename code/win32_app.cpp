@@ -180,11 +180,73 @@ void OpenFileToView(int item_index) {
 }
 
 
+// try another layout method
+void DrawTagMenu(int cw, int ch,
+                 void (*selectNone)(int),
+                 void (*selectAll)(int),
+                 void (*tagSelect)(int),
+                 void (*hideMenu)(int),
+                 int_pool *selected_tags_pool)
+{
+    rect lastr = ui_button("select none", 0,0, UI_LEFT,UI_TOP, selectNone);
+    ui_button("select all", lastr.w,0, UI_LEFT,UI_TOP, selectAll);
+
+
+    // first get size of all our tags
+    float_pool widths = float_pool::new_empty();
+    for (int i = 0; i < tag_list.count; i++) {
+        rect r = ui_text(tag_list[i].ToUTF8Reusable(), 0,0, UI_LEFT,UI_TOP, false);
+        widths.add(r.w);
+    }
+
+
+    // then find some stats on our tags
+    float average_width = 0;
+    for (int i = 0; i < widths.count; i++) {
+        average_width += widths[i];
+    }
+    average_width /= widths.count;
+
+    sort_float_pool(&widths);
+    int q1i = widths.count / 4.0;
+    int q2i = widths.count / 2.0;
+    int q3i = (3.0*widths.count) / 4.0;
+    float q1 = widths[q1i];
+    float q2 = widths[q2i]; // median
+    float q3 = widths[q3i];
+
+    float middle_range = q3-q1;
+    float column_widths = q3;//q3 + middle_range*1.5; // flyer cutoff
+
+    int colcount = cw/column_widths;
+    int rowcount = tag_list.count / colcount;
+
+    float x = 0;
+    float y = 0;
+    int row = 0;
+    int col = 0;
+    for (int i = 0; i < tag_list.count; i++) {
+        if (row>rowcount) {
+            row = 0;
+            col++;
+        }
+        x = col * column_widths;
+        y = row * UI_TEXT_SIZE + UI_TEXT_SIZE;
+        rect brect = ui_button(tag_list[i].ToUTF8Reusable(), x,y, UI_LEFT,UI_TOP, tagSelect, i);
+
+        if (selected_tags_pool->has(i)) {
+            ui_rect(brect, 0xffff00ff, 0.3);
+        }
+        row++;
+    }
+
+}
+
 // can use for tag menu in browse mode (selecting what to browse)
 // and tag menu in view mode (for selecting an item's tags)
 // pass in the click handlers for the buttons
 // and a list of ints which are the indices of the tags that are marked "selected" (color pink)
-void DrawTagMenu(int cw, int ch,
+void DrawTagMenu0(int cw, int ch,
                  void (*selectNone)(int),
                  void (*selectAll)(int),
                  void (*tagSelect)(int),
@@ -464,7 +526,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         int ch = clientRect.bottom-clientRect.top;
         opengl_resize_if_change(cw, ch);
 
-        g_cw = cw; // right now only used to arrange tiles when changing browsing tag selection
+        g_cw = cw; // used for a couple things, eg callbacks where not so easy to pass values in
         g_ch = ch;
 
 

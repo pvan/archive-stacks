@@ -62,8 +62,26 @@ DEFINE_TYPE_POOL(int);
 DEFINE_TYPE_POOL(v2);
 DEFINE_TYPE_POOL(string);
 DEFINE_TYPE_POOL(bool);
+DEFINE_TYPE_POOL(rect);
+DEFINE_TYPE_POOL(float);
+
+void sort_float_pool(float_pool *floats) {
+    int i, key, j;
+    for (i = 1; i < floats->count; i++) {
+        key = floats->pool[i];
+        j = i - 1;
+
+        // move forward all and only the elements > key
+        while (j >= 0 && floats->pool[j] > key) {
+            floats->pool[j + 1] = floats->pool[j];
+            j = j - 1;
+        }
+        floats->pool[j + 1] = key;
+    }
+}
 
 
+// todo: are we using this?
 // queue, can only push/pop items to end
 #define DEFINE_TYPE_QUEUE(thetype) struct thetype##_queue \
 { \
@@ -97,6 +115,5 @@ DEFINE_TYPE_POOL(bool);
 };
 
 DEFINE_TYPE_QUEUE(int);
-
 
 
