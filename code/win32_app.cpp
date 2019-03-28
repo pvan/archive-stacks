@@ -205,54 +205,41 @@ void DrawTagMenu(int cw, int ch,
 
     // upperbound is 1 col for every tag
     // for (int totalcols = 1; totalcols < tag_list.count; totalcols++) {
-    int totalcols = 3;
+    int totalcols = 4;
         int maxrowspercol = (tag_list.count / totalcols) + 1; // round up
-        // float colwidth = 0;
         int maxoverrun = 2;
-        // int *lastoverruns = 0;
-        int_pool lastoverruns = int_pool::new_empty();
+
         int_pool colwidths = int_pool::new_empty();
-        // for (int i = 0; i < totalcols+1; i++) {//allow for overflow column
-        //     colwidths.add(0);
-        // }
-        // for (int i = 0; i < widths.count; i++) {
-        // int tagi = 0;
-
-
-        int_pool overrunrows = int_pool::new_empty();
-        float_pool overrunwidths = float_pool::new_empty();
+        intfloatpair_pool skips = intfloatpair_pool::new_empty();
+        intfloatpair_pool lastskips = intfloatpair_pool::new_empty();
 
         int col = 0;
         int row = 0;
         for (int i = 0; i < tag_list.count; i++, row++) { // note row++
 
-            // int i_at_col_top = 0;
             if (row >= maxrowspercol) {
                 row = 0;
                 col++;
             }
 
             if (row == 0) {
-                // start of new column
-                if (lastoverruns.pool) free(lastoverruns.pool); // clear the very old, todo: clear the very last row elsewhere
-                lastoverruns = overrunrows; // save for next column
-
-                overrunrows = int_pool::new_empty();
-                overrunwidths = float_pool::new_empty();
+                // start of new row
+                if (lastskips.pool) free(lastskips.pool);
+                lastskips = skips;
+                skips = intfloatpair_pool::new_empty();
 
                 colwidths.add(0);
-                // colwidths[col] = 0;
-
-                // i_at_col_top = i;
             }
 
-            if (lastoverruns.has(row))
-                continue; // careful here if we put anything at end of loop
+            // skip spots where there are overrun items in the last column
+            if (intfloatpair_pool_has(lastskips, row))
+                continue;
 
+            // actually draw the buttons (skip this when searching for now many rows we need)
             {
                 float x = 0;
                 for (int c = 0; c < col; c++) x += colwidths[c]; // sum of all previous columns
-                float y = row * UI_TEXT_SIZE;
+                float y = row * UI_TEXT_SIZE + UI_TEXT_SIZE;
 
                 rect brect = ui_button(tag_list[i].ToUTF8Reusable(), x,y, UI_LEFT,UI_TOP, tagSelect, i);
 
@@ -262,204 +249,25 @@ void DrawTagMenu(int cw, int ch,
             }
 
 
+            // track column width and overrun items
             if (widths[i] > colwidths[col]) {
                 float delta = widths[i] - colwidths[col];
                 if (delta < 20) {
                     // if small increment, just include the larger in this col
                     colwidths[col] = widths[i];
                 } else {
-                    // if large increment, this is a contender to overrun into next column
-                    if (overrunrows.count < maxoverrun) {
-                        // if we haven't hit our limit, mark as overrun
-                        overrunrows.add(row);
-                        overrunwidths.add(widths[i]);
+                    if (skips.count < maxoverrun) {
+                        skips.add({row,widths[i]});
                     } else {
-                        // if we've hit our limit of overruns,
-                        // find the smallest of the overruns and remove
-                        // potentially removing others of similar length as well (not implemented yet)
-                        overrunrows.add(row); // add to list anyway to find smallest easier
-                        overrunwidths.add(widths[i]);
-                        sort_int_pool_by_float_pool(&overrunrows, &overrunwidths); // sort floats and keep ints in same order
-                        // colwidths[col] = max(colwidths[col], widths[i_at_col_top+overrunrows[0]]); // expand col to fit it
-                        colwidths[col] = max(colwidths[col], overrunwidths[0]); // expand col to fit it
-                        overrunrows.remove(overrunrows[0]); // remove it from skip list
-                        overrunwidths.remove(overrunwidths[0]);
+                        skips.add({row,widths[i]});
+                        sort_intfloatpair_pool(&skips);
+                        colwidths[col] = max(colwidths[col], skips[0].f); // probably the
+                        skips.remove(skips[0]); // remove item with lowest width
                     }
                 }
             }
 
         } // iterated through last tag
-
-
-    //     int tagssofar = 0;
-    //     for (int c = 0; c < totalcols; c++) {
-    //         colwidths.add(0);
-    //         // int overruncount = 0;
-    //         int_pool overrunrows = int_pool::new_empty();
-    //         // int *overrunrows = (int*)malloc((maxoverrun+1) * sizeof(int)); // allow 1 more that max for comparisons (or use itemspercol*sizeof?)
-
-    //         int itemsthiscol = 0;
-    //         for (int r = 0; r < itemspercol; r++) {
-    //             int tagi = tagssofar + r;
-
-    //             if (lastoverruns.has(r))
-    //                 continue; // skip this row if marked as overrun from last column
-
-    //             itemsthiscol++;
-
-    //             {
-    //                 float x = 0;
-    //                 for (int i = 0; i < c; i++) x += colwidths[i]; // sum of all previous columns
-    //                 float y = r * UI_TEXT_SIZE;
-
-    //                 rect brect = ui_button(tag_list[tagi].ToUTF8Reusable(), x,y, UI_LEFT,UI_TOP, tagSelect, tagi);
-
-    //                 if (selected_tags_pool->has(tagi)) {
-    //                     ui_rect(brect, 0xffff00ff, 0.3);
-    //                 }
-    //             }
-
-    //             if (widths[tagi] > colwidths[c]) {
-    //                 float delta = widths[tagi] - colwidths[c];
-    //                 if (delta < 20) {
-    //                     // if small increment, just include the larger in this col
-    //                     colwidths[c] = widths[tagi];
-    //                 } else {
-    //                     // if large increment, this is a contender to overrun into next column
-    //                     if (overrunrows.count < maxoverrun) {
-    //                         // if we haven't hit our limit, mark as overrun
-    //                         overrunrows.add(r);
-    //                     } else {
-    //                         // if we've hit our limit of overruns,
-    //                         // find the smallest of the overruns and remove
-    //                         // potentially removing others of similar length as well (not implemented yet)
-    //                         overrunrows.add(r); // add to list anyway to find smallest easier
-    //                         sort_int_pool(&overrunrows); // find smallest
-    //                         colwidths[c] = max(colwidths[c], widths[tagssofar+overrunrows[0]]); // expand col to fit it
-    //                         overrunrows.remove(overrunrows[0]); // remove it
-
-    //                         // // find smallest
-    //                         // float smallestoverrun = overrunrows[0];
-    //                         // int smallestoverrunrow = 0;
-    //                         // for (int o = 0; o < maxoverrun+1; o++) { // recall we have space for 1 extra
-    //                         //     if (widths[tagssofar+overrunrows[o]] < smallestoverrun) {
-    //                         //         smallestoverrun = widths[tagssofar+overruns[o]];
-    //                         //         smallestoverrunrow = o;
-    //                         //     }
-    //                         // }
-    //                         // // remove it
-    //                         // colwidth = widths[tagssofar+overruns[smallestoverrunrow]]; // now the new max for the collumn
-    //                         // for (int o = smallestoverrunrow; o < maxoverrun-1; o++) {
-    //                         //     overruns[o] = overruns[o+1];
-    //                         // }
-    //                     }
-    //                 }
-    //             }
-    //         } // done iterating rows in this column
-
-    //         tagssofar += itemsthiscol;
-
-    //         // we now know the column width for this column
-    //         // and have the tags marked as overruns in *overruns
-
-    //         if (lastoverruns.pool) free(lastoverruns.pool); // clear the very old, todo: clear the very last row elsewhere
-
-    //         lastoverruns = overrunrows; // save for next column
-
-
-    //     } // done iterating all columns (for this number of columns)
-    // // }
-
-
-    // // starting by trying an iterative approach...
-
-    // // lets start by dividing up into columns without any carry over to next column
-
-    // float max_width = 0;
-    // for (int i = 0; i < widths.count; i++) {
-    //     if (widths[i] > max_width)
-    //         max_width = widths[i];
-    // }
-
-    // int colcount = cw/max_width;
-    // int rowcount = tag_list.count / colcount;
-
-
-    // // next narrow down the columns
-
-    // float *colwidths = (float*)malloc(tag_list.count * sizeof(float));// worst case 1 col for every tag
-
-    // for (int c = 0; c < colcount; c++) {
-    //     float maxthiscol = 0;
-    //     for (int r = 0; r < rowcount; r++) {
-    //         if (widths[r] > maxthiscol) {
-    //             maxthiscol = widths[r];
-    //             colwidths[c] = widths[r];
-    //         }
-    //     }
-    // }
-
-    // free(colwidths);
-
-    // int row = 0;
-    // int col = 0;
-    // for (int i = 0; i < tag_list.count; i++) {
-    //     if (row>rowcount) {
-    //         row = 0;
-    //         col++;
-    //     }
-    //     float x = col * max_width;
-    //     float y = row * UI_TEXT_SIZE + UI_TEXT_SIZE;
-    //     rect brect = ui_button(tag_list[i].ToUTF8Reusable(), x,y, UI_LEFT,UI_TOP, tagSelect, i);
-
-    //     if (selected_tags_pool->has(i)) {
-    //         ui_rect(brect, 0xffff00ff, 0.3);
-    //     }
-    //     row++;
-    // }
-
-
-
-
-    // just something to get the rough idea...
-    // // then find some stats on our tags
-    // float average_width = 0;
-    // for (int i = 0; i < widths.count; i++) {
-    //     average_width += widths[i];
-    // }
-    // average_width /= widths.count;
-
-    // sort_float_pool(&widths);
-    // int q1i = widths.count / 4.0;
-    // int q2i = widths.count / 2.0;
-    // int q3i = (3.0*widths.count) / 4.0;
-    // float q1 = widths[q1i];
-    // float q2 = widths[q2i]; // median
-    // float q3 = widths[q3i];
-
-    // float middle_range = q3-q1;
-    // float column_widths = q3;//q3 + middle_range*1.5; // flyer cutoff
-
-    // int colcount = cw/column_widths;
-    // int rowcount = tag_list.count / colcount;
-
-    // float x = 0;
-    // float y = 0;
-    // int row = 0;
-    // int col = 0;
-    // for (int i = 0; i < tag_list.count; i++) {
-    //     if (row>rowcount) {
-    //         row = 0;
-    //         col++;
-    //     }
-    //     x = col * column_widths;
-    //     y = row * UI_TEXT_SIZE + UI_TEXT_SIZE;
-    //     rect brect = ui_button(tag_list[i].ToUTF8Reusable(), x,y, UI_LEFT,UI_TOP, tagSelect, i);
-
-    //     if (selected_tags_pool->has(i)) {
-    //         ui_rect(brect, 0xffff00ff, 0.3);
-    //     }
-    //     row++;
     // }
 
 }

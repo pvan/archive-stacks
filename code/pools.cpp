@@ -95,26 +95,67 @@ void sort_int_pool(int_pool *ints) {
         ints->pool[j + 1] = key;
     }
 }
-// kind of a terrible name
-// sort the second list (floats) and keep first (ints) in same re-ordering
-void sort_int_pool_by_float_pool(int_pool *indices, float_pool *floats) {
-    int i, j, ikey;
-    float key;
-    for (i = 1; i < floats->count; i++) {
-        key = floats->pool[i];
-        ikey = indices->pool[i];
+
+// unverified
+// // kind of a terrible name
+// // sort the second list (floats) and keep first (ints) in same re-ordering
+// void sort_int_pool_by_float_pool(int_pool *indices, float_pool *floats) {
+//     int i, j, ikey;
+//     float key;
+//     for (i = 1; i < floats->count; i++) {
+//         key = floats->pool[i];
+//         ikey = indices->pool[i];
+//         j = i - 1;
+
+//         // move forward all and only the elements > key
+//         while (j >= 0 && floats->pool[j] > key) {
+//             floats->pool[j + 1] = floats->pool[j];
+//             indices->pool[j + 1] = indices->pool[j];
+//             j = j - 1;
+//         }
+//         floats->pool[j + 1] = key;
+//         indices->pool[j + 1] = ikey;
+//     }
+// }
+
+
+//
+// int float pair
+
+// kind of forced into existing abstractions for one particular need
+// (tracking row number and column width of "overrun" items when creating layout for tag menu)
+
+struct intfloatpair {
+    int i;
+    float f;
+    bool operator==(intfloatpair o) { return i==o.i && f==o.f; }
+};
+
+DEFINE_TYPE_POOL(intfloatpair);
+
+void sort_intfloatpair_pool(intfloatpair_pool *pairs) {
+    int i, j;
+    intfloatpair key;
+    for (i = 1; i < pairs->count; i++) {
+        key = pairs->pool[i];
         j = i - 1;
 
         // move forward all and only the elements > key
-        while (j >= 0 && floats->pool[j] > key) {
-            floats->pool[j + 1] = floats->pool[j];
-            indices->pool[j + 1] = indices->pool[j];
+        while (j >= 0 && pairs->pool[j].f > key.f) {
+            pairs->pool[j + 1] = pairs->pool[j];
             j = j - 1;
         }
-        floats->pool[j + 1] = key;
-        indices->pool[j + 1] = ikey;
+        pairs->pool[j + 1] = key;
     }
 }
+// getting messy
+bool intfloatpair_pool_has(intfloatpair_pool pairs, int i) {
+    for (int s = 0; s < pairs.count; s++) {
+        if (pairs[s].i == i) return true;
+    }
+    return false;
+}
+
 
 
 // todo: are we using this?
