@@ -65,6 +65,7 @@ DEFINE_TYPE_POOL(bool);
 DEFINE_TYPE_POOL(rect);
 DEFINE_TYPE_POOL(float);
 
+// add generic sort to pool struct? (would require > operator on all pool types)
 void sort_float_pool(float_pool *floats) {
     int i, key, j;
     for (i = 1; i < floats->count; i++) {
@@ -77,6 +78,20 @@ void sort_float_pool(float_pool *floats) {
             j = j - 1;
         }
         floats->pool[j + 1] = key;
+    }
+}
+void sort_int_pool(int_pool *ints) {
+    int i, key, j;
+    for (i = 1; i < ints->count; i++) {
+        key = ints->pool[i];
+        j = i - 1;
+
+        // move forward all and only the elements > key
+        while (j >= 0 && ints->pool[j] > key) {
+            ints->pool[j + 1] = ints->pool[j];
+            j = j - 1;
+        }
+        ints->pool[j + 1] = key;
     }
 }
 
