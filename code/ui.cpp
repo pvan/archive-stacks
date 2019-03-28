@@ -171,21 +171,6 @@ void ui_render_elements(float mx, float my) {
 
 
 
-void ui_init() {
-    ui_create_solid_color_texture_and_upload();
-}
-
-
-void ui_reset() {  // call every frame
-
-    // free all the mem used in the subelements of our ui_elements before clearing it
-    for (int i = 0; i < ui_elements.count; i++) {
-        ui_elements[i].mesh.free_all_mem();
-    }
-    ui_elements.empty_out();
-}
-
-
 
 //
 // click handling basically (previously known as "button")
@@ -304,6 +289,20 @@ void ui_add_draggable(rect r, float *callbackvalue, float callbackscale) {
 //
 // intended exposed api
 
+void ui_init() {
+    ui_create_solid_color_texture_and_upload();
+}
+
+void ui_reset() {  // call every frame
+
+    // free all the mem used in the subelements of our ui_elements before clearing it
+    for (int i = 0; i < ui_elements.count; i++) {
+        ui_elements[i].mesh.free_all_mem();
+    }
+    ui_elements.empty_out();
+
+    ui_clickables.empty_out();
+}
 
 const int UI_CENTER = 0;
 const int UI_LEFT = 1;
