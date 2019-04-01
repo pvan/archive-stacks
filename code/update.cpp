@@ -4,11 +4,13 @@
 
 // helper function for DrawTagMenu
 // pass actually_draw_buttons = false to just test the layout
-// in that case, will return if the layout overruns the screen
+// will return if the layout overruns the screen
 // todo: is this starting to smell a little?
 bool DrawTagsWithXColumns(int totalcols,
                              bool actually_draw_buttons,
                              float_pool widths,
+                             float hgap,
+                             float vgap,
                              int cw, int ch,
                              void (*selectNone)(int),
                              void (*selectAll)(int),
@@ -18,7 +20,7 @@ bool DrawTagsWithXColumns(int totalcols,
     // algorithm is a bit quirky
     // basically we put all the widths in place for one column
     // then find the biggest gap in the largest X items (X=max_overrun_count)
-    // that's where we create the column width (with the larger items running into the next column)
+    // that's where we create the column cutoff point (with the larger items running into the next column)
     // also, the gap has to be at least Y big to count (to avoid tiny little overruns) (Y=min_overrun_amount)
     //
     // so you might have a natural break with the 3rd largest item,
@@ -31,7 +33,7 @@ bool DrawTagsWithXColumns(int totalcols,
 
     int max_rows_per_col = (tag_list.count / totalcols) + 1; // round up
     int max_overrun_count = 3; // max number of items to allow to overrun per column
-    float min_overrun_amount = 20; // how far into next col we need to be
+    float min_overrun_amount = 20+hgap; // how far into next col we need to be
 
     // list of column widths for columns created so far
     int_pool colwidths = int_pool::new_empty();
@@ -66,7 +68,7 @@ bool DrawTagsWithXColumns(int totalcols,
                     largestgapcount = i+1;
                 }
             }
-            colwidths[col] = widthsincol[largestgapcount].f; // final width of that column
+            colwidths[col] = widthsincol[largestgapcount].f + hgap; // final width of that column
             skiprows.empty_out(); // and what row spots to skip for the next columns
             for (int i = 0; i < largestgapcount; i++) {
                 skiprows.add(widthsincol[i].i);
@@ -110,7 +112,7 @@ bool DrawTagsWithXColumns(int totalcols,
         {
             float x = thiscolX;
             // for (int c = 0; c < col; c++) x += colwidths[c]; // sum of all previous columns
-            float y = row * UI_TEXT_SIZE + UI_TEXT_SIZE;
+            float y = (row+1) * (UI_TEXT_SIZE+vgap);// + UI_TEXT_SIZE;
 
             rect brect = ui_button(tag_list[t].ToUTF8Reusable(), x,y, UI_LEFT,UI_TOP, tagSelect, t);
 
@@ -141,14 +143,18 @@ void DrawTagMenu(int cw, int ch,
         // ui_button("show tags", cw/2, 0, UI_CENTER,UI_TOP, &ToggleTagMenu);
         ui_button("show tags", 0, 0, UI_LEFT,UI_TOP, menuToggle);
         return; // don't draw any more
-    } else {
-        ui_button("hide tags", 0, 0, UI_LEFT,UI_TOP, menuToggle);
     }
+
+    rect hider = ui_button("hide tags", 0, 0, UI_LEFT,UI_TOP, menuToggle);
+
+
+    float hgap = 12;
+    float vgap = 3;
 
     // rect lastr = ui_button("select none", 0,0, UI_LEFT,UI_TOP, selectNone);
     // ui_button("select all", lastr.w,0, UI_LEFT,UI_TOP, selectAll);
-    rect lastr = ui_button("select none", cw/2,0, UI_LEFT,UI_TOP, selectNone);
-    ui_button("select all", cw/2,0, UI_RIGHT,UI_TOP, selectAll);
+    rect lastr = ui_button("select none", hider.w+hgap,0, UI_LEFT,UI_TOP, selectNone);
+    ui_button("select all", hider.w+lastr.w+hgap*2,0, UI_LEFT,UI_TOP, selectAll);
 
 
     // first get size of all our tags
@@ -169,6 +175,8 @@ void DrawTagMenu(int cw, int ch,
             totalcols,
             false, // don't draw actual buttons, this is jsut a test of the layout with this many columns
             widths,
+            hgap,
+            vgap,
             cw, ch,
             selectNone,
             selectAll,
@@ -184,6 +192,8 @@ void DrawTagMenu(int cw, int ch,
             final_desired_cols,
             true, // now we draw the buttons
             widths,
+            hgap,
+            vgap,
             cw, ch,
             selectNone,
             selectAll,
