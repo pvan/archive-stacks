@@ -27,13 +27,13 @@ bool DrawTagsWithXColumns(int totalcols,
     // but if the largest is so much bigger than the next two, that's what will be sued
     //
     // todo: theoretically could bleed over into an extra column, i think (if we skip a lot each col)
-    // also these vars not tested for extreme values
+    // todo: test for extreme values (long items could overrun two columns in some cases)
     // todo: could maybe improve the result of this if instead of looking at max gap,
     // we look at some kind of area calculation that looks at gap*number of overrun items
 
     int max_rows_per_col = (tag_list.count / totalcols) + 1; // round up
     int max_overrun_count = 3; // max number of items to allow to overrun per column
-    float min_overrun_amount = 20+hgap; // how far into next col we need to be
+    float min_overrun_amount = 10+hgap;//hgap*2; // how far into next col we need to be
 
     // list of column widths for columns created so far
     int_pool colwidths = int_pool::new_empty();
@@ -61,7 +61,12 @@ bool DrawTagsWithXColumns(int totalcols,
             int largestgapcount = 0;
             for (int i = 0; i<max_overrun_count && i<widthsincol.count-1; i++) {
                 float thisgap = widthsincol[i].f - widthsincol[i+1].f;
-                if (thisgap > largestgap &&
+                // todo: or maybe we should just go all out and calculate the whitespace of the whole column
+                // and calculate the whitespace delta for each possible number of cutoff items
+                // // could try something like this.. weight the potential new space by the number of potential new items
+                // float thisgap = (widthsincol[i].f - widthsincol[i+1].f) * ((i+1)-largestgapcount); // kind of area of (new width)*(num of newly added)
+                if (
+                    thisgap > largestgap &&  // ignore this to overrun as many items as possible
                     thisgap > min_overrun_amount) // don't treat as gap if not this big
                 {
                     largestgap = thisgap;
@@ -73,6 +78,18 @@ bool DrawTagsWithXColumns(int totalcols,
             for (int i = 0; i < largestgapcount; i++) {
                 skiprows.add(widthsincol[i].i);
             }
+
+            // // print debug info at button of each row
+            // if (actually_draw_buttons)
+            // {
+            //     float x = thiscolX;
+            //     float y = (row+1) * (UI_TEXT_SIZE+vgap);
+            //     char buf[256];
+            //     sprintf(buf, "%i", largestgapcount);
+            //     ui_button(buf, x,y, UI_LEFT,UI_TOP, 0, 0);
+            //     sprintf(buf, "%0.f", largestgap);
+            //     ui_button(buf, x,y+UI_TEXT_SIZE, UI_LEFT,UI_TOP, 0, 0);
+            // }
 
             // prep for next column
             widthsincol = intfloatpair_pool::new_empty(); // empty widths for use in next column
@@ -111,8 +128,7 @@ bool DrawTagsWithXColumns(int totalcols,
         if (actually_draw_buttons)
         {
             float x = thiscolX;
-            // for (int c = 0; c < col; c++) x += colwidths[c]; // sum of all previous columns
-            float y = (row+1) * (UI_TEXT_SIZE+vgap);// + UI_TEXT_SIZE;
+            float y = (row+1) * (UI_TEXT_SIZE+vgap);
 
             rect brect = ui_button(tag_list[t].ToUTF8Reusable(), x,y, UI_LEFT,UI_TOP, tagSelect, t);
 
