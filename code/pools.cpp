@@ -164,7 +164,7 @@ void sort_intfloatpair_pool_high_to_low(intfloatpair_pool *pairs) {
     }
 }
 // getting messy
-bool intfloatpair_pool_has(intfloatpair_pool pairs, int i) {
+bool intfloatpair_pool_has_int(intfloatpair_pool pairs, int i) {
     for (int s = 0; s < pairs.count; s++) {
         if (pairs[s].i == i) return true;
     }
