@@ -1,6 +1,264 @@
 
 
 
+
+// helper function for DrawTagMenu
+// pass actually_draw_buttons = false to just test the layout
+// in that case, will return if the layout overruns the screen
+// todo: is this starting to smell a little?
+bool DrawTagsWithXColumns(int totalcols,
+                             bool actually_draw_buttons,
+                             float_pool widths,
+                             int cw, int ch,
+                             void (*selectNone)(int),
+                             void (*selectAll)(int),
+                             void (*tagSelect)(int),
+                             int_pool *selected_tags_pool)
+{
+    // algorithm is a bit quirky
+    // basically we put all the widths in place for one column
+    // then find the biggest gap in the largest X items (X=max_overrun_count)
+    // that's where we create the column width (with the larger items running into the next column)
+    // also, the gap has to be at least Y big to count (to avoid tiny little overruns) (Y=min_overrun_amount)
+    //
+    // so you might have a natural break with the 3rd largest item,
+    // but if the largest is so much bigger than the next two, that's what will be sued
+    //
+    // todo: theoretically could bleed over into an extra column, i think (if we skip a lot each col)
+    // also these vars not tested for extreme values
+    // todo: could maybe improve the result of this if instead of looking at max gap,
+    // we look at some kind of area calculation that looks at gap*number of overrun items
+
+    int max_rows_per_col = (tag_list.count / totalcols) + 1; // round up
+    int max_overrun_count = 3; // max number of items to allow to overrun per column
+    float min_overrun_amount = 20; // how far into next col we need to be
+
+    // list of column widths for columns created so far
+    int_pool colwidths = int_pool::new_empty();
+    colwidths.add(0); // first column (more added each new column)
+
+    // width of every item in current column (and row number of it)
+    intfloatpair_pool widthsincol = intfloatpair_pool::new_empty();
+
+    // list of row indicies (eg col 2 second item is row=1)
+    // to skip over on this column (because last column item overruns into this spot)
+    int_pool skiprows = int_pool::new_empty();
+
+    int col = 0;
+    int row = 0;
+    float thiscolX = 0;
+    for (int t = 0; t < tag_list.count; t++, row++) { // note row++
+
+        if (row >= max_rows_per_col) {  // end of a row
+
+            sort_intfloatpair_pool_high_to_low(&widthsincol);
+
+            // find largest gap in widths of the largest X items (X=max_overrun_count)
+            // gap has to be at least Y big to count (Y=min_overrun_amount)
+            float largestgap = 0;
+            int largestgapcount = 0;
+            for (int i = 0; i<max_overrun_count && i<widthsincol.count-1; i++) {
+                float thisgap = widthsincol[i].f - widthsincol[i+1].f;
+                if (thisgap > largestgap &&
+                    thisgap > min_overrun_amount) // don't treat as gap if not this big
+                {
+                    largestgap = thisgap;
+                    largestgapcount = i+1;
+                }
+            }
+            colwidths[col] = widthsincol[largestgapcount].f; // final width of that column
+            skiprows.empty_out(); // and what row spots to skip for the next columns
+            for (int i = 0; i < largestgapcount; i++) {
+                skiprows.add(widthsincol[i].i);
+            }
+
+            // prep for next column
+            widthsincol = intfloatpair_pool::new_empty(); // empty widths for use in next column
+            colwidths.add(0); // first column (more added each new column)
+
+            row = 0;
+            col++;
+
+            thiscolX = 0;
+            for (int c = 0; c < col; c++)
+                thiscolX += colwidths[c]; // sum of all previous columns
+        }
+
+        // skip spots where there are overrun items in the last column
+        if (skiprows.has(row))
+            continue;
+
+        widthsincol.add({row,widths[t]});
+
+        if (thiscolX + widths[t] > cw) {
+            // we're bleeding off screen right,
+            // we found our max allowable column count (1 before this one)
+
+            // if we overrun screen in this case, something went wrong
+            // (caller handles now)
+            // assert(!actually_draw_buttons);
+
+            colwidths.free_all();
+            widthsincol.free_all();
+            skiprows.free_all();
+            return true;
+        }
+
+
+        // actually draw the buttons (skip this when searching for now many columns we need)
+        if (actually_draw_buttons)
+        {
+            float x = thiscolX;
+            // for (int c = 0; c < col; c++) x += colwidths[c]; // sum of all previous columns
+            float y = row * UI_TEXT_SIZE + UI_TEXT_SIZE;
+
+            rect brect = ui_button(tag_list[t].ToUTF8Reusable(), x,y, UI_LEFT,UI_TOP, tagSelect, t);
+
+            if (selected_tags_pool->has(t)) {
+                ui_rect(brect, 0xffff00ff, 0.3);
+            }
+        }
+
+    } // iterated through last tag
+
+    colwidths.free_all();
+    widthsincol.free_all();
+    skiprows.free_all();
+    return false;
+}
+
+// try another layout method
+void DrawTagMenu(int cw, int ch,
+                 void (*selectNone)(int),
+                 void (*selectAll)(int),
+                 void (*tagSelect)(int),
+                 void (*menuToggle)(int),
+                 bool menu_open,
+                 int_pool *selected_tags_pool)
+{
+
+    if (!menu_open) {
+        // ui_button("show tags", cw/2, 0, UI_CENTER,UI_TOP, &ToggleTagMenu);
+        ui_button("show tags", 0, 0, UI_LEFT,UI_TOP, menuToggle);
+        return; // don't draw any more
+    } else {
+        ui_button("hide tags", 0, 0, UI_LEFT,UI_TOP, menuToggle);
+    }
+
+    // rect lastr = ui_button("select none", 0,0, UI_LEFT,UI_TOP, selectNone);
+    // ui_button("select all", lastr.w,0, UI_LEFT,UI_TOP, selectAll);
+    rect lastr = ui_button("select none", cw/2,0, UI_LEFT,UI_TOP, selectNone);
+    ui_button("select all", cw/2,0, UI_RIGHT,UI_TOP, selectAll);
+
+
+    // first get size of all our tags
+    float_pool widths = float_pool::new_empty();
+    for (int i = 0; i < tag_list.count; i++) {
+        rect r = ui_text(tag_list[i].ToUTF8Reusable(), 0,0, UI_LEFT,UI_TOP, false);
+        widths.add(r.w);
+    }
+
+
+    // ok, try dividing into X columns, starting at 1 and going up until we're out of space
+
+    int final_desired_cols = -1;
+
+    // upperbound is 1 col for every tag
+    for (int totalcols = 1; totalcols < tag_list.count; totalcols++) {
+        if (DrawTagsWithXColumns(
+            totalcols,
+            false, // don't draw actual buttons, this is jsut a test of the layout with this many columns
+            widths,
+            cw, ch,
+            selectNone,
+            selectAll,
+            tagSelect,
+            selected_tags_pool))
+        {
+            final_desired_cols = totalcols-1;
+            break;
+        }
+    }
+
+    bool finalmenutoobig = DrawTagsWithXColumns(
+            final_desired_cols,
+            true, // now we draw the buttons
+            widths,
+            cw, ch,
+            selectNone,
+            selectAll,
+            tagSelect,
+            selected_tags_pool);
+
+    assert(!finalmenutoobig);
+
+}
+
+// can use for tag menu in browse mode (selecting what to browse)
+// and tag menu in view mode (for selecting an item's tags)
+// pass in the click handlers for the buttons
+// and a list of ints which are the indices of the tags that are marked "selected" (color pink)
+void DrawTagMenu_ParagraphLike_DEPRECATED(int cw, int ch,
+                 void (*selectNone)(int),
+                 void (*selectAll)(int),
+                 void (*tagSelect)(int),
+                 int_pool *selected_tags_pool)
+{
+    float hgap = 3;
+    float vgap = 3;
+
+    float x = hgap;
+    float y = UI_TEXT_SIZE + vgap*2;
+
+    // get total size
+    {
+        for (int i = 0; i < tag_list.count; i++) {
+            rect this_rect = ui_text(tag_list[i].ToUTF8Reusable(), x,y, UI_LEFT,UI_TOP, false);
+            this_rect.w+=hgap;
+            this_rect.h+=vgap;
+            if (x+this_rect.w > cw) { y+=this_rect.h; x=hgap; }
+            x += this_rect.w;
+            if (i == tag_list.count-1) y += this_rect.h; // \n for last row
+        }
+    }
+    ui_rect_solid({0,0,(float)cw,y+UI_TEXT_SIZE+vgap}, 0xffffffff, 0.5); // menu bg
+
+    rect lastr = ui_button("select none", hgap,vgap, UI_LEFT,UI_TOP, selectNone);
+    ui_button("select all", lastr.w+hgap*2,vgap, UI_LEFT,UI_TOP, selectAll);
+    // could also do something like this
+    // if (mode == BROWSING_THUMBS) {
+    //     rect lastr = ui_button("select none", hgap,vgap, UI_LEFT,UI_TOP, &SelectItemTagsNone);
+    //     ui_button("select all", lastr.w+hgap*2,vgap, UI_LEFT,UI_TOP, &SelectItemTagsAll);
+    // } else if (mode == VIEWING_FILE) {
+    //     rect lastr = ui_button("select none", 0,0, UI_LEFT,UI_TOP, &SelectBrowseTagsNone);
+    //     ui_button("select all", lastr.w+hgap,0, UI_LEFT,UI_TOP, &SelectBrowseTagsAll);
+    // }
+
+    x = hgap;
+    y = UI_TEXT_SIZE + vgap*2;
+    for (int i = 0; i < tag_list.count; i++) {
+        rect this_rect = ui_text(tag_list[i].ToUTF8Reusable(), x,y, UI_LEFT,UI_TOP, false);
+        this_rect.w+=hgap;
+        this_rect.h+=vgap;
+        if (x+this_rect.w > cw) { y+=this_rect.h; x=hgap; }
+        rect brect = ui_button(tag_list[i].ToUTF8Reusable(), x,y, UI_LEFT,UI_TOP, tagSelect, i);
+
+        // color selected tags...
+        {
+            // if (items[viewing_file_index].tags.has(i)) {
+            if (selected_tags_pool->has(i)) {
+                ui_rect(brect, 0xffff00ff, 0.3);
+            }
+        }
+
+        x += this_rect.w;
+        if (i == tag_list.count-1) y += this_rect.h; // \n for hide tag button
+    }
+}
+
+
+
+
 void browse_tick(float actual_dt, int cw, int ch, Input input, Input keysDown, Input keysUp) {
 
 
@@ -124,16 +382,13 @@ void browse_tick(float actual_dt, int cw, int ch, Input input, Input keysDown, I
 
     // tag menu
     {
-        if (!tag_menu_open) {
-            ui_button("show tags", cw/2, 0, UI_CENTER,UI_TOP, &ToggleTagMenu);
-        } else {
-            DrawTagMenu(cw, ch,
-                        &SelectBrowseTagsNone,
-                        &SelectBrowseTagsAll,
-                        &ToggleTagBrowse,
-                        &ToggleTagMenu,
-                        &browse_tags);
-        }
+        DrawTagMenu(cw, ch,
+                    &SelectBrowseTagsNone,
+                    &SelectBrowseTagsAll,
+                    &ToggleTagBrowse,
+                    &ToggleTagMenu,
+                    tag_menu_open,
+                    &browse_tags);
     }
 
 
@@ -336,16 +591,19 @@ void view_tick(float actual_dt, int cw, int ch, Input input, Input keysDown, Inp
     // select tag menu
     {
 
-        if (!tag_select_open) {
-            ui_button("show tags", cw/2, 0, UI_CENTER,UI_TOP, &ToggleTagSelectMenu);
-        } else {
-            DrawTagMenu(cw, ch,
-                        &SelectItemTagsNone,
-                        &SelectItemTagsAll,
-                        &ToggleTagSelection,
-                        &ToggleTagSelectMenu,
-                        &items[viewing_file_index].tags);
-        }
+        // if (!tag_select_open) {
+        //     // ui_button("show tags", cw/2, 0, UI_CENTER,UI_TOP, &ToggleTagSelectMenu);
+        //     ui_button("show tags", 0, 0, UI_LEFT,UI_TOP, &ToggleTagSelectMenu);
+        // } else {
+        //     ui_button("hide tags", 0, 0, UI_LEFT,UI_TOP, &ToggleTagSelectMenu);
+        DrawTagMenu(cw, ch,
+                    &SelectItemTagsNone,
+                    &SelectItemTagsAll,
+                    &ToggleTagSelection,
+                    &ToggleTagMenu,
+                    tag_select_open,
+                    &items[viewing_file_index].tags);
+        // }
     }
 
 
