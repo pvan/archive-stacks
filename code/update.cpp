@@ -27,7 +27,7 @@ bool DrawTagsWithXColumns(int totalcols,
     // but if the largest is so much bigger than the next two, that's what will be sued
     //
     // todo: theoretically could bleed over into an extra column, i think (if we skip a lot each col)
-    // todo: test for extreme values (long items could overrun two columns in some cases)
+    // todo: test extreme values
     // todo: could maybe improve the result of this if instead of looking at max gap,
     // we look at some kind of area calculation that looks at gap*number of overrun items
 
@@ -44,7 +44,8 @@ bool DrawTagsWithXColumns(int totalcols,
 
     // list of row indicies (eg col 2 second item is row=1)
     // to skip over on this column (because last column item overruns into this spot)
-    int_pool skiprows = int_pool::new_empty();
+    // update: keep widths included here so we can calculate if we need to double-overrun an item
+    intfloatpair_pool skiprows = intfloatpair_pool::new_empty();
 
     int col = 0;
     int row = 0;
@@ -76,7 +77,7 @@ bool DrawTagsWithXColumns(int totalcols,
             colwidths[col] = widthsincol[largestgapcount].f + hgap; // final width of that column
             skiprows.empty_out(); // and what row spots to skip for the next columns
             for (int i = 0; i < largestgapcount; i++) {
-                skiprows.add(widthsincol[i].i);
+                skiprows.add(widthsincol[i]);
             }
 
             // // print debug info at button of each row
@@ -104,8 +105,13 @@ bool DrawTagsWithXColumns(int totalcols,
         }
 
         // skip spots where there are overrun items in the last column
-        if (skiprows.has(row))
+        // if (skiprows.has(row)) {
+        int index_of_this_row_skip = intfloatpair_pool_has_int(skiprows, row);
+        if (index_of_this_row_skip >= 0) {
+            float widthinthiscol = skiprows[index_of_this_row_skip].f - colwidths[col-1]; // todo: test: [col-1] should be fine since col 0 doesn't have any skips
+            widthsincol.add({row,widthinthiscol}); // in case double overrun
             continue;
+        }
 
         widthsincol.add({row,widths[t]});
 
@@ -183,7 +189,7 @@ void DrawTagMenu(int cw, int ch,
 
     // ok, try dividing into X columns, starting at 1 and going up until we're out of space
 
-    int final_desired_cols = -1;
+    int final_desired_cols = tag_list.count;
 
     // upperbound is 1 col for every tag
     for (int totalcols = 1; totalcols < tag_list.count; totalcols++) {
