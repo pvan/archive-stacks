@@ -206,84 +206,67 @@ void DrawTagMenu(int cw, int ch,
     // upperbound is 1 col for every tag
     // for (int totalcols = 1; totalcols < tag_list.count; totalcols++) {
     int totalcols = 5;
-        int maxrowspercol = (tag_list.count / totalcols) + 1; // round up
-        int maxoverrun = 4; // max number of items to allow to overrun per column
-        float minoverrun = 0; // how far into next col we need to be
 
+        // algorithm is a bit quirky
+        // basically we put all the widths in place for one column
+        // then find the biggest gap in the largest X items (X=max_overrun_count)
+        // that's where we create the column width (with the larger items running into the next column)
+        // also, the gap has to be at least Y big to count (to avoid tiny little overruns) (Y=min_overrun_amount)
+        //
+        // so you might have a natural break with the 3rd largest item,
+        // but if the largest is so much bigger than the next two, that's what will be sued
+        //
+        // todo: theoretically could bleed over into an extra column, i think (if we skip a lot each col)
+        // also these vars not tested for extreme values
+
+        int max_rows_per_col = (tag_list.count / totalcols) + 1; // round up
+        int max_overrun_count = 3; // max number of items to allow to overrun per column
+        float min_overrun_amount = 20; // how far into next col we need to be
+
+        // list of column widths for columns created so far
         int_pool colwidths = int_pool::new_empty();
-        intfloatpair_pool skips = intfloatpair_pool::new_empty();
-        intfloatpair_pool lastskips = intfloatpair_pool::new_empty();
+        colwidths.add(0); // first column (more added each new column)
 
+        // width of every item in current column (and row number of it)
         intfloatpair_pool widthsincol = intfloatpair_pool::new_empty();
+
+        // list of row indicies (eg col 2 second item is row=1)
+        // to skip over on this column (because last column item overruns into this spot)
         int_pool skiprows = int_pool::new_empty();
 
         int col = 0;
         int row = 0;
         for (int t = 0; t < tag_list.count; t++, row++) { // note row++
 
-            if (row >= maxrowspercol) {
-                // end of a row
+            if (row >= max_rows_per_col) {  // end of a row
 
-                // // first check if our col width has grown larger than any overrun item widths
-                // sort_intfloatpair_pool_high_to_low(&skips);
-                // for (int o = 0; o < skips.count; o++) {
-                //     if (colwidths[col] > skips[o].f) {
-                //         // if so, just remove them from skips list
-                //         skips.count = o;
-                //         break;
-                //     }
-                // }
-
-                // sort widths
                 sort_intfloatpair_pool_high_to_low(&widthsincol);
+
+                // find largest gap in widths of the largest X items (X=max_overrun_count)
+                // gap has to be at least Y big to count (Y=min_overrun_amount)
                 float largestgap = 0;
                 int largestgapcount = 0;
-                for (int i = 0; i<maxoverrun && i<widthsincol.count-1; i++) {
+                for (int i = 0; i<max_overrun_count && i<widthsincol.count-1; i++) {
                     float thisgap = widthsincol[i].f - widthsincol[i+1].f;
                     if (thisgap > largestgap &&
-                        thisgap > minoverrun) // don't treat as gap if not this big
+                        thisgap > min_overrun_amount) // don't treat as gap if not this big
                     {
                         largestgap = thisgap;
                         largestgapcount = i+1;
                     }
                 }
-
-                colwidths[col] = widthsincol[largestgapcount].f;
-
-                skiprows.empty_out();
-                if (largestgapcount > 0) {
-                    for (int i = 0; i < largestgapcount; i++) {
-                        skiprows.add(widthsincol[i].i);
-                    }
+                colwidths[col] = widthsincol[largestgapcount].f; // final width of that column
+                skiprows.empty_out(); // and what row spots to skip for the next columns
+                for (int i = 0; i < largestgapcount; i++) {
+                    skiprows.add(widthsincol[i].i);
                 }
 
-                // print debug info at button of each row
-                {
-                    float x = 0;
-                    for (int c = 0; c < col; c++) x += colwidths[c]; // sum of all previous columns
-                    float y = row * UI_TEXT_SIZE + UI_TEXT_SIZE;
-                    char buf[256];
-                    sprintf(buf, "%i", largestgapcount);
-                    ui_button(buf, x,y, UI_LEFT,UI_TOP, 0, 0);
-                    sprintf(buf, "%0.f", largestgap);
-                    ui_button(buf, x,y+UI_TEXT_SIZE, UI_LEFT,UI_TOP, 0, 0);
-                }
+                // prep for next column
+                widthsincol = intfloatpair_pool::new_empty(); // empty widths for use in next column
+                colwidths.add(0); // first column (more added each new column)
 
                 row = 0;
                 col++;
-            }
-
-            if (row == 0) {
-                // start of new row
-
-                // if (lastskips.pool) free(lastskips.pool);
-                // lastskips = skips;
-                // skips = intfloatpair_pool::new_empty();
-
-                colwidths.add(0);
-
-                // for copying all widths in this column (to be sorted at end)
-                widthsincol = intfloatpair_pool::new_empty();
             }
 
             // skip spots where there are overrun items in the last column
@@ -292,7 +275,7 @@ void DrawTagMenu(int cw, int ch,
 
             widthsincol.add({row,widths[t]});
 
-            // actually draw the buttons (skip this when searching for now many rows we need)
+            // actually draw the buttons (skip this when searching for now many columns we need)
             {
                 float x = 0;
                 for (int c = 0; c < col; c++) x += colwidths[c]; // sum of all previous columns
@@ -305,27 +288,12 @@ void DrawTagMenu(int cw, int ch,
                 }
             }
 
-
-            // // track column width and overrun items
-            // if (widths[i] > colwidths[col]) {
-            //     float delta = widths[i] - colwidths[col];
-            //     if (delta < 20) { // larger this is, the more gap between overrun and non-overrun items, but the less overrun items there will be total
-            //         // if small increment, just include the larger in this col
-            //         colwidths[col] = widths[i];
-            //     } else {
-            //         if (skips.count < maxoverrun) {
-            //             skips.add({row,widths[i]});
-            //         } else {
-            //             skips.add({row,widths[i]});
-            //             sort_intfloatpair_pool(&skips);
-            //             colwidths[col] = max(colwidths[col], skips[0].f); // probably the
-            //             skips.remove(skips[0]); // remove item with lowest width
-            //         }
-            //     }
-            // }
-
         } // iterated through last tag
     // }
+
+    colwidths.free_all();
+    widthsincol.free_all();
+    skiprows.free_all();
 
 }
 
