@@ -180,6 +180,131 @@ void OpenFileToView(int item_index) {
 }
 
 
+// pass actually_draw_buttons = false to just test the layout
+// in that case, will return if the layout overruns the screen
+// todo: is this starting to smell a little?
+bool DrawTagMenuWithXColumns(int totalcols,
+                             bool actually_draw_buttons,
+                             float_pool widths,
+                             int cw, int ch,
+                             void (*selectNone)(int),
+                             void (*selectAll)(int),
+                             void (*tagSelect)(int),
+                             void (*hideMenu)(int),
+                             int_pool *selected_tags_pool)
+{
+    // algorithm is a bit quirky
+    // basically we put all the widths in place for one column
+    // then find the biggest gap in the largest X items (X=max_overrun_count)
+    // that's where we create the column width (with the larger items running into the next column)
+    // also, the gap has to be at least Y big to count (to avoid tiny little overruns) (Y=min_overrun_amount)
+    //
+    // so you might have a natural break with the 3rd largest item,
+    // but if the largest is so much bigger than the next two, that's what will be sued
+    //
+    // todo: theoretically could bleed over into an extra column, i think (if we skip a lot each col)
+    // also these vars not tested for extreme values
+    // todo: could maybe improve the result of this if instead of looking at max gap,
+    // we look at some kind of area calculation that looks at gap*number of overrun items
+
+    int max_rows_per_col = (tag_list.count / totalcols) + 1; // round up
+    int max_overrun_count = 3; // max number of items to allow to overrun per column
+    float min_overrun_amount = 20; // how far into next col we need to be
+
+    // list of column widths for columns created so far
+    int_pool colwidths = int_pool::new_empty();
+    colwidths.add(0); // first column (more added each new column)
+
+    // width of every item in current column (and row number of it)
+    intfloatpair_pool widthsincol = intfloatpair_pool::new_empty();
+
+    // list of row indicies (eg col 2 second item is row=1)
+    // to skip over on this column (because last column item overruns into this spot)
+    int_pool skiprows = int_pool::new_empty();
+
+    int col = 0;
+    int row = 0;
+    float thiscolX = 0;
+    for (int t = 0; t < tag_list.count; t++, row++) { // note row++
+
+        if (row >= max_rows_per_col) {  // end of a row
+
+            sort_intfloatpair_pool_high_to_low(&widthsincol);
+
+            // find largest gap in widths of the largest X items (X=max_overrun_count)
+            // gap has to be at least Y big to count (Y=min_overrun_amount)
+            float largestgap = 0;
+            int largestgapcount = 0;
+            for (int i = 0; i<max_overrun_count && i<widthsincol.count-1; i++) {
+                float thisgap = widthsincol[i].f - widthsincol[i+1].f;
+                if (thisgap > largestgap &&
+                    thisgap > min_overrun_amount) // don't treat as gap if not this big
+                {
+                    largestgap = thisgap;
+                    largestgapcount = i+1;
+                }
+            }
+            colwidths[col] = widthsincol[largestgapcount].f; // final width of that column
+            skiprows.empty_out(); // and what row spots to skip for the next columns
+            for (int i = 0; i < largestgapcount; i++) {
+                skiprows.add(widthsincol[i].i);
+            }
+
+            // prep for next column
+            widthsincol = intfloatpair_pool::new_empty(); // empty widths for use in next column
+            colwidths.add(0); // first column (more added each new column)
+
+            row = 0;
+            col++;
+
+            thiscolX = 0;
+            for (int c = 0; c < col; c++)
+                thiscolX += colwidths[c]; // sum of all previous columns
+        }
+
+        // skip spots where there are overrun items in the last column
+        if (skiprows.has(row))
+            continue;
+
+        widthsincol.add({row,widths[t]});
+
+        if (thiscolX + widths[t] > cw) {
+            // we're bleeding off screen right,
+            // we found our max allowable column count (1 before this one)
+
+            // if we overrun screen in this case, something went wrong
+            // (caller handles now)
+            // assert(!actually_draw_buttons);
+
+            colwidths.free_all();
+            widthsincol.free_all();
+            skiprows.free_all();
+            return true;
+        }
+
+
+        // actually draw the buttons (skip this when searching for now many columns we need)
+        if (actually_draw_buttons)
+        {
+            float x = thiscolX;
+            // for (int c = 0; c < col; c++) x += colwidths[c]; // sum of all previous columns
+            float y = row * UI_TEXT_SIZE + UI_TEXT_SIZE;
+
+            rect brect = ui_button(tag_list[t].ToUTF8Reusable(), x,y, UI_LEFT,UI_TOP, tagSelect, t);
+
+            if (selected_tags_pool->has(t)) {
+                ui_rect(brect, 0xffff00ff, 0.3);
+            }
+        }
+
+    } // iterated through last tag
+
+    colwidths.free_all();
+    widthsincol.free_all();
+    skiprows.free_all();
+    return false;
+}
+
 // try another layout method
 void DrawTagMenu(int cw, int ch,
                  void (*selectNone)(int),
@@ -200,100 +325,40 @@ void DrawTagMenu(int cw, int ch,
     }
 
 
-
     // ok, try dividing into X columns, starting at 1 and going up until we're out of space
 
+    int final_desired_cols = -1;
+
     // upperbound is 1 col for every tag
-    // for (int totalcols = 1; totalcols < tag_list.count; totalcols++) {
-    int totalcols = 5;
+    for (int totalcols = 1; totalcols < tag_list.count; totalcols++) {
+        if (DrawTagMenuWithXColumns(
+            totalcols,
+            false, // don't draw actual buttons, this is jsut a test of the layout with this many columns
+            widths,
+            cw, ch,
+            selectNone,
+            selectAll,
+            tagSelect,
+            hideMenu,
+            selected_tags_pool))
+        {
+            final_desired_cols = totalcols-1;
+            break;
+        }
+    }
 
-        // algorithm is a bit quirky
-        // basically we put all the widths in place for one column
-        // then find the biggest gap in the largest X items (X=max_overrun_count)
-        // that's where we create the column width (with the larger items running into the next column)
-        // also, the gap has to be at least Y big to count (to avoid tiny little overruns) (Y=min_overrun_amount)
-        //
-        // so you might have a natural break with the 3rd largest item,
-        // but if the largest is so much bigger than the next two, that's what will be sued
-        //
-        // todo: theoretically could bleed over into an extra column, i think (if we skip a lot each col)
-        // also these vars not tested for extreme values
+    bool finalmenutoobig = DrawTagMenuWithXColumns(
+            final_desired_cols,
+            true, // now we draw the buttons
+            widths,
+            cw, ch,
+            selectNone,
+            selectAll,
+            tagSelect,
+            hideMenu,
+            selected_tags_pool);
 
-        int max_rows_per_col = (tag_list.count / totalcols) + 1; // round up
-        int max_overrun_count = 3; // max number of items to allow to overrun per column
-        float min_overrun_amount = 20; // how far into next col we need to be
-
-        // list of column widths for columns created so far
-        int_pool colwidths = int_pool::new_empty();
-        colwidths.add(0); // first column (more added each new column)
-
-        // width of every item in current column (and row number of it)
-        intfloatpair_pool widthsincol = intfloatpair_pool::new_empty();
-
-        // list of row indicies (eg col 2 second item is row=1)
-        // to skip over on this column (because last column item overruns into this spot)
-        int_pool skiprows = int_pool::new_empty();
-
-        int col = 0;
-        int row = 0;
-        for (int t = 0; t < tag_list.count; t++, row++) { // note row++
-
-            if (row >= max_rows_per_col) {  // end of a row
-
-                sort_intfloatpair_pool_high_to_low(&widthsincol);
-
-                // find largest gap in widths of the largest X items (X=max_overrun_count)
-                // gap has to be at least Y big to count (Y=min_overrun_amount)
-                float largestgap = 0;
-                int largestgapcount = 0;
-                for (int i = 0; i<max_overrun_count && i<widthsincol.count-1; i++) {
-                    float thisgap = widthsincol[i].f - widthsincol[i+1].f;
-                    if (thisgap > largestgap &&
-                        thisgap > min_overrun_amount) // don't treat as gap if not this big
-                    {
-                        largestgap = thisgap;
-                        largestgapcount = i+1;
-                    }
-                }
-                colwidths[col] = widthsincol[largestgapcount].f; // final width of that column
-                skiprows.empty_out(); // and what row spots to skip for the next columns
-                for (int i = 0; i < largestgapcount; i++) {
-                    skiprows.add(widthsincol[i].i);
-                }
-
-                // prep for next column
-                widthsincol = intfloatpair_pool::new_empty(); // empty widths for use in next column
-                colwidths.add(0); // first column (more added each new column)
-
-                row = 0;
-                col++;
-            }
-
-            // skip spots where there are overrun items in the last column
-            if (skiprows.has(row))
-                continue;
-
-            widthsincol.add({row,widths[t]});
-
-            // actually draw the buttons (skip this when searching for now many columns we need)
-            {
-                float x = 0;
-                for (int c = 0; c < col; c++) x += colwidths[c]; // sum of all previous columns
-                float y = row * UI_TEXT_SIZE + UI_TEXT_SIZE;
-
-                rect brect = ui_button(tag_list[t].ToUTF8Reusable(), x,y, UI_LEFT,UI_TOP, tagSelect, t);
-
-                if (selected_tags_pool->has(t)) {
-                    ui_rect(brect, 0xffff00ff, 0.3);
-                }
-            }
-
-        } // iterated through last tag
-    // }
-
-    colwidths.free_all();
-    widthsincol.free_all();
-    skiprows.free_all();
+    assert(!finalmenutoobig);
 
 }
 
