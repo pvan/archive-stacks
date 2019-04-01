@@ -97,95 +97,99 @@ Input ReadInput(HWND window)
 {
     Input result = {0};
 
-    if (GetAsyncKeyState('Q'))   result.q = true;
-    if (GetAsyncKeyState('W'))   result.w = true;
-    if (GetAsyncKeyState('E'))   result.e = true;
-    if (GetAsyncKeyState('R'))   result.r = true;
-    if (GetAsyncKeyState('T'))   result.t = true;
-    if (GetAsyncKeyState('Y'))   result.y = true;
-    if (GetAsyncKeyState('U'))   result.u = true;
-    if (GetAsyncKeyState('I'))   result.i = true;
-    if (GetAsyncKeyState('O'))   result.o = true;
-    if (GetAsyncKeyState('P'))   result.p = true;
-    if (GetAsyncKeyState('A'))   result.a = true;
-    if (GetAsyncKeyState('S'))   result.s = true;
-    if (GetAsyncKeyState('D'))   result.d = true;
-    if (GetAsyncKeyState('F'))   result.f = true;
-    if (GetAsyncKeyState('G'))   result.g = true;
-    if (GetAsyncKeyState('H'))   result.h = true;
-    if (GetAsyncKeyState('J'))   result.j = true;
-    if (GetAsyncKeyState('K'))   result.k = true;
-    if (GetAsyncKeyState('L'))   result.l = true;
-    if (GetAsyncKeyState('Z'))   result.z = true;
-    if (GetAsyncKeyState('X'))   result.x = true;
-    if (GetAsyncKeyState('C'))   result.c = true;
-    if (GetAsyncKeyState('V'))   result.v = true;
-    if (GetAsyncKeyState('B'))   result.b = true;
-    if (GetAsyncKeyState('N'))   result.n = true;
-    if (GetAsyncKeyState('M'))   result.m = true;
+    if (GetFocus() == window) { // ignore keys if we dont have keyboard focus
+        if (GetAsyncKeyState('Q'))   result.q = true;
+        if (GetAsyncKeyState('W'))   result.w = true;
+        if (GetAsyncKeyState('E'))   result.e = true;
+        if (GetAsyncKeyState('R'))   result.r = true;
+        if (GetAsyncKeyState('T'))   result.t = true;
+        if (GetAsyncKeyState('Y'))   result.y = true;
+        if (GetAsyncKeyState('U'))   result.u = true;
+        if (GetAsyncKeyState('I'))   result.i = true;
+        if (GetAsyncKeyState('O'))   result.o = true;
+        if (GetAsyncKeyState('P'))   result.p = true;
+        if (GetAsyncKeyState('A'))   result.a = true;
+        if (GetAsyncKeyState('S'))   result.s = true;
+        if (GetAsyncKeyState('D'))   result.d = true;
+        if (GetAsyncKeyState('F'))   result.f = true;
+        if (GetAsyncKeyState('G'))   result.g = true;
+        if (GetAsyncKeyState('H'))   result.h = true;
+        if (GetAsyncKeyState('J'))   result.j = true;
+        if (GetAsyncKeyState('K'))   result.k = true;
+        if (GetAsyncKeyState('L'))   result.l = true;
+        if (GetAsyncKeyState('Z'))   result.z = true;
+        if (GetAsyncKeyState('X'))   result.x = true;
+        if (GetAsyncKeyState('C'))   result.c = true;
+        if (GetAsyncKeyState('V'))   result.v = true;
+        if (GetAsyncKeyState('B'))   result.b = true;
+        if (GetAsyncKeyState('N'))   result.n = true;
+        if (GetAsyncKeyState('M'))   result.m = true;
 
-    if (GetAsyncKeyState(VK_OEM_4))       result.squareL = true;
-    if (GetAsyncKeyState(VK_OEM_6))       result.squareR = true;
-    if (GetAsyncKeyState(VK_OEM_5))       result.bslash = true;
-    if (GetAsyncKeyState(VK_OEM_1))       result.semicolon = true;
-    if (GetAsyncKeyState(VK_OEM_7))       result.apostrophe = true;
-    if (GetAsyncKeyState(VK_OEM_COMMA))   result.comma = true;
-    if (GetAsyncKeyState(VK_OEM_PERIOD))  result.period = true;
-    if (GetAsyncKeyState(VK_OEM_2))       result.fslash = true;
+        if (GetAsyncKeyState(VK_OEM_4))       result.squareL = true;
+        if (GetAsyncKeyState(VK_OEM_6))       result.squareR = true;
+        if (GetAsyncKeyState(VK_OEM_5))       result.bslash = true;
+        if (GetAsyncKeyState(VK_OEM_1))       result.semicolon = true;
+        if (GetAsyncKeyState(VK_OEM_7))       result.apostrophe = true;
+        if (GetAsyncKeyState(VK_OEM_COMMA))   result.comma = true;
+        if (GetAsyncKeyState(VK_OEM_PERIOD))  result.period = true;
+        if (GetAsyncKeyState(VK_OEM_2))       result.fslash = true;
 
-    if (GetAsyncKeyState(VK_UP))          result.up = true;
-    if (GetAsyncKeyState(VK_DOWN))        result.down = true;
-    if (GetAsyncKeyState(VK_LEFT))        result.left = true;
-    if (GetAsyncKeyState(VK_RIGHT))       result.right = true;
+        if (GetAsyncKeyState(VK_UP))          result.up = true;
+        if (GetAsyncKeyState(VK_DOWN))        result.down = true;
+        if (GetAsyncKeyState(VK_LEFT))        result.left = true;
+        if (GetAsyncKeyState(VK_RIGHT))       result.right = true;
 
-    if (GetAsyncKeyState(VK_SPACE))       result.space = true;
-    if (GetAsyncKeyState(VK_SHIFT))       result.shift = true;
-    if (GetAsyncKeyState(VK_CONTROL))     result.ctrl = true;
-    if (GetAsyncKeyState(VK_RETURN))      result.enter = true;
-    if (GetAsyncKeyState(VK_TAB))         result.tab = true;
-    if (GetAsyncKeyState(VK_CAPITAL))     result.caps = true;
-    if (GetAsyncKeyState(VK_OEM_3))       result.tilde = true;
-    if (GetAsyncKeyState(VK_BACK))        result.backspace = true;
+        if (GetAsyncKeyState(VK_SPACE))       result.space = true;
+        if (GetAsyncKeyState(VK_SHIFT))       result.shift = true;
+        if (GetAsyncKeyState(VK_CONTROL))     result.ctrl = true;
+        if (GetAsyncKeyState(VK_RETURN))      result.enter = true;
+        if (GetAsyncKeyState(VK_TAB))         result.tab = true;
+        if (GetAsyncKeyState(VK_CAPITAL))     result.caps = true;
+        if (GetAsyncKeyState(VK_OEM_3))       result.tilde = true;
+        if (GetAsyncKeyState(VK_BACK))        result.backspace = true;
 
-    if (GetAsyncKeyState(VK_OEM_3))       result.row[0] = true;
-    if (GetAsyncKeyState('1'))            result.row[1] = true;
-    if (GetAsyncKeyState('2'))            result.row[2] = true;
-    if (GetAsyncKeyState('3'))            result.row[3] = true;
-    if (GetAsyncKeyState('4'))            result.row[4] = true;
-    if (GetAsyncKeyState('5'))            result.row[5] = true;
-    if (GetAsyncKeyState('6'))            result.row[6] = true;
-    if (GetAsyncKeyState('7'))            result.row[7] = true;
-    if (GetAsyncKeyState('8'))            result.row[8] = true;
-    if (GetAsyncKeyState('9'))            result.row[9] = true;
-    if (GetAsyncKeyState('0'))            result.row[10] = true;
-    if (GetAsyncKeyState(VK_OEM_MINUS))   result.row[11] = true;
-    if (GetAsyncKeyState(VK_OEM_PLUS))    result.row[12] = true;
+        if (GetAsyncKeyState(VK_OEM_3))       result.row[0] = true;
+        if (GetAsyncKeyState('1'))            result.row[1] = true;
+        if (GetAsyncKeyState('2'))            result.row[2] = true;
+        if (GetAsyncKeyState('3'))            result.row[3] = true;
+        if (GetAsyncKeyState('4'))            result.row[4] = true;
+        if (GetAsyncKeyState('5'))            result.row[5] = true;
+        if (GetAsyncKeyState('6'))            result.row[6] = true;
+        if (GetAsyncKeyState('7'))            result.row[7] = true;
+        if (GetAsyncKeyState('8'))            result.row[8] = true;
+        if (GetAsyncKeyState('9'))            result.row[9] = true;
+        if (GetAsyncKeyState('0'))            result.row[10] = true;
+        if (GetAsyncKeyState(VK_OEM_MINUS))   result.row[11] = true;
+        if (GetAsyncKeyState(VK_OEM_PLUS))    result.row[12] = true;
 
-    if (GetAsyncKeyState(VK_PRIOR))       result.pgUp = true;
-    if (GetAsyncKeyState(VK_NEXT))        result.pgDown = true;
+        if (GetAsyncKeyState(VK_PRIOR))       result.pgUp = true;
+        if (GetAsyncKeyState(VK_NEXT))        result.pgDown = true;
 
-    if (GetAsyncKeyState(VK_F1))          result.f1 = true;
-    if (GetAsyncKeyState(VK_F2))          result.f2 = true;
-    if (GetAsyncKeyState(VK_F3))          result.f3 = true;
-    if (GetAsyncKeyState(VK_F4))          result.f4 = true;
-    if (GetAsyncKeyState(VK_F5))          result.f5 = true;
-    if (GetAsyncKeyState(VK_F6))          result.f6 = true;
-    if (GetAsyncKeyState(VK_F7))          result.f7 = true;
-    if (GetAsyncKeyState(VK_F8))          result.f8 = true;
-    if (GetAsyncKeyState(VK_F9))          result.f9 = true;
-    if (GetAsyncKeyState(VK_F10))         result.f10 = true;
-    if (GetAsyncKeyState(VK_F11))         result.f11 = true;
-    if (GetAsyncKeyState(VK_F12))         result.f12 = true;
+        if (GetAsyncKeyState(VK_F1))          result.f1 = true;
+        if (GetAsyncKeyState(VK_F2))          result.f2 = true;
+        if (GetAsyncKeyState(VK_F3))          result.f3 = true;
+        if (GetAsyncKeyState(VK_F4))          result.f4 = true;
+        if (GetAsyncKeyState(VK_F5))          result.f5 = true;
+        if (GetAsyncKeyState(VK_F6))          result.f6 = true;
+        if (GetAsyncKeyState(VK_F7))          result.f7 = true;
+        if (GetAsyncKeyState(VK_F8))          result.f8 = true;
+        if (GetAsyncKeyState(VK_F9))          result.f9 = true;
+        if (GetAsyncKeyState(VK_F10))         result.f10 = true;
+        if (GetAsyncKeyState(VK_F11))         result.f11 = true;
+        if (GetAsyncKeyState(VK_F12))         result.f12 = true;
+    }
 
-    if (GetAsyncKeyState(VK_LBUTTON))     result.mouseL = true;
-    if (GetAsyncKeyState(VK_MBUTTON))     result.mouseM = true;
-    if (GetAsyncKeyState(VK_RBUTTON))     result.mouseR = true;
+    if (GetActiveWindow() == window) { // ignore mouse when window isn't active
+        if (GetAsyncKeyState(VK_LBUTTON))     result.mouseL = true;
+        if (GetAsyncKeyState(VK_MBUTTON))     result.mouseM = true;
+        if (GetAsyncKeyState(VK_RBUTTON))     result.mouseR = true;
 
-    POINT p;
-    if (GetCursorPos(&p)) {
-        if (ScreenToClient(window, &p)) {
-            result.mouseX = p.x;
-            result.mouseY = p.y;
+        POINT p;
+        if (GetCursorPos(&p)) {
+            if (ScreenToClient(window, &p)) {
+                result.mouseX = p.x;
+                result.mouseY = p.y;
+            }
         }
     }
 
