@@ -1,5 +1,98 @@
 
 
+// for panning VIEW mode
+bool mouse_up_once_since_loading = false;
+float clickMouseX;
+float clickMouseY;
+float clickRectX;
+float clickRectY;
+
+
+//
+// button click handlers
+
+bool tag_menu_open = false;  // is tag menu open in browsing mode?
+void ToggleTagMenu() { tag_menu_open = !tag_menu_open; }
+void ToggleTagBrowse(int tagindex) {
+    // int tagindex = (u64)disguisedint;
+    if (browse_tags.has(tagindex)) {
+        browse_tags.remove(tagindex);
+    } else {
+        browse_tags.add(tagindex);
+    }
+
+    // update display list here
+    CreateDisplayListFromBrowseSelection();
+
+    // do in loop for now, just before rendering (or, well, in the update portion)
+    // ArrangeTilesForDisplayList(display_list, &tiles, master_desired_tile_width, g_cw); // requires resolutions to be set
+}
+void SelectBrowseTagsAll() { SelectAllBrowseTags(); CreateDisplayListFromBrowseSelection(); }
+void SelectBrowseTagsNone() { DeselectAllBrowseTags(); CreateDisplayListFromBrowseSelection(); }
+
+bool tag_select_open = false;  // is tag menu open in viewing mode?
+void ToggleTagSelectMenu() { tag_select_open = !tag_select_open; }
+// we assume we're affecting the open / "viewing" file here
+void ToggleTagSelection(int tagindex) {
+    // u64 tagindex = (u64)disguisedint;
+    if (items[viewing_file_index].tags.has(tagindex)) {
+        items[viewing_file_index].tags.remove(tagindex);
+    } else
+    {
+        items[viewing_file_index].tags.add(tagindex);
+    }
+    SaveMetadataFile(); // keep close eye on this, if it gets too slow to do inline we can move to background thread
+}
+void SelectItemTagsAll() {
+    items[viewing_file_index].tags.empty_out();
+    for (int i = 0; i < tag_list.count; i++) {
+        items[viewing_file_index].tags.add(i);
+    }
+}
+void SelectItemTagsNone() {
+    items[viewing_file_index].tags.empty_out();
+}
+
+void OpenFileToView(int item_index) {
+    app_mode = VIEWING_FILE;
+
+    viewing_file_index = item_index;
+
+    // // note shallow copy, not pointer or deep copy
+    // viewing_tile = tiles[viewing_file_index];
+
+    viewing_tile = tile::CreateFromItem(items[viewing_file_index]);
+
+    viewing_tile.needs_loading = true;
+    viewing_tile.needs_unloading = false; // these are init to false in tile::Create,
+    viewing_tile.is_media_loaded = false; // but just to make it explicit here..
+
+    float aspect_ratio = item_resolutions[viewing_file_index].aspect_ratio();
+    rect fit_to_screen = calc_pixel_letterbox_subrect(g_cw, g_ch, aspect_ratio);
+    // note rect seems to be TLBR not XYWH
+    viewing_tile.pos = {fit_to_screen.x, fit_to_screen.y};
+    viewing_tile.size = {fit_to_screen.w-fit_to_screen.x, fit_to_screen.h-fit_to_screen.y};
+
+    mouse_up_once_since_loading = false;
+
+    // move all the tile buttons so we can't click on them
+    // better way to do this?
+    for (int i = 0; i < tiles.count; i++) {
+        tiles[i].pos = {-1000,-1000};
+        tiles[i].size = {0,0};
+    }
+
+}
+void OpenFileToView(void *disguisedint) {
+    u64 item_index = (u64)disguisedint;
+    OpenFileToView(item_index);
+}
+
+
+
+
+
+
 char *tag_filter = "               ";
 
 
