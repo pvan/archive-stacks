@@ -138,10 +138,10 @@ bool DrawTagsWithXColumns(int totalcols,
             float y = (row+1) * (UI_TEXT_SIZE+vgap);
 
             rect brect;
-            if(ui_button(&tag_list[t],
-                         tag_list[t].ToUTF8Reusable(), {x,y}, UI_LEFT,UI_TOP, &brect)) {
-                if(tagSelect) tagSelect(t);
+            if (ui_button(&tag_list[t], tag_list[t].ToUTF8Reusable(), {x,y}, UI_LEFT,UI_TOP, &brect)) {
+                if (tagSelect) tagSelect(t);
             }
+
 
             if (selected_tags_pool->has(t)) {
                 ui_rect(brect, 0xffff00ff, 0.3);

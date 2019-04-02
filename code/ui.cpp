@@ -354,7 +354,7 @@ const int UI_RIGHT = 2;
 const int UI_TOP = 3;
 const int UI_BOTTOM = 4;
 
-void ui_draw_rect(rect r, u32 color, float alpha) {
+void ui_rect(rect r, u32 color, float alpha) {
     gpu_quad quad = gpu_quad_from_rect(r, color, alpha);
     gpu_render_quads_with_texture(&quad, 1, ui_solid_tex_id);
 }
@@ -393,7 +393,7 @@ rect ui_text(ui_id id, char *text, rect r, int hpos, int vpos, bool render) {
 
     if (render) {
         //--bg--
-        ui_draw_rect(bg_quad.to_rect(), 0x0, 0.66);
+        ui_rect(bg_quad.to_rect(), 0x0, 0.66);
 
         //--text--
         int quadsneeded = tf_how_many_quads_needed_for_text(text);
@@ -500,12 +500,12 @@ bool ui_button(ui_id id,
         if (!inr.ContainsPoint(input.current.mouseX,input.current.mouseY)) {
             ui_set_hot(0);
         } else {
-            ui_draw_rect(inr, 0xffffffff, 0.3);
+            ui_rect(inr, 0xffffffff, 0.3);
         }
     }
 
     if (ui_active(id)) {
-        ui_draw_rect(inr, 0xff777700, 0.3);
+        ui_rect(inr, 0xff777700, 0.3);
     }
 
     return result;
@@ -526,13 +526,13 @@ rect ui_button_permanent_highlight(rect br, void(*effect)(void*), void *arg=0)
     return {0};
 }
 
-// ignores clicks (will pass to whatever is below this)
-void ui_rect(rect r, u32 col, float a) {
-    // // feels like this internal api needs some work but it's functional for now
-    // ui_element gizmo = {0};
-    // gizmo.add_solid_rect(r, col, a);
-    // ui_elements.add(gizmo);
-}
+// // ignores clicks (will pass to whatever is below this)
+// void ui_rect(rect r, u32 col, float a) {
+//     // // feels like this internal api needs some work but it's functional for now
+//     // ui_element gizmo = {0};
+//     // gizmo.add_solid_rect(r, col, a);
+//     // ui_elements.add(gizmo);
+// }
 
 // what to name this?
 // will absorbe clicks/hl events (and won't pass below this)
