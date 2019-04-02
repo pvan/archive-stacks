@@ -13,8 +13,6 @@ bool DrawTagsWithXColumns(int totalcols,
                              float hgap,
                              float vgap,
                              int cw, int ch,
-                             void (*selectNone)(),
-                             void (*selectAll)(),
                              void (*tagSelect)(int),
                              int_pool *selected_tags_pool)
 {
@@ -168,16 +166,14 @@ void DrawTagMenu(int cw, int ch,
 
     if (!menu_open) {
         // ui_button("show tags", cw/2, 0, UI_CENTER,UI_TOP, &ToggleTagMenu);
-        if (ui_button(&menuToggle, "show tags", {0, 0}, UI_LEFT,UI_TOP, 0))
-        {
+        if (ui_button(&menuToggle, "show tags", {0, 0}, UI_LEFT,UI_TOP, 0)) {
             if (menuToggle) menuToggle();
         }
         return; // don't draw any more
     }
 
     rect hider;
-    if (ui_button(&menuToggle, "hide tags", {0, 0}, UI_LEFT,UI_TOP, &hider))
-    {
+    if (ui_button(&menuToggle, "hide tags", {0, 0}, UI_LEFT,UI_TOP, &hider)) {
         if (menuToggle) menuToggle();
     }
 
@@ -190,11 +186,10 @@ void DrawTagMenu(int cw, int ch,
     // ui_button("select all", lastr.w,0, UI_LEFT,UI_TOP, selectAll);
     rect lastr;
     if (ui_button(&selectNone, "select none", {hider.w+hgap,0}, UI_LEFT,UI_TOP, &lastr)) {
-        if(selectNone) selectNone;
+        if(selectNone) selectNone();
     }
-    if (ui_button(&selectAll, "select all", {hider.w+lastr.w+hgap*2,0}, UI_LEFT,UI_TOP, 0))
-    {
-        if(selectAll) selectAll;
+    if (ui_button(&selectAll, "select all", {hider.w+lastr.w+hgap*2,0}, UI_LEFT,UI_TOP, 0)) {
+        if(selectAll) selectAll();
     }
 
 
@@ -219,8 +214,6 @@ void DrawTagMenu(int cw, int ch,
             hgap,
             vgap,
             cw, ch,
-            selectNone,
-            selectAll,
             tagSelect,
             selected_tags_pool))
         {
@@ -236,8 +229,6 @@ void DrawTagMenu(int cw, int ch,
             hgap,
             vgap,
             cw, ch,
-            selectNone,
-            selectAll,
             tagSelect,
             selected_tags_pool);
 
