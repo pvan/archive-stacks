@@ -1,5 +1,6 @@
 
 
+char *tag_filter = "               ";
 
 
 // helper function for DrawTagMenu
@@ -12,9 +13,9 @@ bool DrawTagsWithXColumns(int totalcols,
                              float hgap,
                              float vgap,
                              int cw, int ch,
-                             void (*selectNone)(int),
-                             void (*selectAll)(int),
-                             void (*tagSelect)(int),
+                             void (*selectNone)(void*),
+                             void (*selectAll)(void*),
+                             void (*tagSelect)(void*),
                              int_pool *selected_tags_pool)
 {
     // algorithm is a bit quirky
@@ -26,7 +27,7 @@ bool DrawTagsWithXColumns(int totalcols,
     // so you might have a natural break with the 3rd largest item,
     // but if the largest is so much bigger than the next two, that's what will be sued
     //
-    // todo: theoretically could bleed over into an extra column, i think (if we skip a lot each col)
+    // theoretically could bleed over into an extra column (ok now that we're just trying every possible column count)
     // todo: test extreme values
     // todo: could maybe improve the result of this if instead of looking at max gap,
     // we look at some kind of area calculation that looks at gap*number of overrun items
@@ -50,7 +51,7 @@ bool DrawTagsWithXColumns(int totalcols,
     int col = 0;
     int row = 0;
     float thiscolX = 0;
-    for (int t = 0; t < tag_list.count; t++, row++) { // note row++
+    for (u64 t = 0; t < tag_list.count; t++, row++) { // note row++
 
         if (row >= max_rows_per_col) {  // end of a row
 
@@ -136,7 +137,7 @@ bool DrawTagsWithXColumns(int totalcols,
             float x = thiscolX;
             float y = (row+1) * (UI_TEXT_SIZE+vgap);
 
-            rect brect = ui_button(tag_list[t].ToUTF8Reusable(), x,y, UI_LEFT,UI_TOP, tagSelect, t);
+            rect brect = ui_button(tag_list[t].ToUTF8Reusable(), x,y, UI_LEFT,UI_TOP, tagSelect, (void*)t);
 
             if (selected_tags_pool->has(t)) {
                 ui_rect(brect, 0xffff00ff, 0.3);
@@ -153,10 +154,10 @@ bool DrawTagsWithXColumns(int totalcols,
 
 // try another layout method
 void DrawTagMenu(int cw, int ch,
-                 void (*selectNone)(int),
-                 void (*selectAll)(int),
-                 void (*tagSelect)(int),
-                 void (*menuToggle)(int),
+                 void (*selectNone)(void*),
+                 void (*selectAll)(void*),
+                 void (*tagSelect)(void*),
+                 void (*menuToggle)(void*),
                  bool menu_open,
                  int_pool *selected_tags_pool)
 {
@@ -169,6 +170,7 @@ void DrawTagMenu(int cw, int ch,
 
     rect hider = ui_button("hide tags", 0, 0, UI_LEFT,UI_TOP, menuToggle);
 
+    ui_textbox(tag_filter, cw/2,0, UI_CENTER,UI_TOP);
 
     float hgap = 12;
     float vgap = 3;
@@ -226,67 +228,67 @@ void DrawTagMenu(int cw, int ch,
 
 }
 
-// can use for tag menu in browse mode (selecting what to browse)
-// and tag menu in view mode (for selecting an item's tags)
-// pass in the click handlers for the buttons
-// and a list of ints which are the indices of the tags that are marked "selected" (color pink)
-void DrawTagMenu_ParagraphLike_DEPRECATED(int cw, int ch,
-                 void (*selectNone)(int),
-                 void (*selectAll)(int),
-                 void (*tagSelect)(int),
-                 int_pool *selected_tags_pool)
-{
-    float hgap = 3;
-    float vgap = 3;
+// // can use for tag menu in browse mode (selecting what to browse)
+// // and tag menu in view mode (for selecting an item's tags)
+// // pass in the click handlers for the buttons
+// // and a list of ints which are the indices of the tags that are marked "selected" (color pink)
+// void DrawTagMenu_ParagraphLike_DEPRECATED(int cw, int ch,
+//                  void (*selectNone)(void*),
+//                  void (*selectAll)(void*),
+//                  void (*tagSelect)(void*),
+//                  int_pool *selected_tags_pool)
+// {
+//     float hgap = 3;
+//     float vgap = 3;
 
-    float x = hgap;
-    float y = UI_TEXT_SIZE + vgap*2;
+//     float x = hgap;
+//     float y = UI_TEXT_SIZE + vgap*2;
 
-    // get total size
-    {
-        for (int i = 0; i < tag_list.count; i++) {
-            rect this_rect = ui_text(tag_list[i].ToUTF8Reusable(), x,y, UI_LEFT,UI_TOP, false);
-            this_rect.w+=hgap;
-            this_rect.h+=vgap;
-            if (x+this_rect.w > cw) { y+=this_rect.h; x=hgap; }
-            x += this_rect.w;
-            if (i == tag_list.count-1) y += this_rect.h; // \n for last row
-        }
-    }
-    ui_rect_solid({0,0,(float)cw,y+UI_TEXT_SIZE+vgap}, 0xffffffff, 0.5); // menu bg
+//     // get total size
+//     {
+//         for (int i = 0; i < tag_list.count; i++) {
+//             rect this_rect = ui_text(tag_list[i].ToUTF8Reusable(), x,y, UI_LEFT,UI_TOP, false);
+//             this_rect.w+=hgap;
+//             this_rect.h+=vgap;
+//             if (x+this_rect.w > cw) { y+=this_rect.h; x=hgap; }
+//             x += this_rect.w;
+//             if (i == tag_list.count-1) y += this_rect.h; // \n for last row
+//         }
+//     }
+//     ui_rect_solid({0,0,(float)cw,y+UI_TEXT_SIZE+vgap}, 0xffffffff, 0.5); // menu bg
 
-    rect lastr = ui_button("select none", hgap,vgap, UI_LEFT,UI_TOP, selectNone);
-    ui_button("select all", lastr.w+hgap*2,vgap, UI_LEFT,UI_TOP, selectAll);
-    // could also do something like this
-    // if (mode == BROWSING_THUMBS) {
-    //     rect lastr = ui_button("select none", hgap,vgap, UI_LEFT,UI_TOP, &SelectItemTagsNone);
-    //     ui_button("select all", lastr.w+hgap*2,vgap, UI_LEFT,UI_TOP, &SelectItemTagsAll);
-    // } else if (mode == VIEWING_FILE) {
-    //     rect lastr = ui_button("select none", 0,0, UI_LEFT,UI_TOP, &SelectBrowseTagsNone);
-    //     ui_button("select all", lastr.w+hgap,0, UI_LEFT,UI_TOP, &SelectBrowseTagsAll);
-    // }
+//     rect lastr = ui_button("select none", hgap,vgap, UI_LEFT,UI_TOP, selectNone);
+//     ui_button("select all", lastr.w+hgap*2,vgap, UI_LEFT,UI_TOP, selectAll);
+//     // could also do something like this
+//     // if (mode == BROWSING_THUMBS) {
+//     //     rect lastr = ui_button("select none", hgap,vgap, UI_LEFT,UI_TOP, &SelectItemTagsNone);
+//     //     ui_button("select all", lastr.w+hgap*2,vgap, UI_LEFT,UI_TOP, &SelectItemTagsAll);
+//     // } else if (mode == VIEWING_FILE) {
+//     //     rect lastr = ui_button("select none", 0,0, UI_LEFT,UI_TOP, &SelectBrowseTagsNone);
+//     //     ui_button("select all", lastr.w+hgap,0, UI_LEFT,UI_TOP, &SelectBrowseTagsAll);
+//     // }
 
-    x = hgap;
-    y = UI_TEXT_SIZE + vgap*2;
-    for (int i = 0; i < tag_list.count; i++) {
-        rect this_rect = ui_text(tag_list[i].ToUTF8Reusable(), x,y, UI_LEFT,UI_TOP, false);
-        this_rect.w+=hgap;
-        this_rect.h+=vgap;
-        if (x+this_rect.w > cw) { y+=this_rect.h; x=hgap; }
-        rect brect = ui_button(tag_list[i].ToUTF8Reusable(), x,y, UI_LEFT,UI_TOP, tagSelect, i);
+//     x = hgap;
+//     y = UI_TEXT_SIZE + vgap*2;
+//     for (int i = 0; i < tag_list.count; i++) {
+//         rect this_rect = ui_text(tag_list[i].ToUTF8Reusable(), x,y, UI_LEFT,UI_TOP, false);
+//         this_rect.w+=hgap;
+//         this_rect.h+=vgap;
+//         if (x+this_rect.w > cw) { y+=this_rect.h; x=hgap; }
+//         rect brect = ui_button(tag_list[i].ToUTF8Reusable(), x,y, UI_LEFT,UI_TOP, tagSelect, i);
 
-        // color selected tags...
-        {
-            // if (items[viewing_file_index].tags.has(i)) {
-            if (selected_tags_pool->has(i)) {
-                ui_rect(brect, 0xffff00ff, 0.3);
-            }
-        }
+//         // color selected tags...
+//         {
+//             // if (items[viewing_file_index].tags.has(i)) {
+//             if (selected_tags_pool->has(i)) {
+//                 ui_rect(brect, 0xffff00ff, 0.3);
+//             }
+//         }
 
-        x += this_rect.w;
-        if (i == tag_list.count-1) y += this_rect.h; // \n for hide tag button
-    }
-}
+//         x += this_rect.w;
+//         if (i == tag_list.count-1) y += this_rect.h; // \n for hide tag button
+//     }
+// }
 
 
 
@@ -388,7 +390,7 @@ void browse_tick(float actual_dt, int cw, int ch, Input input, Input keysDown, I
         // if (tiles[viewing_file_index].IsOnScreen(ch)) {
         rect r = {tiles[viewing_file_index].pos.x, tiles[viewing_file_index].pos.y,
                   tiles[viewing_file_index].size.w, tiles[viewing_file_index].size.h};
-        ui_button_permanent_highlight(r, &OpenFileToView, viewing_file_index);
+        ui_button_permanent_highlight(r, &OpenFileToView, (void*)viewing_file_index);
 
         // nevermind, still need some sort of ordering or we'll hl even when hovering over hud
         // // highlight here so HUD is drawn overtop highlight rect
@@ -528,7 +530,7 @@ void view_tick(float actual_dt, int cw, int ch, Input input, Input keysDown, Inp
     if (keysDown.right || keysDown.left) {
         // find position in display list
         // (seems a little awkward...)
-        int display_index_of_view_item;
+        u64 display_index_of_view_item;
         for (int i = 0; i < display_list.count; i++) {
             if (viewing_file_index == display_list[i]) {
                 display_index_of_view_item = i;
@@ -632,7 +634,7 @@ void view_tick(float actual_dt, int cw, int ch, Input input, Input keysDown, Inp
                     &SelectItemTagsNone,
                     &SelectItemTagsAll,
                     &ToggleTagSelection,
-                    &ToggleTagMenu,
+                    &ToggleTagSelectMenu,
                     tag_select_open,
                     &items[viewing_file_index].tags);
         // }

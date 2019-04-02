@@ -184,8 +184,8 @@ struct ui_clickable {
     float *callbackvalue; // so we can change value with our deferred handling
     float callbackvaluescale; // kind of a "units" factor for the callbackvalue
 
-    void (*on_click)(int);
-    int click_arg;
+    void (*on_click)(void*);
+    void *click_arg;
 
     void (*on_mouseover)(int);
     int mouseover_arg;
@@ -275,7 +275,7 @@ void ui_update_draggables(float mx, float my, bool mouse_down) {
 }
 
 
-void ui_add_clickable(rect r, void(*on_click)(int),int click_arg, void(*on_mouseover)(int)=0,int mouseover_arg=0) {
+void ui_add_clickable(rect r, void(*on_click)(void*),void *click_arg, void(*on_mouseover)(int)=0,int mouseover_arg=0) {
     ui_clickables.add({r, false,0,0, on_click,click_arg, on_mouseover,mouseover_arg});
 }
 
@@ -285,12 +285,38 @@ void ui_add_draggable(rect r, float *callbackvalue, float callbackscale) {
 
 
 
+// right now just one supported at a time
+bool ui_active_textbox = false;
+rect ui_textbox_rect = {0};
+void ui_activate_textbox(void *ptr) {
+    ui_active_textbox = true;
+    ui_textbox_rect = *((rect*)ptr);
+}
+
 
 //
 // intended exposed api
 
 void ui_init() {
     ui_create_solid_color_texture_and_upload();
+}
+
+void ui_update(int cw, int ch, Input input, Input keysDown) {
+    ui_update_draggables(input.mouseX, input.mouseY, input.mouseL);
+    ui_update_clickables(input.mouseX, input.mouseY, keysDown.mouseL, cw, ch);
+    ui_render_elements(input.mouseX, input.mouseY); // pass mouse pos for highlighting
+
+    if (ui_active_textbox) {
+        // if (*ui_textbox_rect) {
+        gpu_quad q = gpu_quad_from_rect(ui_textbox_rect, 1);
+        q.color = 0xff00ff00;
+        // q.x0=0;
+        // q.y0=0;
+        // q.x1=100;
+        // q.y1=100;
+        gpu_render_quads_with_texture(&q, 1, ui_solid_tex_id, 1);
+        // }
+    }
 }
 
 void ui_reset() {  // call every frame
@@ -410,7 +436,7 @@ rect ui_textf(char *text, float f1, float f2, int x, int y, int hpos, int vpos) 
 }
 
 
-rect ui_button(char *text, float x, float y, int hpos, int vpos, void(*effect)(int), int arg=0)
+rect ui_button(char *text, float x, float y, int hpos, int vpos, void(*effect)(void*), void *arg=0)
 {
     rect tr = ui_text(text, x, y, hpos, vpos);
     rect r = {(float)tr.x, (float)tr.y, (float)tr.w, (float)tr.h};
@@ -420,7 +446,7 @@ rect ui_button(char *text, float x, float y, int hpos, int vpos, void(*effect)(i
 
 // kind of a hack so we can highlight tiles without bringing them into our normal system
 // (they have their own opengl_quads so they don't have to re-send textures to the gpu every frame)
-rect ui_button_permanent_highlight(rect br, void(*effect)(int), int arg=0)
+rect ui_button_permanent_highlight(rect br, void(*effect)(void*), void *arg=0)
 {
     ui_add_clickable(br, effect, arg);
 
@@ -499,6 +525,72 @@ void ui_bitmap(bitmap img, float x, float y) {
     gpu_render_quads_with_texture(&quad, 1, reusable_texture_id_for_bitmap, 1);
 }
 
+
+// todo: this is just a copy paste edit of ui_text(
+// should combine these
+rect ui_textbox(char *text, float x, float y, int hpos, int vpos, float alpha=1) {
+    // without any changes, bb will be TL
+    rect textbb = tf_text_bounding_box(text, x, y);
+
+    // pad beyond just our letter-tight bb
+    int margin = 2;
+
+    // bg (and hl) quad
+    // setup for TL coords as default
+    gpu_quad bg_quad;
+    bg_quad.x0 = x;
+    bg_quad.y0 = y;
+    bg_quad.x1 = x + textbb.w+1 + margin*2;  // note fencepost error with w/h.. don't include last edge
+    bg_quad.y1 = y + tf_cached_largest_total_height+1 + margin*2; // todo: check if correct
+
+    bg_quad.y1 -= 1; // a little hand-tweaking (tbh not sure if +1 in the y1 above is correct, x1 def correct tho)
+
+    // adjust for alignment
+    if (hpos == UI_RIGHT) bg_quad.move(-bg_quad.width(), 0);
+    if (hpos == UI_CENTER) bg_quad.move(-bg_quad.width()/2, 0);
+    if (vpos == UI_BOTTOM) bg_quad.move(0, -bg_quad.height());
+    if (vpos == UI_CENTER) bg_quad.move(0, -bg_quad.height()/2);
+
+    // text position (inside the larger quad)
+    float textx = bg_quad.x0 + margin;
+    float texty = bg_quad.y0 + margin + tf_cached_largest_ascent; // text is drawn from the baseline todo: let text module handle this offset?
+
+
+    ui_element gizmo = {0};
+    {
+        // --bg--
+        gizmo.add_solid_quad(bg_quad, 0xffffffff, 0.66);
+
+        // --text--
+        int quadsneeded = tf_how_many_quads_needed_for_text(text);
+        gpu_quad *quads = (gpu_quad*)malloc(quadsneeded*sizeof(gpu_quad));
+        tf_create_quad_list_for_text_at_rect(text, textx,texty, quads, quadsneeded);
+
+        gpu_quad_list_with_texture textsubmesh = {0};
+        for (int i = 0; i < quadsneeded; i++) {
+            // quads[i].alpha = 0.5;
+            textsubmesh.quads.add(quads[i]);
+        }
+        textsubmesh.texture_id = tf_fonttexture;
+        // gpu_quad_list_with_texture textsubmesh = submesh_from_quads(quads, quadsneeded, tf_fonttexture);
+        gizmo.mesh.add_submesh(textsubmesh);
+        // AddDeferredTextQuads(quads, quadsneeded);
+        free(quads);
+
+        // --highlight--
+        // seems like not a great way to do this,
+        // but just add an invisible rect above every text
+        // and if highlighted (checked when rendering), change the alpha up from 0
+        gizmo.add_hl_quad(bg_quad);
+
+    }
+    ui_queue_element(gizmo);
+
+    rect bg_rect = bg_quad.to_rect();
+    ui_add_clickable(bg_quad.to_rect(), &ui_activate_textbox, (void*)&bg_rect);
+
+    return bg_quad.to_rect();
+}
 
 
 char ui_log_reuseable_mem[256];

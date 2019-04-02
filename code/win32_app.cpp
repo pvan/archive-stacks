@@ -77,7 +77,7 @@ const int BROWSING_THUMBS = 0;
 const int VIEWING_FILE = 1;
 int app_mode = BROWSING_THUMBS;
 
-int viewing_file_index = 0; // what file do we have open if we're in VIEWING_FILE mode
+u64 viewing_file_index = 0; // what file do we have open if we're in VIEWING_FILE mode
 
 string master_path;
 
@@ -109,8 +109,9 @@ float clickRectY;
 // button click handlers
 
 bool tag_menu_open = false;  // is tag menu open in browsing mode?
-void ToggleTagMenu(int) { tag_menu_open = !tag_menu_open; }
-void ToggleTagBrowse(int tagindex) {
+void ToggleTagMenu(void*) { tag_menu_open = !tag_menu_open; }
+void ToggleTagBrowse(void *disguisedint) {
+    int tagindex = (u64)disguisedint;
     if (browse_tags.has(tagindex)) {
         browse_tags.remove(tagindex);
     } else {
@@ -123,13 +124,14 @@ void ToggleTagBrowse(int tagindex) {
     // do in loop for now, just before rendering (or, well, in the update portion)
     // ArrangeTilesForDisplayList(display_list, &tiles, master_desired_tile_width, g_cw); // requires resolutions to be set
 }
-void SelectBrowseTagsAll(int) { SelectAllBrowseTags(); CreateDisplayListFromBrowseSelection(); }
-void SelectBrowseTagsNone(int) { DeselectAllBrowseTags(); CreateDisplayListFromBrowseSelection(); }
+void SelectBrowseTagsAll(void*) { SelectAllBrowseTags(); CreateDisplayListFromBrowseSelection(); }
+void SelectBrowseTagsNone(void*) { DeselectAllBrowseTags(); CreateDisplayListFromBrowseSelection(); }
 
 bool tag_select_open = false;  // is tag menu open in viewing mode?
-void ToggleTagSelectMenu(int) { tag_select_open = !tag_select_open; }
+void ToggleTagSelectMenu(void*) { tag_select_open = !tag_select_open; }
 // we assume we're affecting the open / "viewing" file here
-void ToggleTagSelection(int tagindex) {
+void ToggleTagSelection(void *disguisedint) {
+    u64 tagindex = (u64)disguisedint;
     if (items[viewing_file_index].tags.has(tagindex)) {
         items[viewing_file_index].tags.remove(tagindex);
     } else
@@ -138,13 +140,13 @@ void ToggleTagSelection(int tagindex) {
     }
     SaveMetadataFile(); // keep close eye on this, if it gets too slow to do inline we can move to background thread
 }
-void SelectItemTagsAll(int) {
+void SelectItemTagsAll(void*) {
     items[viewing_file_index].tags.empty_out();
     for (int i = 0; i < tag_list.count; i++) {
         items[viewing_file_index].tags.add(i);
     }
 }
-void SelectItemTagsNone(int) {
+void SelectItemTagsNone(void*) {
     items[viewing_file_index].tags.empty_out();
 }
 
@@ -177,6 +179,10 @@ void OpenFileToView(int item_index) {
         tiles[i].size = {0,0};
     }
 
+}
+void OpenFileToView(void *disguisedint) {
+    u64 item_index = (u64)disguisedint;
+    OpenFileToView(item_index);
 }
 
 
@@ -446,9 +452,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 
         // update ui in all app modes
-        ui_update_draggables(input.mouseX, input.mouseY, input.mouseL);
-        ui_update_clickables(input.mouseX, input.mouseY, keysDown.mouseL, cw, ch);
-        ui_render_elements(input.mouseX, input.mouseY); // pass mouse pos for highlighting
+        ui_update(cw,ch, input, keysDown);
         ui_reset(); // call at the end or start of every frame so buttons don't carry over between frames
 
 
