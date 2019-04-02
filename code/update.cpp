@@ -13,9 +13,9 @@ bool DrawTagsWithXColumns(int totalcols,
                              float hgap,
                              float vgap,
                              int cw, int ch,
-                             void (*selectNone)(void*),
-                             void (*selectAll)(void*),
-                             void (*tagSelect)(void*),
+                             void (*selectNone)(),
+                             void (*selectAll)(),
+                             void (*tagSelect)(int),
                              int_pool *selected_tags_pool)
 {
     // algorithm is a bit quirky
@@ -51,7 +51,7 @@ bool DrawTagsWithXColumns(int totalcols,
     int col = 0;
     int row = 0;
     float thiscolX = 0;
-    for (u64 t = 0; t < tag_list.count; t++, row++) { // note row++
+    for (int t = 0; t < tag_list.count; t++, row++) { // note row++
 
         if (row >= max_rows_per_col) {  // end of a row
 
@@ -140,7 +140,7 @@ bool DrawTagsWithXColumns(int totalcols,
             rect brect;
             if(ui_button(&tag_list[t],
                          tag_list[t].ToUTF8Reusable(), {x,y}, UI_LEFT,UI_TOP, &brect)) {
-                // if(tagSelect) tagSelect(t);
+                if(tagSelect) tagSelect(t);
             }
 
             if (selected_tags_pool->has(t)) {
@@ -158,10 +158,10 @@ bool DrawTagsWithXColumns(int totalcols,
 
 // try another layout method
 void DrawTagMenu(int cw, int ch,
-                 void (*selectNone)(void*),
-                 void (*selectAll)(void*),
-                 void (*tagSelect)(void*),
-                 void (*menuToggle)(void*),
+                 void (*selectNone)(),
+                 void (*selectAll)(),
+                 void (*tagSelect)(int),
+                 void (*menuToggle)(),
                  bool menu_open,
                  int_pool *selected_tags_pool)
 {
@@ -170,7 +170,7 @@ void DrawTagMenu(int cw, int ch,
         // ui_button("show tags", cw/2, 0, UI_CENTER,UI_TOP, &ToggleTagMenu);
         if (ui_button(&menuToggle, "show tags", {0, 0}, UI_LEFT,UI_TOP, 0))
         {
-            if (menuToggle) menuToggle(0);
+            if (menuToggle) menuToggle();
         }
         return; // don't draw any more
     }
@@ -178,10 +178,10 @@ void DrawTagMenu(int cw, int ch,
     rect hider;
     if (ui_button(&menuToggle, "hide tags", {0, 0}, UI_LEFT,UI_TOP, &hider))
     {
-        if (menuToggle) menuToggle(0);
+        if (menuToggle) menuToggle();
     }
 
-    ui_textbox(tag_filter, cw/2,0, UI_CENTER,UI_TOP);
+    // ui_textbox(tag_filter, cw/2,0, UI_CENTER,UI_TOP);
 
     float hgap = 12;
     float vgap = 3;
@@ -201,7 +201,7 @@ void DrawTagMenu(int cw, int ch,
     // first get size of all our tags
     float_pool widths = float_pool::new_empty();
     for (int i = 0; i < tag_list.count; i++) {
-        rect r = ui_text(&tag_list[i], tag_list[i].ToUTF8Reusable(), {0,0}, UI_LEFT,UI_TOP);
+        rect r = ui_text(&tag_list[i], tag_list[i].ToUTF8Reusable(), {0,0}, UI_LEFT,UI_TOP, false);
         widths.add(r.w);
     }
 
@@ -358,7 +358,7 @@ void browse_tick(float actual_dt, int cw, int ch) {
     }
 
     if (input.down.space)
-        ToggleTagMenu(0);
+        ToggleTagMenu();
 
 
 
@@ -572,7 +572,7 @@ void view_tick(float actual_dt, int cw, int ch) {
         // todo: remove tile stuff from memory or gpu ?
     }
     if (input.down.space)
-        ToggleTagSelectMenu(0);
+        ToggleTagSelectMenu();
 
 
     // pan
@@ -663,13 +663,13 @@ void view_tick(float actual_dt, int cw, int ch) {
         // debug tag count on right
         char buf[256];
         sprintf(buf, "%i", items[viewing_file_index].tags.count);
-        ui_text(&buf, buf, {(float)cw,(float)ch}, UI_RIGHT,UI_BOTTOM);
+        ui_text(&buf, buf, {(float)cw,(float)ch}, UI_RIGHT,UI_BOTTOM, true);
 
         // debug tag list on left
         float x = 0;
         for (int i = 0; i < items[viewing_file_index].tags.count; i++) {
             rect lastrect = ui_text(&tag_list[items[viewing_file_index].tags[i]],
-                                    tag_list[items[viewing_file_index].tags[i]].ToUTF8Reusable(), {x,(float)ch}, UI_LEFT,UI_BOTTOM);
+                                    tag_list[items[viewing_file_index].tags[i]].ToUTF8Reusable(), {x,(float)ch}, UI_LEFT,UI_BOTTOM, true);
             x+=lastrect.w;
         }
 

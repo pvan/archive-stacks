@@ -105,19 +105,19 @@ struct ui_element {
         newquadlist.add(q);
         mesh.add_submesh({newquadlist, ui_solid_tex_id});
     }
-    void add_hl_quad(gpu_quad q, u32 col = 0xffffffff, float mouseOnAlpha = 0.3,  float mouseOffAlpha = 0) {
-        add_solid_quad(q, col, mouseOffAlpha);
-        hl_alpha = mouseOnAlpha;
-        // HL quad will be last quad entered
-        gpu_quad_list_with_texture *lastsubmesh = &(mesh.submeshes.pool[mesh.submeshes.count-1]);
-        highlight_quad = &(lastsubmesh->quads[lastsubmesh->quads.count-1]);
-    }
-    void add_solid_rect(rect r, u32 col, float a) {
-        gpu_quad q = gpu_quad_from_rect(r);
-        // int colcode = 1;
-        // if (col == 0) colcode = 0;
-        add_solid_quad(q, col, a);
-    }
+    // void add_hl_quad(gpu_quad q, u32 col = 0xffffffff, float mouseOnAlpha = 0.3,  float mouseOffAlpha = 0) {
+    //     add_solid_quad(q, col, mouseOffAlpha);
+    //     hl_alpha = mouseOnAlpha;
+    //     // HL quad will be last quad entered
+    //     gpu_quad_list_with_texture *lastsubmesh = &(mesh.submeshes.pool[mesh.submeshes.count-1]);
+    //     highlight_quad = &(lastsubmesh->quads[lastsubmesh->quads.count-1]);
+    // }
+    // void add_solid_rect(rect r, u32 col, float a) {
+    //     gpu_quad q = gpu_quad_from_rect(r);
+    //     // int colcode = 1;
+    //     // if (col == 0) colcode = 0;
+    //     add_solid_quad(q, col, a);
+    // }
 };
 
 
@@ -297,8 +297,14 @@ void ui_activate_textbox(void *ptr) {
 // struct ui_id {
 //     void *somethingunique;
 // };
+
+// we use the concept of an id to track controls from one frame to another
+// use something unique but that won't change frame-to-frame
 #define ui_id void*
 
+// the global state for this lib
+// here we track what controls are active
+// so we can, eg, ignore events on other controls (eg textbox)
 struct ui_context {
     ui_id hot;    //hover
     ui_id active; //selected
@@ -348,10 +354,14 @@ const int UI_RIGHT = 2;
 const int UI_TOP = 3;
 const int UI_BOTTOM = 4;
 
+void ui_draw_rect(rect r, u32 color, float alpha) {
+    gpu_quad quad = gpu_quad_from_rect(r, color, alpha);
+    gpu_render_quads_with_texture(&quad, 1, ui_solid_tex_id);
+}
 
 // hpos and vpos specify whether x,y are TL, top/center, center/center, or what
 // note we return rect with TL pos but take as input whatever (as specified by v/h pos)
-rect ui_text(ui_id id, char *text, rect r, int hpos, int vpos, bool render = true) {
+rect ui_text(ui_id id, char *text, rect r, int hpos, int vpos, bool render) {
 
     // without any changes, bb will be TL
     rect textbb = tf_text_bounding_box(text, r.x, r.y);
@@ -380,10 +390,11 @@ rect ui_text(ui_id id, char *text, rect r, int hpos, int vpos, bool render = tru
     float texty = bg_quad.y0 + margin + tf_cached_largest_ascent; // text is drawn from the baseline todo: let text module handle this offset?
 
 
-    // //--bg--
-    // ui_draw_rect(bg_quad
 
     if (render) {
+        //--bg--
+        ui_draw_rect(bg_quad.to_rect(), 0x0, 0.66);
+
         //--text--
         int quadsneeded = tf_how_many_quads_needed_for_text(text);
         gpu_quad *quads = (gpu_quad*)malloc(quadsneeded*sizeof(gpu_quad));
@@ -453,27 +464,29 @@ void ui_set_hot(ui_id id) {
         ui_context.hot = id;
 }
 void ui_set_active(ui_id id) {
-    if (!ui_context.active)
+    // if (!ui_context.active)
         ui_context.active = id;
 }
+
+bool ui_active(ui_id id) { return ui_context.active==id; }
+bool ui_hot(ui_id id) { return ui_context.hot==id; }
 
 bool ui_button(ui_id id,
                char *text, rect inr, int hpos, int vpos, rect *outrect)
 {
-    rect tr = ui_text(&text, text, inr, hpos, vpos);
+    inr = ui_text(&text, text, inr, hpos, vpos, true);
     // rect r = {(float)tr.x, (float)tr.y, (float)tr.w, (float)tr.h};
     // ui_add_clickable(r, effect, arg);
     // return tr;
+
     bool result = false;
-    if (ui_context.active == id) {
+    if (ui_active(id)) {
         if (input.up.mouseL) {
-            if (ui_context.hot == id) {
-                result = true;
-            }
+            if (ui_hot(id)) result = true;
             ui_set_active(0);
         }
     } else {
-        if (ui_context.hot == id) {
+        if (ui_hot(id)) {
             if (input.down.mouseL)
                 ui_set_active(id);
         }
@@ -481,7 +494,19 @@ bool ui_button(ui_id id,
 
     if (inr.ContainsPoint(input.current.mouseX,input.current.mouseY)) { ui_set_hot(id); }
 
-    if(outrect) *outrect = tr;
+    if (outrect) *outrect = inr;
+
+    if (ui_hot(id)) {
+        if (!inr.ContainsPoint(input.current.mouseX,input.current.mouseY)) {
+            ui_set_hot(0);
+        } else {
+            ui_draw_rect(inr, 0xffffffff, 0.3);
+        }
+    }
+
+    if (ui_active(id)) {
+        ui_draw_rect(inr, 0xff777700, 0.3);
+    }
 
     return result;
 }
@@ -564,14 +589,14 @@ void ui_bitmap(bitmap img, float x, float y) {
 
     gpu_upload_texture(img, reusable_texture_id_for_bitmap);
 
-    gpu_quad quad = gpu_quad_from_rect({0,0, (float)img.w, (float)img.h}, 1);
+    gpu_quad quad = gpu_quad_from_rect({0,0, (float)img.w, (float)img.h}, 0xffffffff, 1);
     gpu_render_quads_with_texture(&quad, 1, reusable_texture_id_for_bitmap, 1);
 }
 
 
 // todo: this is just a copy paste edit of ui_text(
 // should combine these
-void ui_textbox(char *text, float x, float y, int hpos, int vpos, float alpha=1) {
+void ui_textbox(char *text, float x, float y, int hpos, int vpos, float alpha, bool render) {
     // // without any changes, bb will be TL
     // rect textbb = tf_text_bounding_box(text, x, y);
 
@@ -639,7 +664,7 @@ void ui_textbox(char *text, float x, float y, int hpos, int vpos, float alpha=1)
 char ui_log_reuseable_mem[256];
 int ui_log_count;
 void UI_PRINT(char *s) {
-    ui_text(&s, s, {0, (float)ui_log_count*UI_TEXT_SIZE}, UI_LEFT,UI_TOP);
+    ui_text(&s, s, {0, (float)ui_log_count*UI_TEXT_SIZE}, UI_LEFT,UI_TOP, true);
     ui_log_count++;
 }
 void UI_PRINT(u64 i)               { sprintf(ui_log_reuseable_mem, "%lli", i); UI_PRINT(ui_log_reuseable_mem); }

@@ -109,9 +109,9 @@ float clickRectY;
 // button click handlers
 
 bool tag_menu_open = false;  // is tag menu open in browsing mode?
-void ToggleTagMenu(void*) { tag_menu_open = !tag_menu_open; }
-void ToggleTagBrowse(void *disguisedint) {
-    int tagindex = (u64)disguisedint;
+void ToggleTagMenu() { tag_menu_open = !tag_menu_open; }
+void ToggleTagBrowse(int tagindex) {
+    // int tagindex = (u64)disguisedint;
     if (browse_tags.has(tagindex)) {
         browse_tags.remove(tagindex);
     } else {
@@ -124,14 +124,14 @@ void ToggleTagBrowse(void *disguisedint) {
     // do in loop for now, just before rendering (or, well, in the update portion)
     // ArrangeTilesForDisplayList(display_list, &tiles, master_desired_tile_width, g_cw); // requires resolutions to be set
 }
-void SelectBrowseTagsAll(void*) { SelectAllBrowseTags(); CreateDisplayListFromBrowseSelection(); }
-void SelectBrowseTagsNone(void*) { DeselectAllBrowseTags(); CreateDisplayListFromBrowseSelection(); }
+void SelectBrowseTagsAll() { SelectAllBrowseTags(); CreateDisplayListFromBrowseSelection(); }
+void SelectBrowseTagsNone() { DeselectAllBrowseTags(); CreateDisplayListFromBrowseSelection(); }
 
 bool tag_select_open = false;  // is tag menu open in viewing mode?
-void ToggleTagSelectMenu(void*) { tag_select_open = !tag_select_open; }
+void ToggleTagSelectMenu() { tag_select_open = !tag_select_open; }
 // we assume we're affecting the open / "viewing" file here
-void ToggleTagSelection(void *disguisedint) {
-    u64 tagindex = (u64)disguisedint;
+void ToggleTagSelection(int tagindex) {
+    // u64 tagindex = (u64)disguisedint;
     if (items[viewing_file_index].tags.has(tagindex)) {
         items[viewing_file_index].tags.remove(tagindex);
     } else
@@ -140,13 +140,13 @@ void ToggleTagSelection(void *disguisedint) {
     }
     SaveMetadataFile(); // keep close eye on this, if it gets too slow to do inline we can move to background thread
 }
-void SelectItemTagsAll(void*) {
+void SelectItemTagsAll() {
     items[viewing_file_index].tags.empty_out();
     for (int i = 0; i < tag_list.count; i++) {
         items[viewing_file_index].tags.add(i);
     }
 }
-void SelectItemTagsNone(void*) {
+void SelectItemTagsNone() {
     items[viewing_file_index].tags.empty_out();
 }
 

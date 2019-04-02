@@ -24,7 +24,7 @@ struct gpu_quad {
 };
 
 
-gpu_quad gpu_quad_from_rect(rect r, float alpha = 1) {
+gpu_quad gpu_quad_from_rect(rect r, u32 color, float alpha) {
     gpu_quad q;
     q.x0 = r.x;
     q.y0 = r.y;
@@ -35,7 +35,7 @@ gpu_quad gpu_quad_from_rect(rect r, float alpha = 1) {
     q.u1 = 1.0;
     q.v1 = 1.0;
     q.alpha = alpha;
-    q.color = 0xffffffff;
+    q.color = color;
     return q;
 }
 
