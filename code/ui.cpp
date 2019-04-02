@@ -294,6 +294,18 @@ void ui_activate_textbox(void *ptr) {
 }
 
 
+// struct ui_id {
+//     void *somethingunique;
+// };
+#define ui_id void*
+
+struct ui_context {
+    ui_id hot;    //hover
+    ui_id active; //selected
+};
+
+ui_context ui_context;
+
 //
 // intended exposed api
 
@@ -301,34 +313,34 @@ void ui_init() {
     ui_create_solid_color_texture_and_upload();
 }
 
-void ui_update(int cw, int ch, Input input, Input keysDown) {
-    ui_update_draggables(input.mouseX, input.mouseY, input.mouseL);
-    ui_update_clickables(input.mouseX, input.mouseY, keysDown.mouseL, cw, ch);
-    ui_render_elements(input.mouseX, input.mouseY); // pass mouse pos for highlighting
+// void ui_update(int cw, int ch, Input input, Input keysDown) {
+//     ui_update_draggables(input.mouseX, input.mouseY, input.mouseL);
+//     ui_update_clickables(input.mouseX, input.mouseY, keysDown.mouseL, cw, ch);
+//     ui_render_elements(input.mouseX, input.mouseY); // pass mouse pos for highlighting
 
-    if (ui_active_textbox) {
-        // if (*ui_textbox_rect) {
-        gpu_quad q = gpu_quad_from_rect(ui_textbox_rect, 1);
-        q.color = 0xff00ff00;
-        // q.x0=0;
-        // q.y0=0;
-        // q.x1=100;
-        // q.y1=100;
-        gpu_render_quads_with_texture(&q, 1, ui_solid_tex_id, 1);
-        // }
-    }
-}
+//     if (ui_active_textbox) {
+//         // if (*ui_textbox_rect) {
+//         gpu_quad q = gpu_quad_from_rect(ui_textbox_rect, 1);
+//         q.color = 0xff00ff00;
+//         // q.x0=0;
+//         // q.y0=0;
+//         // q.x1=100;
+//         // q.y1=100;
+//         gpu_render_quads_with_texture(&q, 1, ui_solid_tex_id, 1);
+//         // }
+//     }
+// }
 
-void ui_reset() {  // call every frame
+// void ui_reset() {  // call every frame
 
-    // free all the mem used in the subelements of our ui_elements before clearing it
-    for (int i = 0; i < ui_elements.count; i++) {
-        ui_elements[i].mesh.free_all_mem();
-    }
-    ui_elements.empty_out();
+//     // free all the mem used in the subelements of our ui_elements before clearing it
+//     for (int i = 0; i < ui_elements.count; i++) {
+//         ui_elements[i].mesh.free_all_mem();
+//     }
+//     ui_elements.empty_out();
 
-    ui_clickables.empty_out();
-}
+//     ui_clickables.empty_out();
+// }
 
 const int UI_CENTER = 0;
 const int UI_LEFT = 1;
@@ -339,10 +351,10 @@ const int UI_BOTTOM = 4;
 
 // hpos and vpos specify whether x,y are TL, top/center, center/center, or what
 // note we return rect with TL pos but take as input whatever (as specified by v/h pos)
-rect ui_text(char *text, float x, float y, int hpos, int vpos, bool render = true) {
+rect ui_text(ui_id id, char *text, rect r, int hpos, int vpos, bool render = true) {
 
     // without any changes, bb will be TL
-    rect textbb = tf_text_bounding_box(text, x, y);
+    rect textbb = tf_text_bounding_box(text, r.x, r.y);
 
     // pad beyond just our letter-tight bb
     int margin = 2;
@@ -350,10 +362,10 @@ rect ui_text(char *text, float x, float y, int hpos, int vpos, bool render = tru
     // bg (and hl) quad
     // setup for TL coords as default
     gpu_quad bg_quad;
-    bg_quad.x0 = x;
-    bg_quad.y0 = y;
-    bg_quad.x1 = x + textbb.w+1 + margin*2;  // note fencepost error with w/h.. don't include last edge
-    bg_quad.y1 = y + tf_cached_largest_total_height+1 + margin*2; // todo: check if correct
+    bg_quad.x0 = r.x;
+    bg_quad.y0 = r.y;
+    bg_quad.x1 = r.x + textbb.w+1 + margin*2;  // note fencepost error with w/h.. don't include last edge
+    bg_quad.y1 = r.y + tf_cached_largest_total_height+1 + margin*2; // todo: check if correct
 
     bg_quad.y1 -= 1; // a little hand-tweaking (tbh not sure if +1 in the y1 above is correct, x1 def correct tho)
 
@@ -367,117 +379,148 @@ rect ui_text(char *text, float x, float y, int hpos, int vpos, bool render = tru
     float textx = bg_quad.x0 + margin;
     float texty = bg_quad.y0 + margin + tf_cached_largest_ascent; // text is drawn from the baseline todo: let text module handle this offset?
 
-    // fixed?
-    // // todo: find root cause of this bug (id: zxoi)
-    // // (this is maybe related to some inconsistent kerning.. need subpixel rendering?)
-    // // it's ugly but if x is on an exact 0.5 edge,
-    // // we seem to get inconsistent rounding somewhere in our rendering pipeline
-    // // it wouldn't matter too much except we draw the same quad twice -- once for the highlight
-    // // and if they round differently.. we'll end up with an extra pixel bar where they don't match perfectly
-    // // so in that case, add a fudge factor
-    // if (x-0.5 == (int)x) {
-    //     x+=0.01;
-    //     // assert(false);
-    // }
 
+    // //--bg--
+    // ui_draw_rect(bg_quad
 
     if (render) {
-        ui_element gizmo = {0};
-        {
-            // --bg--
-            gizmo.add_solid_quad(bg_quad, 0x0, 0.66);
-
-            // --text--
-            int quadsneeded = tf_how_many_quads_needed_for_text(text);
-            gpu_quad *quads = (gpu_quad*)malloc(quadsneeded*sizeof(gpu_quad));
+        //--text--
+        int quadsneeded = tf_how_many_quads_needed_for_text(text);
+        gpu_quad *quads = (gpu_quad*)malloc(quadsneeded*sizeof(gpu_quad));
             tf_create_quad_list_for_text_at_rect(text, textx,texty, quads, quadsneeded);
-
-            gpu_quad_list_with_texture textsubmesh = {0};
-            for (int i = 0; i < quadsneeded; i++) {
-                // quads[i].alpha = 0.5;
-                textsubmesh.quads.add(quads[i]);
-            }
-            textsubmesh.texture_id = tf_fonttexture;
-            // gpu_quad_list_with_texture textsubmesh = submesh_from_quads(quads, quadsneeded, tf_fonttexture);
-            gizmo.mesh.add_submesh(textsubmesh);
-            // AddDeferredTextQuads(quads, quadsneeded);
-            free(quads);
-
-            // --highlight--
-            // seems like not a great way to do this,
-            // but just add an invisible rect above every text
-            // and if highlighted (checked when rendering), change the alpha up from 0
-            gizmo.add_hl_quad(bg_quad);
-
-        }
-        ui_queue_element(gizmo);
+            gpu_render_quads_with_texture(quads, quadsneeded, tf_fonttexture, 1/*alpha*/);
+        free(quads);
     }
+
+
+    // if (render) {
+    //     ui_element gizmo = {0};
+    //     {
+    //         // --bg--
+    //         gizmo.add_solid_quad(bg_quad, 0x0, 0.66);
+
+    //         // --text--
+    //         int quadsneeded = tf_how_many_quads_needed_for_text(text);
+    //         gpu_quad *quads = (gpu_quad*)malloc(quadsneeded*sizeof(gpu_quad));
+    //         tf_create_quad_list_for_text_at_rect(text, textx,texty, quads, quadsneeded);
+
+    //         gpu_quad_list_with_texture textsubmesh = {0};
+    //         for (int i = 0; i < quadsneeded; i++) {
+    //             // quads[i].alpha = 0.5;
+    //             textsubmesh.quads.add(quads[i]);
+    //         }
+    //         textsubmesh.texture_id = tf_fonttexture;
+    //         // gpu_quad_list_with_texture textsubmesh = submesh_from_quads(quads, quadsneeded, tf_fonttexture);
+    //         gizmo.mesh.add_submesh(textsubmesh);
+    //         // AddDeferredTextQuads(quads, quadsneeded);
+    //         free(quads);
+
+    //         // --highlight--
+    //         // seems like not a great way to do this,
+    //         // but just add an invisible rect above every text
+    //         // and if highlighted (checked when rendering), change the alpha up from 0
+    //         gizmo.add_hl_quad(bg_quad);
+
+    //     }
+    //     ui_queue_element(gizmo);
+    // }
 
     return bg_quad.to_rect();
 }
 
 
-rect ui_texti(char *text, int value, int x, int y, int hpos, int vpos) {
-    sprintf(ui_text_reusable_buffer, text, value);
-    return ui_text(ui_text_reusable_buffer, x, y, hpos, vpos);
+// rect ui_texti(char *text, int value, rect r, int hpos, int vpos) {
+//     sprintf(ui_text_reusable_buffer, text, value);
+//     return ui_text(ui_text_reusable_buffer, r, hpos, vpos);
+// }
+// rect ui_texti(char *text, int v1, int v2, rect r, int hpos, int vpos) {
+//     sprintf(ui_text_reusable_buffer, text, v1, v2);
+//     return ui_text(ui_text_reusable_buffer, r, hpos, vpos);
+// }
+
+// rect ui_textf(char *text, float value, rect r, int hpos, int vpos) {
+//     sprintf(ui_text_reusable_buffer, text, value);
+//     return ui_text(ui_text_reusable_buffer, r, hpos, vpos);
+// }
+// rect ui_textf(char *text, float f1, float f2, rect r, int hpos, int vpos) {
+//     sprintf(ui_text_reusable_buffer, text, f1, f2);
+//     return ui_text(ui_text_reusable_buffer, r, hpos, vpos);
+// }
+
+
+void ui_set_hot(ui_id id) {
+    if (!ui_context.active)
+        ui_context.hot = id;
 }
-rect ui_texti(char *text, int v1, int v2, int x, int y, int hpos, int vpos) {
-    sprintf(ui_text_reusable_buffer, text, v1, v2);
-    return ui_text(ui_text_reusable_buffer, x, y, hpos, vpos);
+void ui_set_active(ui_id id) {
+    if (!ui_context.active)
+        ui_context.active = id;
 }
 
-rect ui_textf(char *text, float value, int x, int y, int hpos, int vpos) {
-    sprintf(ui_text_reusable_buffer, text, value);
-    return ui_text(ui_text_reusable_buffer, x, y, hpos, vpos);
-}
-rect ui_textf(char *text, float f1, float f2, int x, int y, int hpos, int vpos) {
-    sprintf(ui_text_reusable_buffer, text, f1, f2);
-    return ui_text(ui_text_reusable_buffer, x, y, hpos, vpos);
-}
-
-
-rect ui_button(char *text, float x, float y, int hpos, int vpos, void(*effect)(void*), void *arg=0)
+bool ui_button(ui_id id,
+               char *text, rect inr, int hpos, int vpos, rect *outrect)
 {
-    rect tr = ui_text(text, x, y, hpos, vpos);
-    rect r = {(float)tr.x, (float)tr.y, (float)tr.w, (float)tr.h};
-    ui_add_clickable(r, effect, arg);
-    return tr;
+    rect tr = ui_text(&text, text, inr, hpos, vpos);
+    // rect r = {(float)tr.x, (float)tr.y, (float)tr.w, (float)tr.h};
+    // ui_add_clickable(r, effect, arg);
+    // return tr;
+    bool result = false;
+    if (ui_context.active == id) {
+        if (input.up.mouseL) {
+            if (ui_context.hot == id) {
+                result = true;
+            }
+            ui_set_active(0);
+        }
+    } else {
+        if (ui_context.hot == id) {
+            if (input.down.mouseL)
+                ui_set_active(id);
+        }
+    }
+
+    if (inr.ContainsPoint(input.current.mouseX,input.current.mouseY)) { ui_set_hot(id); }
+
+    if(outrect) *outrect = tr;
+
+    return result;
 }
 
 // kind of a hack so we can highlight tiles without bringing them into our normal system
 // (they have their own opengl_quads so they don't have to re-send textures to the gpu every frame)
 rect ui_button_permanent_highlight(rect br, void(*effect)(void*), void *arg=0)
 {
-    ui_add_clickable(br, effect, arg);
+    // ui_add_clickable(br, effect, arg);
 
-    ui_element gizmo = {0};
-    gpu_quad q = gpu_quad_from_rect(br);
-    gizmo.add_hl_quad(q);
-    ui_elements.add(gizmo);
+    // ui_element gizmo = {0};
+    // gpu_quad q = gpu_quad_from_rect(br);
+    // gizmo.add_hl_quad(q);
+    // ui_elements.add(gizmo);
 
-    return br;
+    // return br;
+    return {0};
 }
 
 // ignores clicks (will pass to whatever is below this)
 void ui_rect(rect r, u32 col, float a) {
-    // feels like this internal api needs some work but it's functional for now
-    ui_element gizmo = {0};
-    gizmo.add_solid_rect(r, col, a);
-    ui_elements.add(gizmo);
+    // // feels like this internal api needs some work but it's functional for now
+    // ui_element gizmo = {0};
+    // gizmo.add_solid_rect(r, col, a);
+    // ui_elements.add(gizmo);
 }
 
 // what to name this?
 // will absorbe clicks/hl events (and won't pass below this)
 void ui_rect_solid(rect r, u32 col, float a) {
 
-    ui_element gizmo = {0};
-    gpu_quad q = gpu_quad_from_rect(r);
-    gizmo.add_hl_quad(q, 0, 0); // pass 0 in for alpha to use when being highlighted (basically, don't highlight)
-    ui_elements.add(gizmo);  // ignore highlight
+    // ui_element gizmo = {0};
+    // gpu_quad q = gpu_quad_from_rect(r);
+    // gizmo.add_hl_quad(q, 0, 0); // pass 0 in for alpha to use when being highlighted (basically, don't highlight)
+    // ui_elements.add(gizmo);  // ignore highlight
 
-    ui_add_clickable(r, 0, 0);  // ignore clicks
+    // ui_add_clickable(r, 0, 0);  // ignore clicks
 
-    ui_rect(r, col, a);
+    // ui_rect(r, col, a);
 }
 
 
@@ -486,29 +529,29 @@ void ui_scrollbar(rect r, float top_percent, float bot_percent,
                   float *callbackvalue, float callbackscale,
                   void(*effect)(int), int arg=0)
 {
-    ui_element gizmo = {0};
-    {
-        // lets try something funny, put the hl below the others as a kind of optional "less opacity"
-        // --hl--
-        gizmo.add_hl_quad(gpu_quad_from_rect(r), 0);
+    // ui_element gizmo = {0};
+    // {
+    //     // lets try something funny, put the hl below the others as a kind of optional "less opacity"
+    //     // --hl--
+    //     gizmo.add_hl_quad(gpu_quad_from_rect(r), 0);
 
-        // --bg--
-        gizmo.add_solid_rect(r, 0xffbbbbbb, 0.4);
+    //     // --bg--
+    //     gizmo.add_solid_rect(r, 0xffbbbbbb, 0.4);
 
-        float top_pixels = top_percent * (float)r.h;
-        float bot_pixels = bot_percent * (float)r.h;
+    //     float top_pixels = top_percent * (float)r.h;
+    //     float bot_pixels = bot_percent * (float)r.h;
 
-        float size = roundf(bot_pixels-top_pixels);
-        if (size < 10) size = 10;
+    //     float size = roundf(bot_pixels-top_pixels);
+    //     if (size < 10) size = 10;
 
-        // --indicator--
-        gizmo.add_solid_rect({r.x, top_pixels, r.w, size}, 0xffeeeeeeee, 0.9);
+    //     // --indicator--
+    //     gizmo.add_solid_rect({r.x, top_pixels, r.w, size}, 0xffeeeeeeee, 0.9);
 
-    }
-    ui_elements.add(gizmo);
+    // }
+    // ui_elements.add(gizmo);
 
-    // click handler
-    ui_add_draggable(r, callbackvalue, callbackscale);
+    // // click handler
+    // ui_add_draggable(r, callbackvalue, callbackscale);
 }
 
 
@@ -528,75 +571,75 @@ void ui_bitmap(bitmap img, float x, float y) {
 
 // todo: this is just a copy paste edit of ui_text(
 // should combine these
-rect ui_textbox(char *text, float x, float y, int hpos, int vpos, float alpha=1) {
-    // without any changes, bb will be TL
-    rect textbb = tf_text_bounding_box(text, x, y);
+void ui_textbox(char *text, float x, float y, int hpos, int vpos, float alpha=1) {
+    // // without any changes, bb will be TL
+    // rect textbb = tf_text_bounding_box(text, x, y);
 
-    // pad beyond just our letter-tight bb
-    int margin = 2;
+    // // pad beyond just our letter-tight bb
+    // int margin = 2;
 
-    // bg (and hl) quad
-    // setup for TL coords as default
-    gpu_quad bg_quad;
-    bg_quad.x0 = x;
-    bg_quad.y0 = y;
-    bg_quad.x1 = x + textbb.w+1 + margin*2;  // note fencepost error with w/h.. don't include last edge
-    bg_quad.y1 = y + tf_cached_largest_total_height+1 + margin*2; // todo: check if correct
+    // // bg (and hl) quad
+    // // setup for TL coords as default
+    // gpu_quad bg_quad;
+    // bg_quad.x0 = x;
+    // bg_quad.y0 = y;
+    // bg_quad.x1 = x + textbb.w+1 + margin*2;  // note fencepost error with w/h.. don't include last edge
+    // bg_quad.y1 = y + tf_cached_largest_total_height+1 + margin*2; // todo: check if correct
 
-    bg_quad.y1 -= 1; // a little hand-tweaking (tbh not sure if +1 in the y1 above is correct, x1 def correct tho)
+    // bg_quad.y1 -= 1; // a little hand-tweaking (tbh not sure if +1 in the y1 above is correct, x1 def correct tho)
 
-    // adjust for alignment
-    if (hpos == UI_RIGHT) bg_quad.move(-bg_quad.width(), 0);
-    if (hpos == UI_CENTER) bg_quad.move(-bg_quad.width()/2, 0);
-    if (vpos == UI_BOTTOM) bg_quad.move(0, -bg_quad.height());
-    if (vpos == UI_CENTER) bg_quad.move(0, -bg_quad.height()/2);
+    // // adjust for alignment
+    // if (hpos == UI_RIGHT) bg_quad.move(-bg_quad.width(), 0);
+    // if (hpos == UI_CENTER) bg_quad.move(-bg_quad.width()/2, 0);
+    // if (vpos == UI_BOTTOM) bg_quad.move(0, -bg_quad.height());
+    // if (vpos == UI_CENTER) bg_quad.move(0, -bg_quad.height()/2);
 
-    // text position (inside the larger quad)
-    float textx = bg_quad.x0 + margin;
-    float texty = bg_quad.y0 + margin + tf_cached_largest_ascent; // text is drawn from the baseline todo: let text module handle this offset?
+    // // text position (inside the larger quad)
+    // float textx = bg_quad.x0 + margin;
+    // float texty = bg_quad.y0 + margin + tf_cached_largest_ascent; // text is drawn from the baseline todo: let text module handle this offset?
 
 
-    ui_element gizmo = {0};
-    {
-        // --bg--
-        gizmo.add_solid_quad(bg_quad, 0xffffffff, 0.66);
+    // ui_element gizmo = {0};
+    // {
+    //     // --bg--
+    //     gizmo.add_solid_quad(bg_quad, 0xffffffff, 0.66);
 
-        // --text--
-        int quadsneeded = tf_how_many_quads_needed_for_text(text);
-        gpu_quad *quads = (gpu_quad*)malloc(quadsneeded*sizeof(gpu_quad));
-        tf_create_quad_list_for_text_at_rect(text, textx,texty, quads, quadsneeded);
+    //     // --text--
+    //     int quadsneeded = tf_how_many_quads_needed_for_text(text);
+    //     gpu_quad *quads = (gpu_quad*)malloc(quadsneeded*sizeof(gpu_quad));
+    //     tf_create_quad_list_for_text_at_rect(text, textx,texty, quads, quadsneeded);
 
-        gpu_quad_list_with_texture textsubmesh = {0};
-        for (int i = 0; i < quadsneeded; i++) {
-            // quads[i].alpha = 0.5;
-            textsubmesh.quads.add(quads[i]);
-        }
-        textsubmesh.texture_id = tf_fonttexture;
-        // gpu_quad_list_with_texture textsubmesh = submesh_from_quads(quads, quadsneeded, tf_fonttexture);
-        gizmo.mesh.add_submesh(textsubmesh);
-        // AddDeferredTextQuads(quads, quadsneeded);
-        free(quads);
+    //     gpu_quad_list_with_texture textsubmesh = {0};
+    //     for (int i = 0; i < quadsneeded; i++) {
+    //         // quads[i].alpha = 0.5;
+    //         textsubmesh.quads.add(quads[i]);
+    //     }
+    //     textsubmesh.texture_id = tf_fonttexture;
+    //     // gpu_quad_list_with_texture textsubmesh = submesh_from_quads(quads, quadsneeded, tf_fonttexture);
+    //     gizmo.mesh.add_submesh(textsubmesh);
+    //     // AddDeferredTextQuads(quads, quadsneeded);
+    //     free(quads);
 
-        // --highlight--
-        // seems like not a great way to do this,
-        // but just add an invisible rect above every text
-        // and if highlighted (checked when rendering), change the alpha up from 0
-        gizmo.add_hl_quad(bg_quad);
+    //     // --highlight--
+    //     // seems like not a great way to do this,
+    //     // but just add an invisible rect above every text
+    //     // and if highlighted (checked when rendering), change the alpha up from 0
+    //     gizmo.add_hl_quad(bg_quad);
 
-    }
-    ui_queue_element(gizmo);
+    // }
+    // ui_queue_element(gizmo);
 
-    rect bg_rect = bg_quad.to_rect();
-    ui_add_clickable(bg_quad.to_rect(), &ui_activate_textbox, (void*)&bg_rect);
+    // rect bg_rect = bg_quad.to_rect();
+    // ui_add_clickable(bg_quad.to_rect(), &ui_activate_textbox, (void*)&bg_rect);
 
-    return bg_quad.to_rect();
+    // return bg_quad.to_rect();
 }
 
 
 char ui_log_reuseable_mem[256];
 int ui_log_count;
 void UI_PRINT(char *s) {
-    ui_text(s, 0, ui_log_count*UI_TEXT_SIZE, UI_LEFT,UI_TOP);
+    ui_text(&s, s, {0, (float)ui_log_count*UI_TEXT_SIZE}, UI_LEFT,UI_TOP);
     ui_log_count++;
 }
 void UI_PRINT(u64 i)               { sprintf(ui_log_reuseable_mem, "%lli", i); UI_PRINT(ui_log_reuseable_mem); }

@@ -1,6 +1,7 @@
 
 
-struct Input
+// state of all possible input at one point in time
+struct input_keystate
 {
     bool q;
     bool w;
@@ -93,9 +94,9 @@ struct Input
 
 
 // could miss a keypress here if it's faster than the framerate?
-Input ReadInput(HWND window)
+input_keystate input_read_keystate(HWND window)
 {
-    Input result = {0};
+    input_keystate result = {0};
 
     if (GetFocus() == window) { // ignore keys if we dont have keyboard focus
         if (GetAsyncKeyState('Q'))   result.q = true;
@@ -198,9 +199,9 @@ Input ReadInput(HWND window)
 
 
 
-Input input_keys_changed(Input current, Input last)
+input_keystate input_keys_changed(input_keystate current, input_keystate last)
 {
-    Input result;
+    input_keystate result;
 
     result.q = current.q && !last.q;
     result.w = current.w && !last.w;
@@ -278,4 +279,24 @@ Input input_keys_changed(Input current, Input last)
 
     return result;
 
+}
+
+struct Input {
+    input_keystate current;
+    input_keystate up;
+    input_keystate down;
+};
+
+Input input; // just keep in global scope for now
+
+input_keystate last_input = {0};
+Input input_read(HWND window) {
+    // static Input last_input = {0};
+    // Input input = ReadInput(hwnd);
+    Input result = {0};
+    result.current = input_read_keystate(window);
+    result.down = input_keys_changed(result.current, last_input);
+    result.up = input_keys_changed(last_input, result.current);
+    last_input = result.current;
+    return result;
 }

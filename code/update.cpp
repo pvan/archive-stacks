@@ -137,7 +137,11 @@ bool DrawTagsWithXColumns(int totalcols,
             float x = thiscolX;
             float y = (row+1) * (UI_TEXT_SIZE+vgap);
 
-            rect brect = ui_button(tag_list[t].ToUTF8Reusable(), x,y, UI_LEFT,UI_TOP, tagSelect, (void*)t);
+            rect brect;
+            if(ui_button(&tag_list[t],
+                         tag_list[t].ToUTF8Reusable(), {x,y}, UI_LEFT,UI_TOP, &brect)) {
+                // if(tagSelect) tagSelect(t);
+            }
 
             if (selected_tags_pool->has(t)) {
                 ui_rect(brect, 0xffff00ff, 0.3);
@@ -164,11 +168,18 @@ void DrawTagMenu(int cw, int ch,
 
     if (!menu_open) {
         // ui_button("show tags", cw/2, 0, UI_CENTER,UI_TOP, &ToggleTagMenu);
-        ui_button("show tags", 0, 0, UI_LEFT,UI_TOP, menuToggle);
+        if (ui_button(&menuToggle, "show tags", {0, 0}, UI_LEFT,UI_TOP, 0))
+        {
+            if (menuToggle) menuToggle(0);
+        }
         return; // don't draw any more
     }
 
-    rect hider = ui_button("hide tags", 0, 0, UI_LEFT,UI_TOP, menuToggle);
+    rect hider;
+    if (ui_button(&menuToggle, "hide tags", {0, 0}, UI_LEFT,UI_TOP, &hider))
+    {
+        if (menuToggle) menuToggle(0);
+    }
 
     ui_textbox(tag_filter, cw/2,0, UI_CENTER,UI_TOP);
 
@@ -177,14 +188,20 @@ void DrawTagMenu(int cw, int ch,
 
     // rect lastr = ui_button("select none", 0,0, UI_LEFT,UI_TOP, selectNone);
     // ui_button("select all", lastr.w,0, UI_LEFT,UI_TOP, selectAll);
-    rect lastr = ui_button("select none", hider.w+hgap,0, UI_LEFT,UI_TOP, selectNone);
-    ui_button("select all", hider.w+lastr.w+hgap*2,0, UI_LEFT,UI_TOP, selectAll);
+    rect lastr;
+    if (ui_button(&selectNone, "select none", {hider.w+hgap,0}, UI_LEFT,UI_TOP, &lastr)) {
+        if(selectNone) selectNone;
+    }
+    if (ui_button(&selectAll, "select all", {hider.w+lastr.w+hgap*2,0}, UI_LEFT,UI_TOP, 0))
+    {
+        if(selectAll) selectAll;
+    }
 
 
     // first get size of all our tags
     float_pool widths = float_pool::new_empty();
     for (int i = 0; i < tag_list.count; i++) {
-        rect r = ui_text(tag_list[i].ToUTF8Reusable(), 0,0, UI_LEFT,UI_TOP, false);
+        rect r = ui_text(&tag_list[i], tag_list[i].ToUTF8Reusable(), {0,0}, UI_LEFT,UI_TOP);
         widths.add(r.w);
     }
 
@@ -293,7 +310,7 @@ void DrawTagMenu(int cw, int ch,
 
 
 
-void browse_tick(float actual_dt, int cw, int ch, Input input, Input keysDown, Input keysUp) {
+void browse_tick(float actual_dt, int cw, int ch) {
 
 
     // --update--
@@ -320,13 +337,13 @@ void browse_tick(float actual_dt, int cw, int ch, Input input, Input keysDown, I
         tiles_height = ArrangeTilesForDisplayList(display_list, &tiles, master_desired_tile_width, g_cw); // requires resolutions to be set
         // tiles_height = ArrangeTilesInOrder(&tiles, master_desired_tile_width, cw); // requires resolutions to be set
 
-        int scroll_pos = CalculateScrollPosition(last_scroll_pos, master_scroll_delta, keysDown, ch, tiles_height);
+        int scroll_pos = CalculateScrollPosition(last_scroll_pos, master_scroll_delta, input.down, ch, tiles_height);
         last_scroll_pos = (float)scroll_pos;
         master_scroll_delta = 0; // done using this in this frame
 
         ShiftTilesBasedOnScrollPosition(&tiles, last_scroll_pos);
 
-        debug_info_tile_index_mouse_was_on = TileIndexMouseIsOver(tiles, input.mouseX, input.mouseY);
+        debug_info_tile_index_mouse_was_on = TileIndexMouseIsOver(tiles, input.current.mouseX, input.current.mouseY);
     }
 
 
@@ -340,7 +357,7 @@ void browse_tick(float actual_dt, int cw, int ch, Input input, Input keysDown, I
         }
     }
 
-    if (keysDown.space)
+    if (input.down.space)
         ToggleTagMenu(0);
 
 
@@ -385,8 +402,8 @@ void browse_tick(float actual_dt, int cw, int ch, Input input, Input keysDown, I
 
     // make invisible button on top of mouse-overed tile
     // consider: what do you think about this, seems a little funny
-    if (input.point_in_client_area(cw,ch)) { // todo: where to put this check, here or with all click handling?
-        viewing_file_index = TileIndexMouseIsOver(tiles, input.mouseX, input.mouseY);
+    if (input.current.point_in_client_area(cw,ch)) { // todo: where to put this check, here or with all click handling?
+        viewing_file_index = TileIndexMouseIsOver(tiles, input.current.mouseX, input.current.mouseY);
         // if (tiles[viewing_file_index].IsOnScreen(ch)) {
         rect r = {tiles[viewing_file_index].pos.x, tiles[viewing_file_index].pos.y,
                   tiles[viewing_file_index].size.w, tiles[viewing_file_index].size.h};
@@ -453,7 +470,7 @@ void browse_tick(float actual_dt, int cw, int ch, Input input, Input keysDown, I
         UI_PRINT("tiles: %i", tiles.count);
         UI_PRINT("items: %i", items.count);
 
-        UI_PRINT("mouse: %f, %f", input.mouseX, input.mouseY);
+        UI_PRINT("mouse: %f, %f", input.current.mouseX, input.current.mouseY);
         // UI_PRINT("mouseY: %f", input.mouseY);
 
 
@@ -523,11 +540,11 @@ void browse_tick(float actual_dt, int cw, int ch, Input input, Input keysDown, I
 
 
 
-void view_tick(float actual_dt, int cw, int ch, Input input, Input keysDown, Input keysUp) {
+void view_tick(float actual_dt, int cw, int ch) {
 
     // --update--
 
-    if (keysDown.right || keysDown.left) {
+    if (input.down.right || input.down.left) {
         // find position in display list
         // (seems a little awkward...)
         u64 display_index_of_view_item;
@@ -538,10 +555,10 @@ void view_tick(float actual_dt, int cw, int ch, Input input, Input keysDown, Inp
         }
 
         // increment
-        if (keysDown.right) {
+        if (input.down.right) {
             display_index_of_view_item = (display_index_of_view_item+1) % display_list.count;
         }
-        if (keysDown.left) {
+        if (input.down.left) {
             display_index_of_view_item = (display_index_of_view_item-1+display_list.count) % display_list.count;
         }
 
@@ -550,25 +567,25 @@ void view_tick(float actual_dt, int cw, int ch, Input input, Input keysDown, Inp
         OpenFileToView(display_list[display_index_of_view_item]);
     }
 
-    if (keysDown.mouseR) {
+    if (input.down.mouseR) {
         app_mode = BROWSING_THUMBS;
         // todo: remove tile stuff from memory or gpu ?
     }
-    if (keysDown.space)
+    if (input.down.space)
         ToggleTagSelectMenu(0);
 
 
     // pan
-    if (!input.mouseL) mouse_up_once_since_loading = true;
-    if (keysDown.mouseM || keysDown.mouseL) {
-        clickMouseX = input.mouseX;
-        clickMouseY = input.mouseY;
+    if (!input.current.mouseL) mouse_up_once_since_loading = true;
+    if (input.down.mouseM || input.down.mouseL) {
+        clickMouseX = input.current.mouseX;
+        clickMouseY = input.current.mouseY;
         clickRectX = viewing_tile.pos.x;
         clickRectY = viewing_tile.pos.y;
     }
-    if ((input.mouseM || input.mouseL) && mouse_up_once_since_loading) {
-        float deltaX = input.mouseX - clickMouseX;
-        float deltaY = input.mouseY - clickMouseY;
+    if ((input.current.mouseM || input.current.mouseL) && mouse_up_once_since_loading) {
+        float deltaX = input.current.mouseX - clickMouseX;
+        float deltaY = input.current.mouseY - clickMouseY;
         viewing_tile.pos.x = clickRectX + deltaX;
         viewing_tile.pos.y = clickRectY + deltaY;
     }
@@ -580,8 +597,8 @@ void view_tick(float actual_dt, int cw, int ch, Input input, Input keysDown, Inp
         if (master_scroll_delta < 0) scaleFactor = 1.2f;
         viewing_tile.size.w *= scaleFactor;
         viewing_tile.size.h *= scaleFactor;
-        viewing_tile.pos.x -= (input.mouseX - viewing_tile.pos.x) * (scaleFactor - 1);
-        viewing_tile.pos.y -= (input.mouseY - viewing_tile.pos.y) * (scaleFactor - 1);
+        viewing_tile.pos.x -= (input.current.mouseX - viewing_tile.pos.x) * (scaleFactor - 1);
+        viewing_tile.pos.y -= (input.current.mouseY - viewing_tile.pos.y) * (scaleFactor - 1);
 
         master_scroll_delta = 0; // done using this this frame (todo: should put mousewheel in Input class)
     }
@@ -646,12 +663,13 @@ void view_tick(float actual_dt, int cw, int ch, Input input, Input keysDown, Inp
         // debug tag count on right
         char buf[256];
         sprintf(buf, "%i", items[viewing_file_index].tags.count);
-        ui_text(buf, cw,ch, UI_RIGHT,UI_BOTTOM);
+        ui_text(&buf, buf, {(float)cw,(float)ch}, UI_RIGHT,UI_BOTTOM);
 
         // debug tag list on left
         float x = 0;
         for (int i = 0; i < items[viewing_file_index].tags.count; i++) {
-            rect lastrect = ui_text(tag_list[items[viewing_file_index].tags[i]].ToUTF8Reusable(), x,ch, UI_LEFT,UI_BOTTOM);
+            rect lastrect = ui_text(&tag_list[items[viewing_file_index].tags[i]],
+                                    tag_list[items[viewing_file_index].tags[i]].ToUTF8Reusable(), {x,(float)ch}, UI_LEFT,UI_BOTTOM);
             x+=lastrect.w;
         }
 

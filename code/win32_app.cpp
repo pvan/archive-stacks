@@ -225,21 +225,21 @@ void load_tick(item_pool all_items, int cw, int ch) {
 
     int line = -1;
 
-    ui_texti("media files: %i", all_items.count, cw/2, ch/2 + UI_TEXT_SIZE*line++, UI_CENTER,UI_CENTER);
+    // ui_texti("media files: %i", all_items.count, cw/2, ch/2 + UI_TEXT_SIZE*line++, UI_CENTER,UI_CENTER);
 
-    line++;
-    ui_texti("items_without_matching_thumbs: %i", item_indices_without_thumbs.count, cw/2, ch/2 + UI_TEXT_SIZE*line++, UI_CENTER,UI_CENTER);
+    // line++;
+    // ui_texti("items_without_matching_thumbs: %i", item_indices_without_thumbs.count, cw/2, ch/2 + UI_TEXT_SIZE*line++, UI_CENTER,UI_CENTER);
 
-    line++;
-    ui_texti("items_without_matching_metadata: %i", item_indices_without_metadata.count, cw/2, ch/2 + UI_TEXT_SIZE*line++, UI_CENTER,UI_CENTER);
+    // line++;
+    // ui_texti("items_without_matching_metadata: %i", item_indices_without_metadata.count, cw/2, ch/2 + UI_TEXT_SIZE*line++, UI_CENTER,UI_CENTER);
 
-    line++;
-    ui_text(loading_status_msg, cw/2, ch/2 + UI_TEXT_SIZE*line++, UI_CENTER,UI_CENTER);
-    ui_texti("files: %i of %i", loading_reusable_count, loading_reusable_max, cw/2, ch/2 + UI_TEXT_SIZE*line++, UI_CENTER,UI_CENTER);
+    // line++;
+    // ui_text(loading_status_msg, cw/2, ch/2 + UI_TEXT_SIZE*line++, UI_CENTER,UI_CENTER);
+    // ui_texti("files: %i of %i", loading_reusable_count, loading_reusable_max, cw/2, ch/2 + UI_TEXT_SIZE*line++, UI_CENTER,UI_CENTER);
 
 
-    ui_render_elements(0, 0); // pass mouse pos for highlighting
-    ui_reset(); // call at the end or start of every frame so buttons don't carry over between frames
+    // ui_render_elements(0, 0); // pass mouse pos for highlighting
+    // ui_reset(); // call at the end or start of every frame so buttons don't carry over between frames
 
 
     opengl_swap();
@@ -431,29 +431,25 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 
         // calc input edge triggers
-        static Input last_input = {0};
-        Input input = ReadInput(hwnd);
-        Input keysDown = input_keys_changed(input, last_input);
-        Input keysUp = input_keys_changed(last_input, input);
-        last_input = input;
+        input = input_read(hwnd);
 
 
 
         // common to all app modes
-        if (keysDown.tilde) show_debug_console = !show_debug_console;
+        if (input.down.tilde) show_debug_console = !show_debug_console;
 
 
         if (app_mode == BROWSING_THUMBS) {
-            browse_tick(actual_dt, cw,ch, input,keysDown,keysUp);
+            browse_tick(actual_dt, cw,ch);
         }
         else if (app_mode == VIEWING_FILE) {
-            view_tick(actual_dt, cw,ch, input,keysDown,keysUp);
+            view_tick(actual_dt, cw,ch);
         }
 
 
-        // update ui in all app modes
-        ui_update(cw,ch, input, keysDown);
-        ui_reset(); // call at the end or start of every frame so buttons don't carry over between frames
+        // // update ui in all app modes
+        // ui_update(cw,ch, input.current, input.down);
+        // ui_reset(); // call at the end or start of every frame so buttons don't carry over between frames
 
 
         opengl_swap();
