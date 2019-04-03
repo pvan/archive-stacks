@@ -61,6 +61,10 @@ struct input_keystate
     // bool carrotR;
     // bool questionMark;
 
+    bool insert;
+    bool home;
+    bool del;
+    bool end;
     bool pgUp;
     bool pgDown;
 
@@ -163,6 +167,10 @@ input_keystate input_read_keystate(HWND window)
         if (GetAsyncKeyState(VK_OEM_MINUS))   result.row[11] = true;
         if (GetAsyncKeyState(VK_OEM_PLUS))    result.row[12] = true;
 
+        if (GetAsyncKeyState(VK_INSERT))      result.insert = true;
+        if (GetAsyncKeyState(VK_HOME))        result.home = true;
+        if (GetAsyncKeyState(VK_DELETE))      result.del = true;
+        if (GetAsyncKeyState(VK_END))         result.end = true;
         if (GetAsyncKeyState(VK_PRIOR))       result.pgUp = true;
         if (GetAsyncKeyState(VK_NEXT))        result.pgDown = true;
 
@@ -254,8 +262,12 @@ input_keystate input_keys_changed(input_keystate current, input_keystate last)
     for (int i = 0; i < 12; i++)
         result.row[i] = current.row[i] && !last.row[i];
 
-    result.pgUp = current.pgUp && !last.pgUp;
-    result.pgDown = current.pgDown && !last.pgDown;
+    result.insert = current.insert && !last.insert ;
+    result.home   = current.home   && !last.home   ;
+    result.del    = current.del    && !last.del    ;
+    result.end    = current.end    && !last.end    ;
+    result.pgUp   = current.pgUp   && !last.pgUp   ;
+    result.pgDown = current.pgDown && !last.pgDown ;
 
     result.f1 = current.f1 && !last.f1;
     result.f2 = current.f2 && !last.f2;

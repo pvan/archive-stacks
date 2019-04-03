@@ -320,6 +320,9 @@ void ui_textbox(ui_id id, newstring *text, rect r, float dt) {
             text->rtrim(1);
             ui_cursor_pos--;
         }
+        if (input.down.del && ui_cursor_pos<text->count) {
+            text->del_at(ui_cursor_pos+1);
+        }
 
         // moving cursor
         if (input.down.left && ui_cursor_pos>0) {
@@ -371,7 +374,7 @@ void ui_textbox(ui_id id, newstring *text, rect r, float dt) {
         int cursorW = rectleftofcursor.w;
         // draw cursor
         if (ui_cursor_blink < ui_cursor_blink_ms/2) {
-            ui_rect({r.x+cursorW-2,r.y+2,2,r.h-4}, 0xff000000, 1);
+            ui_rect({r.x+cursorW-3,r.y+2,2,r.h-4}, 0xff000000, 1);
         }
     }
 

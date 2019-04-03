@@ -50,13 +50,22 @@ struct newstring {
     }
 
     void insert(wc newChar, int atIndex) {
-        assert(atIndex >= 0 && atIndex <= count);
+        assert(atIndex >= 0 && atIndex <= count); //<=count since we allow adding to end
         add(newChar); // placeholder character, also note count now is +1 from original
         // move all chars back until spot
         for (int i = count; i > atIndex; i--) {
             list[i] = list[i-1];
         }
         list[atIndex] = newChar;
+    }
+
+    void del_at(int atIndex) {
+        assert(atIndex >= 0 && atIndex < count);
+        // move all chars forward starting at spot
+        for (int i = atIndex; i < count-1; i++) {
+            list[i] = list[i+1];
+        }
+        count--;
     }
 
     void append(wc newchar) { add(newchar); }
