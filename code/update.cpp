@@ -270,7 +270,7 @@ void DrawTagMenu(int cw, int ch,
         if (menuToggle) menuToggle();
     }
 
-    if (tag_filter.count == 0) tag_filter.append("t");
+    // if (tag_filter.count == 0) tag_filter.append(L't');
     ui_textbox(&tag_filter, &tag_filter, {(float)cw/2,0,100,UI_TEXT_SIZE}, g_dt);
 
     float hgap = 12;
@@ -290,7 +290,7 @@ void DrawTagMenu(int cw, int ch,
     // first get size of all our tags
     float_pool widths = float_pool::new_empty();
     for (int i = 0; i < tag_list.count; i++) {
-        rect r = ui_text(tag_list[i].ToUTF8Reusable(), {0,0}, UI_LEFT,UI_TOP, false);
+        rect r = ui_text(tag_list[i].ToUTF8Reusable(), {0,0}, UI_LEFT,UI_TOP, false, 0);
         widths.add(r.w);
     }
 
@@ -739,12 +739,12 @@ void view_tick(float actual_dt, int cw, int ch) {
         // debug tag count on right
         char buf[256];
         sprintf(buf, "%i", items[viewing_file_index].tags.count);
-        ui_text(buf, {(float)cw,(float)ch}, UI_RIGHT,UI_BOTTOM, true);
+        ui_text(buf, {(float)cw,(float)ch}, UI_RIGHT,UI_BOTTOM, true, 0.66);
 
         // debug tag list on left
         float x = 0;
         for (int i = 0; i < items[viewing_file_index].tags.count; i++) {
-            rect lastrect = ui_text(tag_list[items[viewing_file_index].tags[i]].ToUTF8Reusable(), {x,(float)ch}, UI_LEFT,UI_BOTTOM, true);
+            rect lastrect = ui_text(tag_list[items[viewing_file_index].tags[i]].ToUTF8Reusable(), {x,(float)ch}, UI_LEFT,UI_BOTTOM, true, 0.66);
             x+=lastrect.w;
         }
 

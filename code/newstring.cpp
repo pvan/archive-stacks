@@ -49,11 +49,11 @@ struct newstring {
         return str;
     }
 
-    // void append(wc newchar) { add(newchar); }
+    void append(wc newchar) { add(newchar); }
     // void append(char newchar) { add((wc)newchar); }
-    void append(char *c) { for (;*c;c++) add((wc)c); }
+    // void append(char *c) { for (;*c;c++) add((wc)c); }
 
-    void rtrim(int amt) { assert(amt>=count && amt>=0); count-=amt; }
+    void rtrim(int amt) { assert(count>=amt && amt>=0); count-=amt; }
 
     // char *to_utf8_reusable() {
     //     // method without null terminator

@@ -114,7 +114,7 @@ void ui_rect(rect r, u32 color, float alpha) {
 
 // hpos and vpos specify whether x,y are TL, top/center, center/center, or what
 // note we return rect with TL pos but take as input whatever (as specified by v/h pos)
-rect ui_text(char *text, rect r, int hpos, int vpos, bool render) {
+rect ui_text(char *text, rect r, int hpos, int vpos, bool render, float bgalpha, u32 textcol = 0xffffffff) {
 
     // without any changes, bb will be TL
     rect textbb = tf_text_bounding_box(text, r.x, r.y);
@@ -146,14 +146,16 @@ rect ui_text(char *text, rect r, int hpos, int vpos, bool render) {
 
     if (render) {
         //--bg--
-        ui_rect(bg_quad.to_rect(), 0x0, 0.66);
+        ui_rect(bg_quad.to_rect(), 0x0, bgalpha);
 
         //--text--
-        int quadsneeded = tf_how_many_quads_needed_for_text(text);
-        gpu_quad *quads = (gpu_quad*)malloc(quadsneeded*sizeof(gpu_quad));
-            tf_create_quad_list_for_text_at_rect(text, textx,texty, quads, quadsneeded);
-            gpu_render_quads_with_texture(quads, quadsneeded, tf_fonttexture, 1/*alpha*/);
-        free(quads);
+        if (strlen(text) > 0) { // don't bother if we don't have text
+            int quadsneeded = tf_how_many_quads_needed_for_text(text);
+            gpu_quad *quads = (gpu_quad*)malloc(quadsneeded*sizeof(gpu_quad));
+                tf_create_quad_list_for_text_at_rect(text, textx,texty, quads, quadsneeded, textcol);
+                gpu_render_quads_with_texture(quads, quadsneeded, tf_fonttexture, 1/*alpha*/);
+            free(quads);
+        }
     }
 
     return bg_quad.to_rect();
@@ -230,7 +232,7 @@ bool ui_button(ui_id id, rect r) {
 
 bool ui_button_text(ui_id id, char *text, rect r, int hpos, int vpos, rect *outrect)
 {
-    r = ui_text(text, r, hpos, vpos, true);
+    r = ui_text(text, r, hpos, vpos, true, 0.66);
     if (outrect) *outrect = r;
     return ui_button(id, r);
 }
@@ -297,24 +299,19 @@ void ui_scrollbar(ui_id id,
 
 float ui_cursor_blink = 0;
 float ui_cursor_blink_ms = 500;
-// int ui_cursor_pos = 0;
+int ui_cursor_pos = 1;
 void ui_textbox(ui_id id, newstring *text, rect r, float dt) {
 
     ui_cursor_blink += dt;
     if (ui_cursor_blink > ui_cursor_blink_ms)
         ui_cursor_blink -= ui_cursor_blink_ms;
 
-    // --bg--
-    ui_rect(r, 0xffffffff, 0.7);
-
-    // // --text--
-    char *ascii = text->to_ascii_new_memory();
-    // ui_text(ascii, r, UI_LEFT,UI_TOP, true);
-
     if (ui_active(id)) {
         // editing text
-        if (input.down.a) text->append("a");
-        if (input.down.backspace) text->rtrim(1);
+        if (input.down.a) { text->append(L'a'); ui_cursor_pos++; }
+        if (input.down.backspace) {
+            text->rtrim(1);
+            ui_cursor_pos--; }
 
         // done editing
         if (input.down.mouseL && !ui_hot(id)) {
@@ -326,17 +323,39 @@ void ui_textbox(ui_id id, newstring *text, rect r, float dt) {
         }
     }
 
-    if (ui_hot(id)) {
-        ui_rect(r, 0xffffffff, 0.3);
-    }
+    // if (ui_hot(id)) {
+    //     ui_rect(r, 0xffffffff, 0.3);
+    // }
+
+    // --bg--
+    ui_rect(r, 0xffffffff, 0.7);
+
+    // --text--
+    char *ascii = text->to_ascii_new_memory();
+    ui_text(ascii, r, UI_LEFT,UI_TOP, true, 0, 0x0);
 
     if (ui_active(id)) {
         ui_rect(r, 0xff777700, 0.3);
+
+        // --cursor--
+        // measure position of cursor
+        // newstring copy = text->copy_into_new_memory();
+            // copy.rtrim(text->count-ui_cursor_pos);
+            // rect rectleftofcursor = ui_text(copy.to_ascii_reusuable(), r, UI_LEFT,UI_TOP, true);
+        // copy.free_all();
+        ascii[ui_cursor_pos] = '\0'; // trim everything after cursor
+        rect rectleftofcursor = ui_text(ascii, r, UI_LEFT,UI_TOP, false, 0);
+        int cursorW = rectleftofcursor.w;
         // draw cursor
         if (ui_cursor_blink < ui_cursor_blink_ms/2) {
-            ui_rect({r.x,r.y,5,r.h}, 0xff222222, 0.8);
+            ui_rect({r.x+cursorW,r.y,5,r.h}, 0xff222222, 0.8);
         }
     }
+
+
+
+
+
 
     bool mouseOver = r.ContainsPoint(input.current.mouseX,input.current.mouseY);
     if (mouseOver && (ui_active(id) || ui_active(0))) ui_set_hot(id);
@@ -350,7 +369,7 @@ void ui_textbox(ui_id id, newstring *text, rect r, float dt) {
 char ui_log_reuseable_mem[256];
 int ui_log_count;
 void UI_PRINT(char *s) {
-    ui_text(s, {0, (float)ui_log_count*UI_TEXT_SIZE}, UI_LEFT,UI_TOP, true);
+    ui_text(s, {0, (float)ui_log_count*UI_TEXT_SIZE}, UI_LEFT,UI_TOP, true, 0.66);
     ui_log_count++;
 }
 void UI_PRINT(u64 i)               { sprintf(ui_log_reuseable_mem, "%lli", i); UI_PRINT(ui_log_reuseable_mem); }

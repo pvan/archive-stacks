@@ -108,7 +108,7 @@ int tf_how_many_quads_needed_for_text(char *text) {
 // caller passes in quad memory to be filled in
 // use tf_how_many_quads_needed_for_text to know how much memory to pass in
 // return bounding box of all resulting quads
-rect tf_create_quad_list_for_text_at_rect(char *text, float x, float y, gpu_quad *quadlist, int quadcount) {
+rect tf_create_quad_list_for_text_at_rect(char *text, float x, float y, gpu_quad *quadlist, int quadcount, u32 textcol) {
 
     assert(quadlist && quadcount>0);
 
@@ -132,7 +132,7 @@ rect tf_create_quad_list_for_text_at_rect(char *text, float x, float y, gpu_quad
             // hmm not sure if i like alpha and color piggybacking on the quad or not
             gpu_quad quad = {q.x0,q.y0,q.s0,q.t0, q.x1,q.y1,q.s1,q.t1};
             quad.alpha = 1;
-            quad.color = 0xffffffff;
+            quad.color = textcol;
             quadlist[quadcountsofar++] = quad;
 
             // x bounding box
