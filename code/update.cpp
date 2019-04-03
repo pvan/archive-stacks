@@ -107,16 +107,17 @@ bool DrawTagsWithXColumns(int totalcols,
                              float vgap,
                              int cw, int ch,
                              void (*tagSelect)(int),
-                             int_pool *selected_tags_pool)
+                             int_pool *selected_tags_pool,
+                             int_pool filtered_tag_indices)
 {
     // algorithm is a bit quirky
     // basically we put all the widths in place for one column
-    // then find the biggest gap in the largest X items (X=max_overrun_count)
+    // then find the biggest gap between two widths in the largest X items (X=max_overrun_count)
     // that's where we create the column cutoff point (with the larger items running into the next column)
     // also, the gap has to be at least Y big to count (to avoid tiny little overruns) (Y=min_overrun_amount)
     //
     // so you might have a natural break with the 3rd largest item,
-    // but if the largest is so much bigger than the next two, that's what will be sued
+    // but if the largest is so much bigger than the next two, that's what will be used
     //
     // theoretically could bleed over into an extra column (ok now that we're just trying every possible column count)
     // todo: test extreme values
@@ -142,7 +143,9 @@ bool DrawTagsWithXColumns(int totalcols,
     int col = 0;
     int row = 0;
     float thiscolX = 0;
-    for (int t = 0; t < tag_list.count; t++, row++) { // note row++
+    // for (int t = 0; t < tag_list.count; t++, row++) { // note row++
+    for (int ft = 0; ft < filtered_tag_indices.count; ft++, row++) { // note row++
+        int t = filtered_tag_indices[ft];
 
         if (row >= max_rows_per_col) {  // end of a row
 
@@ -247,14 +250,19 @@ bool DrawTagsWithXColumns(int totalcols,
     return false;
 }
 
-// try another layout method
+// can use for tag menu in browse mode (selecting what to browse)
+// and tag menu in view mode (for selecting an item's tags)
+// pass in the click handlers for the buttons
+// and a list of ints which are the indices of the tags that are marked "selected" (color pink)
+// also pass in list of indices into tag_list which are the tags not filtered out
 void DrawTagMenu(int cw, int ch,
                  void (*selectNone)(),
                  void (*selectAll)(),
                  void (*tagSelect)(int),
                  void (*menuToggle)(),
                  bool menu_open,
-                 int_pool *selected_tags_pool)
+                 int_pool *selected_tags_pool,
+                 int_pool filtered_tag_indices)
 {
 
     if (!menu_open) {
@@ -310,7 +318,8 @@ void DrawTagMenu(int cw, int ch,
             vgap,
             cw, ch,
             tagSelect,
-            selected_tags_pool))
+            selected_tags_pool,
+            filtered_tag_indices))
         {
             final_desired_cols = totalcols-1;
             break;
@@ -325,16 +334,14 @@ void DrawTagMenu(int cw, int ch,
             vgap,
             cw, ch,
             tagSelect,
-            selected_tags_pool);
+            selected_tags_pool,
+            filtered_tag_indices);
 
     assert(!finalmenutoobig);
 
 }
 
-// // can use for tag menu in browse mode (selecting what to browse)
-// // and tag menu in view mode (for selecting an item's tags)
-// // pass in the click handlers for the buttons
-// // and a list of ints which are the indices of the tags that are marked "selected" (color pink)
+// old method, just packs the buttons like words in a paragraph
 // void DrawTagMenu_ParagraphLike_DEPRECATED(int cw, int ch,
 //                  void (*selectNone)(void*),
 //                  void (*selectAll)(void*),
@@ -395,6 +402,8 @@ void DrawTagMenu(int cw, int ch,
 
 
 
+// todo: we could use global dt here instead of passing in, same with cw/ch..
+// or would it be better to go the other way -- pass dt and cw/ch to all children and try and remove global usage?
 
 void browse_tick(float actual_dt, int cw, int ch) {
 
@@ -510,13 +519,19 @@ void browse_tick(float actual_dt, int cw, int ch) {
 
     // tag menu
     {
+        static int_pool filtered_tag_indices = int_pool::new_empty();
+        if (filtered_tag_indices.count == 0) {
+            filtered_tag_indices.add(4);
+            filtered_tag_indices.add(7);
+        }
         DrawTagMenu(cw, ch,
                     &SelectBrowseTagsNone,
                     &SelectBrowseTagsAll,
                     &ToggleTagBrowse,
                     &ToggleTagMenu,
                     tag_menu_open,
-                    &browse_tags);
+                    &browse_tags,
+                    filtered_tag_indices);
     }
 
 
@@ -718,20 +733,19 @@ void view_tick(float actual_dt, int cw, int ch) {
 
     // select tag menu
     {
-
-        // if (!tag_select_open) {
-        //     // ui_button("show tags", cw/2, 0, UI_CENTER,UI_TOP, &ToggleTagSelectMenu);
-        //     ui_button("show tags", 0, 0, UI_LEFT,UI_TOP, &ToggleTagSelectMenu);
-        // } else {
-        //     ui_button("hide tags", 0, 0, UI_LEFT,UI_TOP, &ToggleTagSelectMenu);
+        static int_pool filtered_tag_indices = int_pool::new_empty();
+        if (filtered_tag_indices.count == 0) {
+            filtered_tag_indices.add(4);
+            filtered_tag_indices.add(7);
+        }
         DrawTagMenu(cw, ch,
                     &SelectItemTagsNone,
                     &SelectItemTagsAll,
                     &ToggleTagSelection,
                     &ToggleTagSelectMenu,
                     tag_select_open,
-                    &items[viewing_file_index].tags);
-        // }
+                    &items[viewing_file_index].tags,
+                    filtered_tag_indices);
     }
 
 
