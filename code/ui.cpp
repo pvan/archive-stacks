@@ -295,8 +295,55 @@ void ui_scrollbar(ui_id id,
 
 
 
+float ui_cursor_blink = 0;
+float ui_cursor_blink_ms = 500;
+// int ui_cursor_pos = 0;
+void ui_textbox(ui_id id, newstring *text, rect r, float dt) {
 
-void ui_textbox(char *text, rect r) {
+    ui_cursor_blink += dt;
+    if (ui_cursor_blink > ui_cursor_blink_ms)
+        ui_cursor_blink -= ui_cursor_blink_ms;
+
+    // --bg--
+    ui_rect(r, 0xffffffff, 0.7);
+
+    // // --text--
+    char *ascii = text->to_ascii_new_memory();
+    // ui_text(ascii, r, UI_LEFT,UI_TOP, true);
+
+    if (ui_active(id)) {
+        // editing text
+        if (input.down.a) text->append("a");
+        if (input.down.backspace) text->rtrim(1);
+
+        // done editing
+        if (input.down.mouseL && !ui_hot(id)) {
+            ui_set_active(0);
+        }
+    } else {
+        if (ui_hot(id) && input.up.mouseL) {
+            ui_set_active(id);
+        }
+    }
+
+    if (ui_hot(id)) {
+        ui_rect(r, 0xffffffff, 0.3);
+    }
+
+    if (ui_active(id)) {
+        ui_rect(r, 0xff777700, 0.3);
+        // draw cursor
+        if (ui_cursor_blink < ui_cursor_blink_ms/2) {
+            ui_rect({r.x,r.y,5,r.h}, 0xff222222, 0.8);
+        }
+    }
+
+    bool mouseOver = r.ContainsPoint(input.current.mouseX,input.current.mouseY);
+    if (mouseOver && (ui_active(id) || ui_active(0))) ui_set_hot(id);
+    if (!mouseOver && ui_hot(id)) ui_set_hot(0);
+
+
+    free(ascii);
 }
 
 

@@ -93,7 +93,7 @@ void OpenFileToView(void *disguisedint) {
 
 
 
-char *tag_filter = "               ";
+newstring tag_filter = newstring::allocate_new(128);
 
 
 // helper function for DrawTagMenu
@@ -270,7 +270,8 @@ void DrawTagMenu(int cw, int ch,
         if (menuToggle) menuToggle();
     }
 
-    // ui_textbox(tag_filter, cw/2,0, UI_CENTER,UI_TOP);
+    if (tag_filter.count == 0) tag_filter.append("t");
+    ui_textbox(&tag_filter, &tag_filter, {(float)cw/2,0,100,UI_TEXT_SIZE}, g_dt);
 
     float hgap = 12;
     float vgap = 3;

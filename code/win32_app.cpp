@@ -24,6 +24,7 @@ void DEBUGPRINT(char *s, float f1, float f2) { sprintf(debugprintbuffer, s, f1, 
 #include "v2.cpp"
 #include "rect.cpp"
 #include "string.cpp"
+#include "newstring.cpp"
 #include "bitmap.cpp"
 #include "pools.cpp"
 
@@ -54,7 +55,7 @@ void time_init() {
     QueryPerformanceFrequency(&time_freq);
     QueryPerformanceCounter(&time_start);
 }
-float time_now() {
+float time_now() { // ms
     LARGE_INTEGER now;
     QueryPerformanceCounter(&now);
     int64_t ticks_elapsed = now.QuadPart - time_start.QuadPart;
@@ -94,8 +95,11 @@ int master_ctrl_scroll_delta = 0;
 
 float master_desired_tile_width = 200;
 
+// basically looking at these all over, let's just make global at app level for now
+// updated at start of every frame
 int g_cw;
 int g_ch;
+float g_dt;
 
 
 
@@ -297,6 +301,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         //     // frame took longer than our target fps
         // }
         float actual_dt = time_now() - last_time;
+        g_dt = actual_dt;
         last_time = time_now();
 
         // if (measured_first_frame_time) { // don't count first frame
