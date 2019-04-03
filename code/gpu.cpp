@@ -126,10 +126,8 @@ void gpu_upload_texture(bitmap img, gpu_texture_id tex_id) {
 
 
 
-// every time we pass verts to the gpu we need some memory to
-// convert the list of quads to a list of triangle verts
-// this is the pointer to that memory (freed/alloced every upload_ call)
-float *gpu_cached_verts = 0;
+// now that we free after using, we don't need this global
+// float *gpu_cached_verts = 0;
 
 // returns number of verts uploaded
 int gpu_upload_vertices(gpu_quad *quads, int quadcount) {
@@ -150,7 +148,7 @@ int gpu_upload_vertices(gpu_quad *quads, int quadcount) {
     int floats_per_quad = 3/*verts per tri*/ * 2/*tris*/ * 8/*comps per vert*/;
     int total_floats = quadcount*floats_per_quad;
 
-    gpu_cached_verts = (float*)malloc(total_floats * sizeof(float));
+    float *gpu_cached_verts = (float*)malloc(total_floats * sizeof(float));
 
     int v = 0;
     for (int i = 0; i < quadcount; i++) {

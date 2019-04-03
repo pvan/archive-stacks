@@ -299,7 +299,7 @@ void ui_scrollbar(ui_id id,
 
 float ui_cursor_blink = 0;
 float ui_cursor_blink_ms = 700;
-int ui_cursor_pos = 1;
+int ui_cursor_pos = 0;
 void ui_textbox(ui_id id, newstring *text, rect r, float dt) {
 
     ui_cursor_blink += dt;
@@ -308,10 +308,14 @@ void ui_textbox(ui_id id, newstring *text, rect r, float dt) {
 
     if (ui_active(id)) {
         // editing text
-        if (input.down.a) { text->append(L'a'); ui_cursor_pos++; }
-        if (input.down.backspace) {
+        if (input.down.a) {
+            text->append(L'a');
+            ui_cursor_pos++;
+        }
+        if (input.down.backspace && ui_cursor_pos>0) {
             text->rtrim(1);
-            ui_cursor_pos--; }
+            ui_cursor_pos--;
+        }
 
         // done editing
         if (input.down.mouseL && !ui_hot(id)) {
@@ -322,6 +326,10 @@ void ui_textbox(ui_id id, newstring *text, rect r, float dt) {
             ui_set_active(id);
         }
     }
+
+    // sanity check
+    if (ui_cursor_pos < 0) ui_cursor_pos = 0;
+    if (ui_cursor_pos > text->count) ui_cursor_pos = text->count;
 
     u32 bgcolor = 0xffffffff;
     float bgalpha = 0.8;
@@ -346,7 +354,7 @@ void ui_textbox(ui_id id, newstring *text, rect r, float dt) {
     // --cursor--
     if (ui_active(id)) {
         // measure position of cursor
-        ascii[ui_cursor_pos] = '\0'; // trim everything after cursor
+        if (ui_cursor_pos < text->count) ascii[ui_cursor_pos] = '\0'; // trim everything after cursor
         rect rectleftofcursor = ui_text(ascii, r, UI_LEFT,UI_TOP, false, 0);
         int cursorW = rectleftofcursor.w;
         // draw cursor
