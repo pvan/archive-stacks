@@ -294,23 +294,6 @@ void ui_activate_textbox(void *ptr) {
 }
 
 
-// struct ui_id {
-//     void *somethingunique;
-// };
-
-// we use the concept of an id to track controls from one frame to another
-// use something unique but that won't change frame-to-frame
-#define ui_id void*
-
-// the global state for this lib
-// here we track what controls are active
-// so we can, eg, ignore events on other controls (eg textbox)
-struct ui_context {
-    ui_id hot;    //hover
-    ui_id active; //selected
-};
-
-ui_context ui_context;
 
 //
 // intended exposed api
@@ -318,35 +301,6 @@ ui_context ui_context;
 void ui_init() {
     ui_create_solid_color_texture_and_upload();
 }
-
-// void ui_update(int cw, int ch, Input input, Input keysDown) {
-//     ui_update_draggables(input.mouseX, input.mouseY, input.mouseL);
-//     ui_update_clickables(input.mouseX, input.mouseY, keysDown.mouseL, cw, ch);
-//     ui_render_elements(input.mouseX, input.mouseY); // pass mouse pos for highlighting
-
-//     if (ui_active_textbox) {
-//         // if (*ui_textbox_rect) {
-//         gpu_quad q = gpu_quad_from_rect(ui_textbox_rect, 1);
-//         q.color = 0xff00ff00;
-//         // q.x0=0;
-//         // q.y0=0;
-//         // q.x1=100;
-//         // q.y1=100;
-//         gpu_render_quads_with_texture(&q, 1, ui_solid_tex_id, 1);
-//         // }
-//     }
-// }
-
-// void ui_reset() {  // call every frame
-
-//     // free all the mem used in the subelements of our ui_elements before clearing it
-//     for (int i = 0; i < ui_elements.count; i++) {
-//         ui_elements[i].mesh.free_all_mem();
-//     }
-//     ui_elements.empty_out();
-
-//     ui_clickables.empty_out();
-// }
 
 const int UI_CENTER = 0;
 const int UI_LEFT = 1;
@@ -361,7 +315,7 @@ void ui_rect(rect r, u32 color, float alpha) {
 
 // hpos and vpos specify whether x,y are TL, top/center, center/center, or what
 // note we return rect with TL pos but take as input whatever (as specified by v/h pos)
-rect ui_text(ui_id id, char *text, rect r, int hpos, int vpos, bool render) {
+rect ui_text(char *text, rect r, int hpos, int vpos, bool render) {
 
     // without any changes, bb will be TL
     rect textbb = tf_text_bounding_box(text, r.x, r.y);
@@ -403,39 +357,6 @@ rect ui_text(ui_id id, char *text, rect r, int hpos, int vpos, bool render) {
         free(quads);
     }
 
-
-    // if (render) {
-    //     ui_element gizmo = {0};
-    //     {
-    //         // --bg--
-    //         gizmo.add_solid_quad(bg_quad, 0x0, 0.66);
-
-    //         // --text--
-    //         int quadsneeded = tf_how_many_quads_needed_for_text(text);
-    //         gpu_quad *quads = (gpu_quad*)malloc(quadsneeded*sizeof(gpu_quad));
-    //         tf_create_quad_list_for_text_at_rect(text, textx,texty, quads, quadsneeded);
-
-    //         gpu_quad_list_with_texture textsubmesh = {0};
-    //         for (int i = 0; i < quadsneeded; i++) {
-    //             // quads[i].alpha = 0.5;
-    //             textsubmesh.quads.add(quads[i]);
-    //         }
-    //         textsubmesh.texture_id = tf_fonttexture;
-    //         // gpu_quad_list_with_texture textsubmesh = submesh_from_quads(quads, quadsneeded, tf_fonttexture);
-    //         gizmo.mesh.add_submesh(textsubmesh);
-    //         // AddDeferredTextQuads(quads, quadsneeded);
-    //         free(quads);
-
-    //         // --highlight--
-    //         // seems like not a great way to do this,
-    //         // but just add an invisible rect above every text
-    //         // and if highlighted (checked when rendering), change the alpha up from 0
-    //         gizmo.add_hl_quad(bg_quad);
-
-    //     }
-    //     ui_queue_element(gizmo);
-    // }
-
     return bg_quad.to_rect();
 }
 
@@ -459,30 +380,38 @@ rect ui_text(ui_id id, char *text, rect r, int hpos, int vpos, bool render) {
 // }
 
 
-void ui_set_hot(ui_id id
-                // , bool enable
-                ) {
-    // if (enable) {
-        if (!ui_context.active) ui_context.hot = id;
-    // } else {
-    //     if (ui_context.hot == id) ui_context.hot = 0;
-    // }
+// we use the concept of an id to track controls from one frame to another
+// use something unique but that won't change frame-to-frame
+#define ui_id void*
+
+// the global state for this lib
+// here we track what controls are active
+// so we can, eg, ignore events on other controls (eg textbox)
+struct ui_context {
+    ui_id hot;    //hover
+    ui_id active; //selected
+    ui_id next_hot; // track what will be hot for next frame, so we always get the topmost
+};
+
+ui_context ui_context;
+
+void ui_update() {
+    ui_context.hot = ui_context.next_hot;
+    ui_context.next_hot = 0;
+}
+
+void ui_set_hot(ui_id id) {
+    // ui_context.hot = id;
+    ui_context.next_hot = id;
 }
 void ui_set_active(ui_id id) {
-    // if (!ui_context.active)
-        ui_context.active = id;
+    ui_context.active = id;
 }
 
 bool ui_active(ui_id id) { return ui_context.active==id; }
 bool ui_hot(ui_id id) { return ui_context.hot==id; }
 
-bool ui_button(ui_id id,
-               char *text, rect inr, int hpos, int vpos, rect *outrect)
-{
-    inr = ui_text(&text, text, inr, hpos, vpos, true);
-    // rect r = {(float)tr.x, (float)tr.y, (float)tr.w, (float)tr.h};
-    // ui_add_clickable(r, effect, arg);
-    // return tr;
+bool ui_button(ui_id id, rect r) {
 
     bool result = false;
     if (ui_active(id)) {
@@ -497,61 +426,32 @@ bool ui_button(ui_id id,
         }
     }
 
-    // ui_set_hot(id, inr.ContainsPoint(input.current.mouseX,input.current.mouseY));
-
-    bool mouseOver = inr.ContainsPoint(input.current.mouseX,input.current.mouseY);
-    if (mouseOver) ui_set_hot(id);
-    if (!mouseOver && ui_hot(id)) ui_set_hot(0);
-
-    if (outrect) *outrect = inr;
-
     if (ui_hot(id)) {
-        ui_rect(inr, 0xffffffff, 0.3);
+        ui_rect(r, 0xffffffff, 0.3);
     }
 
     if (ui_active(id)) {
-        ui_rect(inr, 0xff777700, 0.3);
+        ui_rect(r, 0xff777700, 0.3);
     }
+
+    bool mouseOver = r.ContainsPoint(input.current.mouseX,input.current.mouseY);
+    if (mouseOver && (ui_active(id) || ui_active(0))) ui_set_hot(id);
+    if (!mouseOver && ui_hot(id)) ui_set_hot(0);
 
     return result;
 }
 
-// kind of a hack so we can highlight tiles without bringing them into our normal system
-// (they have their own opengl_quads so they don't have to re-send textures to the gpu every frame)
-rect ui_button_permanent_highlight(rect br, void(*effect)(void*), void *arg=0)
+bool ui_button_text(ui_id id, char *text, rect r, int hpos, int vpos, rect *outrect)
 {
-    // ui_add_clickable(br, effect, arg);
-
-    // ui_element gizmo = {0};
-    // gpu_quad q = gpu_quad_from_rect(br);
-    // gizmo.add_hl_quad(q);
-    // ui_elements.add(gizmo);
-
-    // return br;
-    return {0};
+    r = ui_text(text, r, hpos, vpos, true);
+    if (outrect) *outrect = r;
+    return ui_button(id, r);
 }
 
-// // ignores clicks (will pass to whatever is below this)
-// void ui_rect(rect r, u32 col, float a) {
-//     // // feels like this internal api needs some work but it's functional for now
-//     // ui_element gizmo = {0};
-//     // gizmo.add_solid_rect(r, col, a);
-//     // ui_elements.add(gizmo);
-// }
-
-// // what to name this?
-// // will absorbe clicks/hl events (and won't pass below this)
-// void ui_rect_solid(rect r, u32 col, float a) {
-
-//     // ui_element gizmo = {0};
-//     // gpu_quad q = gpu_quad_from_rect(r);
-//     // gizmo.add_hl_quad(q, 0, 0); // pass 0 in for alpha to use when being highlighted (basically, don't highlight)
-//     // ui_elements.add(gizmo);  // ignore highlight
-
-//     // ui_add_clickable(r, 0, 0);  // ignore clicks
-
-//     // ui_rect(r, col, a);
-// }
+bool ui_button_rect(ui_id id, rect r, u32 color, float alpha) {
+    ui_rect(r, color, alpha);
+    return ui_button(id, r);
+}
 
 
 // note takes two values, for top/bottom of scroll bar indicator (for variable size)
@@ -584,10 +484,6 @@ void ui_scrollbar(ui_id id,
         }
     }
 
-    bool mouseOver = r.ContainsPoint(input.current.mouseX,input.current.mouseY);
-    if (mouseOver) ui_set_hot(id);
-    if (!mouseOver && ui_hot(id)) ui_set_hot(0);
-
     // --bg--
     ui_rect(r, bgcolor, bgalpha);
 
@@ -605,29 +501,9 @@ void ui_scrollbar(ui_id id,
         ui_rect(r, 0xff777700, 0.3);
     }
 
-    // ui_element gizmo = {0};
-    // {
-    //     // lets try something funny, put the hl below the others as a kind of optional "less opacity"
-    //     // --hl--
-    //     gizmo.add_hl_quad(gpu_quad_from_rect(r), 0);
-
-    //     // --bg--
-    //     gizmo.add_solid_rect(r, 0xffbbbbbb, 0.4);
-
-    //     float top_pixels = top_percent * (float)r.h;
-    //     float bot_pixels = bot_percent * (float)r.h;
-
-    //     float size = roundf(bot_pixels-top_pixels);
-    //     if (size < 10) size = 10;
-
-    //     // --indicator--
-    //     gizmo.add_solid_rect({r.x, top_pixels, r.w, size}, 0xffeeeeeeee, 0.9);
-
-    // }
-    // ui_elements.add(gizmo);
-
-    // // click handler
-    // ui_add_draggable(r, callbackvalue, callbackscale);
+    bool mouseOver = r.ContainsPoint(input.current.mouseX,input.current.mouseY);
+    if (mouseOver && (ui_active(id) || ui_active(0))) ui_set_hot(id);
+    if (!mouseOver && ui_hot(id)) ui_set_hot(0);
 }
 
 
@@ -715,7 +591,7 @@ void ui_textbox(char *text, float x, float y, int hpos, int vpos, float alpha, b
 char ui_log_reuseable_mem[256];
 int ui_log_count;
 void UI_PRINT(char *s) {
-    ui_text(&s, s, {0, (float)ui_log_count*UI_TEXT_SIZE}, UI_LEFT,UI_TOP, true);
+    ui_text(s, {0, (float)ui_log_count*UI_TEXT_SIZE}, UI_LEFT,UI_TOP, true);
     ui_log_count++;
 }
 void UI_PRINT(u64 i)               { sprintf(ui_log_reuseable_mem, "%lli", i); UI_PRINT(ui_log_reuseable_mem); }

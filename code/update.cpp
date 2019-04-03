@@ -229,7 +229,7 @@ bool DrawTagsWithXColumns(int totalcols,
             float y = (row+1) * (UI_TEXT_SIZE+vgap);
 
             rect brect;
-            if (ui_button(&tag_list[t], tag_list[t].ToUTF8Reusable(), {x,y}, UI_LEFT,UI_TOP, &brect)) {
+            if (ui_button_text(&tag_list[t], tag_list[t].ToUTF8Reusable(), {x,y}, UI_LEFT,UI_TOP, &brect)) {
                 if (tagSelect) tagSelect(t);
             }
 
@@ -259,14 +259,14 @@ void DrawTagMenu(int cw, int ch,
 
     if (!menu_open) {
         // ui_button("show tags", cw/2, 0, UI_CENTER,UI_TOP, &ToggleTagMenu);
-        if (ui_button(&menuToggle, "show tags", {0, 0}, UI_LEFT,UI_TOP, 0)) {
+        if (ui_button_text(&menuToggle, "show tags", {0, 0}, UI_LEFT,UI_TOP, 0)) {
             if (menuToggle) menuToggle();
         }
         return; // don't draw any more
     }
 
     rect hider;
-    if (ui_button(&menuToggle, "hide tags", {0, 0}, UI_LEFT,UI_TOP, &hider)) {
+    if (ui_button_text(&menuToggle, "hide tags", {0, 0}, UI_LEFT,UI_TOP, &hider)) {
         if (menuToggle) menuToggle();
     }
 
@@ -278,10 +278,10 @@ void DrawTagMenu(int cw, int ch,
     // rect lastr = ui_button("select none", 0,0, UI_LEFT,UI_TOP, selectNone);
     // ui_button("select all", lastr.w,0, UI_LEFT,UI_TOP, selectAll);
     rect lastr;
-    if (ui_button(&selectNone, "select none", {hider.w+hgap,0}, UI_LEFT,UI_TOP, &lastr)) {
+    if (ui_button_text(&selectNone, "select none", {hider.w+hgap,0}, UI_LEFT,UI_TOP, &lastr)) {
         if(selectNone) selectNone();
     }
-    if (ui_button(&selectAll, "select all", {hider.w+lastr.w+hgap*2,0}, UI_LEFT,UI_TOP, 0)) {
+    if (ui_button_text(&selectAll, "select all", {hider.w+lastr.w+hgap*2,0}, UI_LEFT,UI_TOP, 0)) {
         if(selectAll) selectAll();
     }
 
@@ -289,7 +289,7 @@ void DrawTagMenu(int cw, int ch,
     // first get size of all our tags
     float_pool widths = float_pool::new_empty();
     for (int i = 0; i < tag_list.count; i++) {
-        rect r = ui_text(&tag_list[i], tag_list[i].ToUTF8Reusable(), {0,0}, UI_LEFT,UI_TOP, false);
+        rect r = ui_text(tag_list[i].ToUTF8Reusable(), {0,0}, UI_LEFT,UI_TOP, false);
         widths.add(r.w);
     }
 
@@ -451,52 +451,43 @@ void browse_tick(float actual_dt, int cw, int ch) {
 
     opengl_clear();
 
-    for (int tileI = 0; tileI < tiles.count; tileI++) {
-        tile *t = &tiles[tileI];
-        if (t->skip_rendering) continue; // this is set when tile is not selected for display
-        if (t->IsOnScreen(ch)) { // only render if on screen
+    for (u64 tileI = 0; tileI < tiles.count; tileI++) {
+        tile& t = tiles[tileI];
+        if (t.skip_rendering) continue; // this is set when tile is not selected for display
+        if (t.IsOnScreen(ch)) { // only render if on screen
 
-            if (!t->display_quad_created) {
-                t->display_quad.create(0,0,1,1);
-                t->display_quad_created = true;
+            if (!t.display_quad_created) {
+                t.display_quad.create(0,0,1,1);
+                t.display_quad_created = true;
             }
 
-            if (!t->display_quad_texture_sent_to_gpu || t->texture_updated_since_last_read) {
-                bitmap img = t->GetImage(actual_dt); // the bitmap memory should be freed when getimage is called again
-                t->display_quad.set_texture(img.data, img.w, img.h);
-                t->display_quad_texture_sent_to_gpu = true;
+            if (!t.display_quad_texture_sent_to_gpu || t.texture_updated_since_last_read) {
+                bitmap img = t.GetImage(actual_dt); // the bitmap memory should be freed when getimage is called again
+                t.display_quad.set_texture(img.data, img.w, img.h);
+                t.display_quad_texture_sent_to_gpu = true;
             }
-            else if (t->is_media_loaded) {
-                if (!t->media.IsStaticImageBestGuess()) {
+            else if (t.is_media_loaded) {
+                if (!t.media.IsStaticImageBestGuess()) {
                     // if video, just force send new texture every frame
                     // todo: i think a bug in playback speed here
                     //       maybe b/c if video is offscreen, dt will get messed up?
-                    bitmap img = t->GetImage(actual_dt); // the bitmap memory should be freed when getimage is called again
-                    t->display_quad.set_texture(img.data, img.w, img.h);
-                    t->display_quad_texture_sent_to_gpu = true;
+                    bitmap img = t.GetImage(actual_dt); // the bitmap memory should be freed when getimage is called again
+                    t.display_quad.set_texture(img.data, img.w, img.h);
+                    t.display_quad_texture_sent_to_gpu = true;
                 }
             }
 
-            t->display_quad.set_verts(t->pos.x, t->pos.y, t->size.w, t->size.h);
-            t->display_quad.render(1);
+            t.display_quad.set_verts(t.pos.x, t.pos.y, t.size.w, t.size.h);
+            t.display_quad.render(1);
 
+            // add a button for this item
+            rect r = {t.pos.x,t.pos.y, t.size.w,t.size.h};
+            if (ui_button_rect((void*)(tileI+1), r, 0xffffffff, 0)) { //+1 so we never use 0 as an id
+                OpenFileToView(tileI);
+            }
         }
     }
 
-
-    // make invisible button on top of mouse-overed tile
-    // consider: what do you think about this, seems a little funny
-    if (input.current.point_in_client_area(cw,ch)) { // todo: where to put this check, here or with all click handling?
-        viewing_file_index = TileIndexMouseIsOver(tiles, input.current.mouseX, input.current.mouseY);
-        // if (tiles[viewing_file_index].IsOnScreen(ch)) {
-        rect r = {tiles[viewing_file_index].pos.x, tiles[viewing_file_index].pos.y,
-                  tiles[viewing_file_index].size.w, tiles[viewing_file_index].size.h};
-        ui_button_permanent_highlight(r, &OpenFileToView, (void*)viewing_file_index);
-
-        // nevermind, still need some sort of ordering or we'll hl even when hovering over hud
-        // // highlight here so HUD is drawn overtop highlight rect
-        // ui_highlight(r);
-    }
 
     // scroll bar
     {
@@ -747,13 +738,12 @@ void view_tick(float actual_dt, int cw, int ch) {
         // debug tag count on right
         char buf[256];
         sprintf(buf, "%i", items[viewing_file_index].tags.count);
-        ui_text(&buf, buf, {(float)cw,(float)ch}, UI_RIGHT,UI_BOTTOM, true);
+        ui_text(buf, {(float)cw,(float)ch}, UI_RIGHT,UI_BOTTOM, true);
 
         // debug tag list on left
         float x = 0;
         for (int i = 0; i < items[viewing_file_index].tags.count; i++) {
-            rect lastrect = ui_text(&tag_list[items[viewing_file_index].tags[i]],
-                                    tag_list[items[viewing_file_index].tags[i]].ToUTF8Reusable(), {x,(float)ch}, UI_LEFT,UI_BOTTOM, true);
+            rect lastrect = ui_text(tag_list[items[viewing_file_index].tags[i]].ToUTF8Reusable(), {x,(float)ch}, UI_LEFT,UI_BOTTOM, true);
             x+=lastrect.w;
         }
 

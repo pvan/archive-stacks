@@ -361,6 +361,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         // // update ui in all app modes
         // ui_update(cw,ch, input.current, input.down);
         // ui_reset(); // call at the end or start of every frame so buttons don't carry over between frames
+        ui_update();
 
 
         opengl_swap();
