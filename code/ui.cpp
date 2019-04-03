@@ -307,9 +307,84 @@ void ui_textbox(ui_id id, newstring *text, rect r, float dt) {
         ui_cursor_blink -= ui_cursor_blink_ms;
 
     if (ui_active(id)) {
-        // editing text
-        if (input.down.a) { text->insert(L'a', ui_cursor_pos); ui_cursor_pos++; }
-        if (input.down.b) { text->insert(L'b', ui_cursor_pos); ui_cursor_pos++; }
+        // typing text
+        if (!input.current.shift) {
+            if (input.down.q) { text->insert(L'q', ui_cursor_pos); ui_cursor_pos++; }
+            if (input.down.w) { text->insert(L'w', ui_cursor_pos); ui_cursor_pos++; }
+            if (input.down.e) { text->insert(L'e', ui_cursor_pos); ui_cursor_pos++; }
+            if (input.down.r) { text->insert(L'r', ui_cursor_pos); ui_cursor_pos++; }
+            if (input.down.t) { text->insert(L't', ui_cursor_pos); ui_cursor_pos++; }
+            if (input.down.y) { text->insert(L'y', ui_cursor_pos); ui_cursor_pos++; }
+            if (input.down.u) { text->insert(L'u', ui_cursor_pos); ui_cursor_pos++; }
+            if (input.down.i) { text->insert(L'i', ui_cursor_pos); ui_cursor_pos++; }
+            if (input.down.o) { text->insert(L'o', ui_cursor_pos); ui_cursor_pos++; }
+            if (input.down.p) { text->insert(L'p', ui_cursor_pos); ui_cursor_pos++; }
+            if (input.down.a) { text->insert(L'a', ui_cursor_pos); ui_cursor_pos++; }
+            if (input.down.s) { text->insert(L's', ui_cursor_pos); ui_cursor_pos++; }
+            if (input.down.d) { text->insert(L'd', ui_cursor_pos); ui_cursor_pos++; }
+            if (input.down.f) { text->insert(L'f', ui_cursor_pos); ui_cursor_pos++; }
+            if (input.down.g) { text->insert(L'g', ui_cursor_pos); ui_cursor_pos++; }
+            if (input.down.h) { text->insert(L'h', ui_cursor_pos); ui_cursor_pos++; }
+            if (input.down.j) { text->insert(L'j', ui_cursor_pos); ui_cursor_pos++; }
+            if (input.down.k) { text->insert(L'k', ui_cursor_pos); ui_cursor_pos++; }
+            if (input.down.l) { text->insert(L'l', ui_cursor_pos); ui_cursor_pos++; }
+            if (input.down.z) { text->insert(L'z', ui_cursor_pos); ui_cursor_pos++; }
+            if (input.down.x) { text->insert(L'x', ui_cursor_pos); ui_cursor_pos++; }
+            if (input.down.c) { text->insert(L'c', ui_cursor_pos); ui_cursor_pos++; }
+            if (input.down.v) { text->insert(L'v', ui_cursor_pos); ui_cursor_pos++; }
+            if (input.down.b) { text->insert(L'b', ui_cursor_pos); ui_cursor_pos++; }
+            if (input.down.n) { text->insert(L'n', ui_cursor_pos); ui_cursor_pos++; }
+            if (input.down.m) { text->insert(L'm', ui_cursor_pos); ui_cursor_pos++; }
+            if (input.down.squareL   ) { text->insert(L'[', ui_cursor_pos); ui_cursor_pos++; }
+            if (input.down.squareR   ) { text->insert(L']', ui_cursor_pos); ui_cursor_pos++; }
+            if (input.down.bslash    ) { text->insert(L'\\', ui_cursor_pos); ui_cursor_pos++; }
+            if (input.down.semicolon ) { text->insert(L';', ui_cursor_pos); ui_cursor_pos++; }
+            if (input.down.apostrophe) { text->insert(L'\'', ui_cursor_pos); ui_cursor_pos++; }
+            if (input.down.comma     ) { text->insert(L',', ui_cursor_pos); ui_cursor_pos++; }
+            if (input.down.period    ) { text->insert(L'.', ui_cursor_pos); ui_cursor_pos++; }
+            if (input.down.fslash    ) { text->insert(L'/', ui_cursor_pos); ui_cursor_pos++; }
+            if (input.down.space     ) { text->insert(L' ', ui_cursor_pos); ui_cursor_pos++; }
+            if (input.down.tilde     ) { text->insert(L'`', ui_cursor_pos); ui_cursor_pos++; }
+        } else {
+            if (input.down.q) { text->insert(L'Q', ui_cursor_pos); ui_cursor_pos++; }
+            if (input.down.w) { text->insert(L'W', ui_cursor_pos); ui_cursor_pos++; }
+            if (input.down.e) { text->insert(L'E', ui_cursor_pos); ui_cursor_pos++; }
+            if (input.down.r) { text->insert(L'R', ui_cursor_pos); ui_cursor_pos++; }
+            if (input.down.t) { text->insert(L'T', ui_cursor_pos); ui_cursor_pos++; }
+            if (input.down.y) { text->insert(L'Y', ui_cursor_pos); ui_cursor_pos++; }
+            if (input.down.u) { text->insert(L'U', ui_cursor_pos); ui_cursor_pos++; }
+            if (input.down.i) { text->insert(L'I', ui_cursor_pos); ui_cursor_pos++; }
+            if (input.down.o) { text->insert(L'O', ui_cursor_pos); ui_cursor_pos++; }
+            if (input.down.p) { text->insert(L'P', ui_cursor_pos); ui_cursor_pos++; }
+            if (input.down.a) { text->insert(L'A', ui_cursor_pos); ui_cursor_pos++; }
+            if (input.down.s) { text->insert(L'S', ui_cursor_pos); ui_cursor_pos++; }
+            if (input.down.d) { text->insert(L'D', ui_cursor_pos); ui_cursor_pos++; }
+            if (input.down.f) { text->insert(L'F', ui_cursor_pos); ui_cursor_pos++; }
+            if (input.down.g) { text->insert(L'G', ui_cursor_pos); ui_cursor_pos++; }
+            if (input.down.h) { text->insert(L'H', ui_cursor_pos); ui_cursor_pos++; }
+            if (input.down.j) { text->insert(L'J', ui_cursor_pos); ui_cursor_pos++; }
+            if (input.down.k) { text->insert(L'K', ui_cursor_pos); ui_cursor_pos++; }
+            if (input.down.l) { text->insert(L'L', ui_cursor_pos); ui_cursor_pos++; }
+            if (input.down.z) { text->insert(L'Z', ui_cursor_pos); ui_cursor_pos++; }
+            if (input.down.x) { text->insert(L'X', ui_cursor_pos); ui_cursor_pos++; }
+            if (input.down.c) { text->insert(L'C', ui_cursor_pos); ui_cursor_pos++; }
+            if (input.down.v) { text->insert(L'V', ui_cursor_pos); ui_cursor_pos++; }
+            if (input.down.b) { text->insert(L'B', ui_cursor_pos); ui_cursor_pos++; }
+            if (input.down.n) { text->insert(L'N', ui_cursor_pos); ui_cursor_pos++; }
+            if (input.down.m) { text->insert(L'M', ui_cursor_pos); ui_cursor_pos++; }
+            if (input.down.squareL   ) { text->insert(L'{', ui_cursor_pos); ui_cursor_pos++; }
+            if (input.down.squareR   ) { text->insert(L'}', ui_cursor_pos); ui_cursor_pos++; }
+            if (input.down.bslash    ) { text->insert(L'|', ui_cursor_pos); ui_cursor_pos++; }
+            if (input.down.semicolon ) { text->insert(L':', ui_cursor_pos); ui_cursor_pos++; }
+            if (input.down.apostrophe) { text->insert(L'"', ui_cursor_pos); ui_cursor_pos++; }
+            if (input.down.comma     ) { text->insert(L'<', ui_cursor_pos); ui_cursor_pos++; }
+            if (input.down.period    ) { text->insert(L'>', ui_cursor_pos); ui_cursor_pos++; }
+            if (input.down.fslash    ) { text->insert(L'?', ui_cursor_pos); ui_cursor_pos++; }
+            if (input.down.space     ) { text->insert(L' ', ui_cursor_pos); ui_cursor_pos++; }
+            if (input.down.tilde     ) { text->insert(L'~', ui_cursor_pos); ui_cursor_pos++; }
+        }
+
+        // deleting text
         if (input.down.backspace && ui_cursor_pos>0) { text->rtrim(1); ui_cursor_pos--; }
         if (input.down.del && ui_cursor_pos<text->count) { text->del_at(ui_cursor_pos); }
 
