@@ -520,9 +520,13 @@ void browse_tick(float actual_dt, int cw, int ch) {
     // tag menu
     {
         static int_pool filtered_tag_indices = int_pool::new_empty();
-        if (filtered_tag_indices.count == 0) {
-            filtered_tag_indices.add(4);
-            filtered_tag_indices.add(7);
+        filtered_tag_indices.empty_out();
+        for (int i = 0; i < tag_list.count; i++) {
+            // strstr returns pointer to substring in string
+            // todo: not sure if works on utf8 strings
+            if (strstr(tag_list[i].ToUTF8Reusable(), tag_filter.to_utf8_reusable()) != 0) {
+                filtered_tag_indices.add(i);
+            }
         }
         DrawTagMenu(cw, ch,
                     &SelectBrowseTagsNone,
@@ -734,9 +738,13 @@ void view_tick(float actual_dt, int cw, int ch) {
     // select tag menu
     {
         static int_pool filtered_tag_indices = int_pool::new_empty();
-        if (filtered_tag_indices.count == 0) {
-            filtered_tag_indices.add(4);
-            filtered_tag_indices.add(7);
+        filtered_tag_indices.empty_out();
+        for (int i = 0; i < tag_list.count; i++) {
+            // strstr returns pointer to substring in string
+            // todo: not sure if works on utf8 strings
+            if (strstr(tag_list[i].ToUTF8Reusable(), tag_filter.to_utf8_reusable()) != 0) {
+                filtered_tag_indices.add(i);
+            }
         }
         DrawTagMenu(cw, ch,
                     &SelectItemTagsNone,

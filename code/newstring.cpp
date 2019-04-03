@@ -74,31 +74,25 @@ struct newstring {
 
     void rtrim(int amt) { assert(count>=amt && amt>=0); count-=amt; }
 
-    // char *to_utf8_reusable() {
-    //     // method without null terminator
-    //     int bytes_needed = WideCharToMultiByte(CP_UTF8,0,  list,count,  0,0,  0,0);
-    //     char *utf8 = next_open_reusable_mem();
-    //     assert(bytes_needed+1 <= REUSABLE_MEM_BYTES); //+1 for null termin we have to add
-    //     WideCharToMultiByte(CP_UTF8,0,  list,count,  utf8,bytes_needed,  0,0);
-    //     utf8[bytes_needed] = 0; // add null terminator, it's not there by default if we pass in count instead of -1
-    //     return utf8;
-
-    //     // add(L'\0'); // add null terminator before passing string along anywhere (todo: double check this everywhere--with asserts if possible)
-    //     // int numChars = WideCharToMultiByte(CP_UTF8,0,  list,-1,  0,0,  0,0);
-    //     // char *utf8 = string_reusable_toggle ? (char*)&string_reusable_mem1 : (char*)&string_reusable_mem2; string_reusable_toggle=!string_reusable_toggle;
-    //     // WideCharToMultiByte(CP_UTF8,0,  list,-1,  utf8,numChars*sizeof(char),  0,0);
-    //     // return utf8;
-    // }
-    // char *to_ascii_reusuable() {
-    //     // todo: just use utf8 for now and worry about non-ascii chars later
-    //     return to_utf8_reusable();
-    // }
+    char *to_utf8_reusable() {
+        // method without null terminator
+        int bytes_needed_with_null = WideCharToMultiByte(CP_UTF8,0,  list,count,  0,0,  0,0) +1; // need +1 for null terminator if passing count instead of -1
+        char *utf8 = next_open_reusable_mem();
+        assert(bytes_needed_with_null <= REUSABLE_MEM_BYTES);
+        WideCharToMultiByte(CP_UTF8,0,  list,count,  utf8,bytes_needed_with_null,  0,0);
+        utf8[bytes_needed_with_null-1] = 0; // add null terminator, it's not there by default if we pass in count instead of -1
+        return utf8;
+    }
+    char *to_ascii_reusuable() {
+        // todo: just use utf8 for now and worry about non-ascii chars later
+        return to_utf8_reusable();
+    }
 
     char *to_utf8_new_memory() {
         // method without null terminator
         int bytes_needed_with_null = WideCharToMultiByte(CP_UTF8,0,  list,count,  0,0,  0,0) +1; // need +1 for null terminator if passing count instead of -1
         char *utf8 = (char*)malloc(bytes_needed_with_null);
-        assert(bytes_needed_with_null <= REUSABLE_MEM_BYTES);
+        // assert(bytes_needed_with_null <= REUSABLE_MEM_BYTES); // not needed when allocating our own
         WideCharToMultiByte(CP_UTF8,0,  list,count,  utf8,bytes_needed_with_null,  0,0);
         utf8[bytes_needed_with_null-1] = 0; // add null terminator, it's not there by default if we pass in count instead of -1
         return utf8;
