@@ -271,7 +271,8 @@ void DrawTagMenu(int cw, int ch,
     }
 
     // if (tag_filter.count == 0) tag_filter.append(L't');
-    ui_textbox(&tag_filter, &tag_filter, {(float)cw/2,0,100,UI_TEXT_SIZE}, g_dt);
+    ui_text("filter: ", {(float)cw/2-50,0}, UI_RIGHT,UI_TOP, true, 0.66);
+    ui_textbox(&tag_filter, &tag_filter, {(float)cw/2-50,0,100,UI_TEXT_SIZE}, g_dt);
 
     float hgap = 12;
     float vgap = 3;
