@@ -459,9 +459,14 @@ rect ui_text(ui_id id, char *text, rect r, int hpos, int vpos, bool render) {
 // }
 
 
-void ui_set_hot(ui_id id) {
-    if (!ui_context.active)
-        ui_context.hot = id;
+void ui_set_hot(ui_id id
+                // , bool enable
+                ) {
+    // if (enable) {
+        if (!ui_context.active) ui_context.hot = id;
+    // } else {
+    //     if (ui_context.hot == id) ui_context.hot = 0;
+    // }
 }
 void ui_set_active(ui_id id) {
     // if (!ui_context.active)
@@ -492,16 +497,16 @@ bool ui_button(ui_id id,
         }
     }
 
-    if (inr.ContainsPoint(input.current.mouseX,input.current.mouseY)) { ui_set_hot(id); }
+    // ui_set_hot(id, inr.ContainsPoint(input.current.mouseX,input.current.mouseY));
+
+    bool mouseOver = inr.ContainsPoint(input.current.mouseX,input.current.mouseY);
+    if (mouseOver) ui_set_hot(id);
+    if (!mouseOver && ui_hot(id)) ui_set_hot(0);
 
     if (outrect) *outrect = inr;
 
     if (ui_hot(id)) {
-        if (!inr.ContainsPoint(input.current.mouseX,input.current.mouseY)) {
-            ui_set_hot(0);
-        } else {
-            ui_rect(inr, 0xffffffff, 0.3);
-        }
+        ui_rect(inr, 0xffffffff, 0.3);
     }
 
     if (ui_active(id)) {
@@ -534,26 +539,72 @@ rect ui_button_permanent_highlight(rect br, void(*effect)(void*), void *arg=0)
 //     // ui_elements.add(gizmo);
 // }
 
-// what to name this?
-// will absorbe clicks/hl events (and won't pass below this)
-void ui_rect_solid(rect r, u32 col, float a) {
+// // what to name this?
+// // will absorbe clicks/hl events (and won't pass below this)
+// void ui_rect_solid(rect r, u32 col, float a) {
 
-    // ui_element gizmo = {0};
-    // gpu_quad q = gpu_quad_from_rect(r);
-    // gizmo.add_hl_quad(q, 0, 0); // pass 0 in for alpha to use when being highlighted (basically, don't highlight)
-    // ui_elements.add(gizmo);  // ignore highlight
+//     // ui_element gizmo = {0};
+//     // gpu_quad q = gpu_quad_from_rect(r);
+//     // gizmo.add_hl_quad(q, 0, 0); // pass 0 in for alpha to use when being highlighted (basically, don't highlight)
+//     // ui_elements.add(gizmo);  // ignore highlight
 
-    // ui_add_clickable(r, 0, 0);  // ignore clicks
+//     // ui_add_clickable(r, 0, 0);  // ignore clicks
 
-    // ui_rect(r, col, a);
-}
+//     // ui_rect(r, col, a);
+// }
 
 
 // note takes two values, for top/bottom of scroll bar indicator (for variable size)
-void ui_scrollbar(rect r, float top_percent, float bot_percent,
-                  float *callbackvalue, float callbackscale,
-                  void(*effect)(int), int arg=0)
+void ui_scrollbar(ui_id id,
+                  rect r, float top_percent, float bot_percent,
+                  float *callbackvalue, float callbackscale)
 {
+
+    float bgalpha = 0.4;
+    u32 bgcolor = 0xffbbbbbb;
+    u32 indicatorcolor = 0xffeeeeeeee;
+
+    if (ui_active(id)) {
+        float click_percent = (input.current.mouseY - r.y) / r.h;
+        // consider: pass function pointer instead of scale factor?
+        // or some other alternative?
+        if (callbackvalue) *callbackvalue = callbackscale * click_percent;
+        if (input.up.mouseL) {
+            ui_set_active(0);
+        } else {
+            indicatorcolor = 0xffff77ff;
+        }
+    } else {
+        if (ui_hot(id)) {
+            bgcolor = 0xff777777;
+            bgalpha = 0.7;
+            if (input.down.mouseL) {
+                ui_set_active(id);
+            }
+        }
+    }
+
+    bool mouseOver = r.ContainsPoint(input.current.mouseX,input.current.mouseY);
+    if (mouseOver) ui_set_hot(id);
+    if (!mouseOver && ui_hot(id)) ui_set_hot(0);
+
+    // --bg--
+    ui_rect(r, bgcolor, bgalpha);
+
+    float top_pixels = top_percent * (float)r.h;
+    float bot_pixels = bot_percent * (float)r.h;
+
+    float size = roundf(bot_pixels-top_pixels);
+    if (size < 10) size = 10;
+
+    // --indicator--
+    ui_rect({r.x, top_pixels, r.w, size}, indicatorcolor, 0.9);
+
+    // --active color--
+    if (ui_active(id)) {
+        ui_rect(r, 0xff777700, 0.3);
+    }
+
     // ui_element gizmo = {0};
     // {
     //     // lets try something funny, put the hl below the others as a kind of optional "less opacity"
