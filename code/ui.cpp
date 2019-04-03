@@ -298,7 +298,7 @@ void ui_scrollbar(ui_id id,
 
 
 float ui_cursor_blink = 0;
-float ui_cursor_blink_ms = 500;
+float ui_cursor_blink_ms = 700;
 int ui_cursor_pos = 1;
 void ui_textbox(ui_id id, newstring *text, rect r, float dt) {
 
@@ -323,44 +323,41 @@ void ui_textbox(ui_id id, newstring *text, rect r, float dt) {
         }
     }
 
-    // if (ui_hot(id)) {
-    //     ui_rect(r, 0xffffffff, 0.3);
-    // }
+    u32 bgcolor = 0xffffffff;
+    float bgalpha = 0.8;
+
+    if (ui_active(id)) {
+        bgcolor = 0xff7777ff;
+        bgalpha = 0.8;
+    }
 
     // --bg--
-    ui_rect(r, 0xffffffff, 0.7);
+    ui_rect(r, bgcolor, bgalpha);
+
+    // --hl--
+    if (ui_hot(id)) {
+        ui_rect(r, 0xffffffff, 0.3);
+    }
 
     // --text--
     char *ascii = text->to_ascii_new_memory();
     ui_text(ascii, r, UI_LEFT,UI_TOP, true, 0, 0x0);
 
+    // --cursor--
     if (ui_active(id)) {
-        ui_rect(r, 0xff777700, 0.3);
-
-        // --cursor--
         // measure position of cursor
-        // newstring copy = text->copy_into_new_memory();
-            // copy.rtrim(text->count-ui_cursor_pos);
-            // rect rectleftofcursor = ui_text(copy.to_ascii_reusuable(), r, UI_LEFT,UI_TOP, true);
-        // copy.free_all();
         ascii[ui_cursor_pos] = '\0'; // trim everything after cursor
         rect rectleftofcursor = ui_text(ascii, r, UI_LEFT,UI_TOP, false, 0);
         int cursorW = rectleftofcursor.w;
         // draw cursor
         if (ui_cursor_blink < ui_cursor_blink_ms/2) {
-            ui_rect({r.x+cursorW,r.y,5,r.h}, 0xff222222, 0.8);
+            ui_rect({r.x+cursorW-2,r.y+2,2,r.h-4}, 0xff000000, 1);
         }
     }
-
-
-
-
-
 
     bool mouseOver = r.ContainsPoint(input.current.mouseX,input.current.mouseY);
     if (mouseOver && (ui_active(id) || ui_active(0))) ui_set_hot(id);
     if (!mouseOver && ui_hot(id)) ui_set_hot(0);
-
 
     free(ascii);
 }
