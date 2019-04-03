@@ -442,7 +442,7 @@ void browse_tick(float actual_dt, int cw, int ch) {
         }
     }
 
-    if (input.down.space)
+    if (input.down.tab)
         ToggleTagMenu();
 
 
@@ -647,7 +647,7 @@ void view_tick(float actual_dt, int cw, int ch) {
         app_mode = BROWSING_THUMBS;
         // todo: remove tile stuff from memory or gpu ?
     }
-    if (input.down.space)
+    if (input.down.tab)
         ToggleTagSelectMenu();
 
 
