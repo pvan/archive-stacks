@@ -308,29 +308,16 @@ void ui_textbox(ui_id id, newstring *text, rect r, float dt) {
 
     if (ui_active(id)) {
         // editing text
-        if (input.down.a) {
-            text->insert(L'a', ui_cursor_pos);
-            ui_cursor_pos++;
-        }
-        if (input.down.b) {
-            text->insert(L'b', ui_cursor_pos);
-            ui_cursor_pos++;
-        }
-        if (input.down.backspace && ui_cursor_pos>0) {
-            text->rtrim(1);
-            ui_cursor_pos--;
-        }
-        if (input.down.del && ui_cursor_pos<text->count) {
-            text->del_at(ui_cursor_pos+1);
-        }
+        if (input.down.a) { text->insert(L'a', ui_cursor_pos); ui_cursor_pos++; }
+        if (input.down.b) { text->insert(L'b', ui_cursor_pos); ui_cursor_pos++; }
+        if (input.down.backspace && ui_cursor_pos>0) { text->rtrim(1); ui_cursor_pos--; }
+        if (input.down.del && ui_cursor_pos<text->count) { text->del_at(ui_cursor_pos); }
 
         // moving cursor
-        if (input.down.left && ui_cursor_pos>0) {
-            ui_cursor_pos--;
-        }
-        if (input.down.right && ui_cursor_pos<text->count) {
-            ui_cursor_pos++;
-        }
+        if (input.down.left  && ui_cursor_pos>0)           { ui_cursor_pos--; }
+        if (input.down.right && ui_cursor_pos<text->count) { ui_cursor_pos++; }
+        if (input.down.home) { ui_cursor_pos = 0; }
+        if (input.down.end) { ui_cursor_pos = text->count; }
 
         // done editing
         if (input.down.mouseL && !ui_hot(id)) {
