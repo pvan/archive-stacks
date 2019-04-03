@@ -49,6 +49,16 @@ struct newstring {
         return str;
     }
 
+    void insert(wc newChar, int atIndex) {
+        assert(atIndex >= 0 && atIndex <= count);
+        add(newChar); // placeholder character, also note count now is +1 from original
+        // move all chars back until spot
+        for (int i = count; i > atIndex; i--) {
+            list[i] = list[i-1];
+        }
+        list[atIndex] = newChar;
+    }
+
     void append(wc newchar) { add(newchar); }
     // void append(char newchar) { add((wc)newchar); }
     // void append(char *c) { for (;*c;c++) add((wc)c); }
