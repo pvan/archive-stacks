@@ -316,6 +316,12 @@ void ui_textbox(ui_id id, newstring *text, rect r, float dt) {
             text->rtrim(1);
             ui_cursor_pos--;
         }
+        if (input.down.left && ui_cursor_pos>0) {
+            ui_cursor_pos--;
+        }
+        if (input.down.right && ui_cursor_pos<text->count) {
+            ui_cursor_pos++;
+        }
 
         // done editing
         if (input.down.mouseL && !ui_hot(id)) {
