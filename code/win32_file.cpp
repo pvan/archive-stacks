@@ -73,52 +73,83 @@ bool win32_PathExists(newstring path) { return win32_PathExists(path.to_wc_reusa
 // for IFileOpenDialog and friends
 #include <shobjidl.h>
 #pragma comment(lib, "Ole32.lib")
+#pragma comment(lib, "Shell32.lib")
 
-newstring win32_OpenFileSelectDialog(HWND hwnd, newstring startingDir) {
+// create popup dialog to select a folder
+// pass a pointer that will be changed to the selected folder
+// todo: value of pointer passed in will be the default starting directory
+void win32_OpenFolderSelectDialog(HWND hwnd, newstring *inAndOutString) {
 
-    wc *buffer = (wc*)malloc(256 * sizeof(wc));
+    // GetOpenFileNameW
+    // older, but lighterweight
+    // unfortunately no easy folder selection
 
-    OPENFILENAMEW ofn = {0};
-    ofn.lStructSize = sizeof(OPENFILENAME);
-    ofn.hwndOwner = hwnd;
-    ofn.lpstrFile = buffer;
-    ofn.nMaxFile = 256;
-    // ofn.lpstrInitialDir
+    // wc *buffer = (wc*)malloc(256 * sizeof(wc));
 
-    if (GetOpenFileNameW(&ofn)) {
-        newstring result = {0};
-        result = newstring::create_with_new_memory(ofn.lpstrFile);
-        return result;
-    } else {
+    // OPENFILENAMEW ofn = {0};
+    // ofn.lStructSize = sizeof(OPENFILENAME);
+    // ofn.hwndOwner = hwnd;
+    // ofn.lpstrFile = buffer;
+    // ofn.nMaxFile = 256;
+    // // ofn.lpstrInitialDir
 
-    }
+    // if (GetOpenFileNameW(&ofn)) {
+    //     newstring result = {0};
+    //     result = newstring::create_with_new_memory(ofn.lpstrFile);
+    //     return result;
+    // } else {
 
-    // if (CoInitializeEx(0, COINIT_APARTMENTTHREADED|COINIT_DISABLE_OLE1DDE) >=0)
-    // {
-    //     IFileOpenDialog *pfo;
-    //     if (CoCreateInstance(CLSID_FileOpenDialog, 0, CLSCTX_ALL,
-    //                          IID_IFileOpenDialog, (void**)(&pfo)) >=0)
-    //     {
-    //         if (pfo->Show(0) >=0)
-    //         {
-    //             IShellItem *pitem;
-    //             if (pfo->GetResult(&pitem) >=0)
-    //             {
-    //                 PWSTR filepath;
-    //                 if (pitem->GetDisplayName(SIGDN_FILESYSPATH, &filepath) >=0)
-    //                 {
-    //                     MessageBoxW(0,filepath, L"yurp", MB_OK);
-    //                     CoTaskMemFree(filepath);
-    //                 }
-    //                 pitem->Release();
-    //             }
-    //         }
-    //         pfo->Release();
-    //     }
-    //     CoUninitialize();
     // }
 
-    return startingDir;
+
+    // newer way, IFileDialog
+    // loads a bunch of shell-related dlls though
+    // and my god, it's full of hoops to go through
+    // but easy to select folders, so let's go with it
+
+    if (CoInitializeEx(0, COINIT_APARTMENTTHREADED|COINIT_DISABLE_OLE1DDE) >=0)
+    {
+        IFileOpenDialog *pfo;
+        if (CoCreateInstance(CLSID_FileOpenDialog, 0, CLSCTX_ALL,
+                             IID_IFileOpenDialog, (void**)(&pfo)) >=0)
+        {
+
+            // set as folder select
+            FILEOPENDIALOGOPTIONS options;
+            pfo->GetOptions(&options);
+            pfo->SetOptions(options | FOS_PICKFOLDERS);
+
+            // set initial folder
+            IShellItem *psi = 0;
+
+            if (win32_IsDirectory(*inAndOutString)) {
+                SHCreateItemFromParsingName(inAndOutString->to_wc_reusable(), 0, IID_PPV_ARGS(&psi));
+                pfo->SetFolder(psi);
+            }
+
+            if (pfo->Show(0) >=0)
+            {
+                IShellItem *pitem;
+                if (pfo->GetResult(&pitem) >=0)
+                {
+                    PWSTR filepath;
+                    if (pitem->GetDisplayName(SIGDN_FILESYSPATH, &filepath) >=0)
+                    {
+                        // MessageBoxW(0,filepath, L"yurp", MB_OK);
+                        inAndOutString->empty_out();
+                        inAndOutString->append(filepath);
+                        CoTaskMemFree(filepath);
+                    }
+                    pitem->Release();
+                }
+            }
+
+            if(psi) psi->Release();
+            pfo->Release();
+        }
+        CoUninitialize();
+    }
+
 }
 
 

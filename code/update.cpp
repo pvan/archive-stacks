@@ -868,7 +868,7 @@ void settings_tick(float actual_dt, int cw, int ch) {
         proposed_master_path.count = 0;
     }
     if (ui_button_text("browse","browse", {x+textboxwidth+40,y}, UI_LEFT,UI_TOP, 0)) {
-        win32_OpenFileSelectDialog(g_hwnd, proposed_master_path);
+        win32_OpenFolderSelectDialog(g_hwnd, &proposed_master_path);
     }
 
     if (win32_PathExists(proposed_master_path)) {
