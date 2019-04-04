@@ -72,7 +72,7 @@ void SelectItemTagsNone() {
 }
 
 void OpenFileToView(int item_index) {
-    app_mode = VIEWING_FILE;
+    app_change_mode(VIEWING_FILE);
 
     viewing_file_index = item_index;
 
@@ -601,8 +601,7 @@ void browse_tick(float actual_dt, int cw, int ch) {
     }
 
     if (ui_button_text("settings", "settings", {(float)cw,0}, UI_RIGHT,UI_TOP, 0)) {
-        app_mode = SETTINGS;
-        // todo: make app mode switching into function?
+        app_change_mode(SETTINGS);
     }
 
 
@@ -731,8 +730,7 @@ void view_tick(float actual_dt, int cw, int ch) {
     }
 
     if (input.down.mouseR) {
-        app_mode = BROWSING_THUMBS;
-        // todo: remove tile stuff from memory or gpu ?
+        app_change_mode(BROWSING_THUMBS);
     }
     if (input.down.tab)
         ToggleTagSelectMenu();
@@ -824,8 +822,7 @@ void view_tick(float actual_dt, int cw, int ch) {
 
     // close button
     if (ui_button_text("close X", "close X", {(float)cw,0}, UI_RIGHT,UI_TOP, 0)) {
-        app_mode = BROWSING_THUMBS;
-        // todo: make app mode switching into function?
+        app_change_mode(BROWSING_THUMBS);
     }
 
 
@@ -855,7 +852,6 @@ void view_tick(float actual_dt, int cw, int ch) {
 }
 
 
-newstring proposed_master_path = newstring::allocate_new(256);
 
 void settings_tick(float actual_dt, int cw, int ch) {
 
@@ -868,12 +864,21 @@ void settings_tick(float actual_dt, int cw, int ch) {
         proposed_master_path.count = 0;
     }
     if (ui_button_text("browse","browse", {x+textboxwidth+40,y}, UI_LEFT,UI_TOP, 0)) {
+        // newstring prev_proposed = proposed_master_path.copy_into_new_memory();
         win32_OpenFolderSelectDialog(g_hwnd, &proposed_master_path);
+        // if (proposed_master_path != prev_proposed) {
+
+        // }
+        // prev_proposed.free_all();
     }
 
     if (win32_PathExists(proposed_master_path)) {
         if (win32_IsDirectory(proposed_master_path)) {
             ui_text("directory found", {x,y+UI_TEXT_SIZE}, UI_LEFT,UI_TOP, true, 0, 0xff00ff00);
+
+
+
+
         } else {
             ui_text("path not directory", {x,y+UI_TEXT_SIZE}, UI_LEFT,UI_TOP, true, 0, 0xff0000ff);
         }
@@ -901,8 +906,7 @@ void settings_tick(float actual_dt, int cw, int ch) {
 
 
     if (ui_button_text("close x", "close x", {(float)cw,0}, UI_RIGHT,UI_TOP, 0)) {
-        app_mode = BROWSING_THUMBS;
-        // todo: make app mode switching into function?
+        app_change_mode(BROWSING_THUMBS);
     }
 
 }

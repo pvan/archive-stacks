@@ -34,6 +34,14 @@ struct newstring {
     int count;
     int alloc;
 
+    void realloc_mem(int amt) {
+        if (amt > alloc) {
+            alloc = amt;
+            if (!list) { list = (wc*)malloc(alloc * sizeof(wc)); assert(list); }
+            else { list = (wc*)realloc(list, alloc * sizeof(wc)); assert(list); }
+        }
+    }
+
     void add(wc newItem) {
         if (count >= alloc) {
             if (!list) { alloc = 32; list = (wc*)malloc(alloc * sizeof(wc)); assert(list); }
@@ -63,8 +71,6 @@ struct newstring {
 
     newstring append(wc newchar) { add(newchar); return *this; }
     newstring append(wc *newchar) { for (wc *c=newchar;*c;c++) add(*c); return *this; }
-    // void append(char newchar) { add((wc)newchar); }
-    // void append(char *c) { for (;*c;c++) add((wc)c); }
 
     void rtrim(int amt) { assert(count>=amt && amt>=0); count-=amt; }
     void ltrim(int amt) { assert(count>=amt && amt>=0);
@@ -95,11 +101,38 @@ struct newstring {
         return *this;
     }
 
+    newstring overwrite_with_copy_of(newstring o) {
+        empty_out();
+        if (alloc < o.count) { realloc_mem(o.count); }
+        memcpy(list, o.list, o.count*sizeof(list[0]));
+        count = o.count;
+        return *this;
+    }
+
+    newstring copy_into_new_memory() {
+        newstring copy = newstring::allocate_new(alloc);
+        copy.count = count;
+        memcpy(copy.list, list, count*sizeof(list[0]));
+        return copy;
+    }
+
+    newstring copy_and_append(wc *suffix) {
+        newstring c = copy_into_new_memory();
+        c.append(suffix);
+        // c.count += wcslen(suffix);
+        // c.list = (wchar_t*)realloc(c.chars, (c.length+1)*sizeof(wchar_t));
+        // wcscat(c.chars, suffix);
+        return c;
+    }
+
     // delete this when done with old system
     string to_old_string_temp() {
         string result = string::CreateWithNewMem(to_wc_reusable());
         return result;
     }
+
+    //
+    // conversions / exports
 
     // "final" = now should no longer be changed (todo: enforce this with a bool)
     // (consider: var to indicate if null terminated and remove/add as needed?)
@@ -115,14 +148,6 @@ struct newstring {
         memcpy(result, list, bytes_needed_without_null); // no \0 yet
         result[count] = L'\0';
         return result;
-
-        // int bytes_needed_with_null = (count +1)*sizeof(wc); // need +1 for null terminator
-        // wc *result = (wc*)next_open_reusable_mem();
-        // assert(bytes_needed_with_null <= REUSABLE_MEM_BYTES);
-        // append(L'\0'); // temporary, for copying
-        // memcpy(result, list, bytes_needed_with_null);
-        // rtrim(1); // remove that \0
-        // return result;
     }
 
     char *to_utf8_reusable() {
@@ -153,21 +178,8 @@ struct newstring {
         return to_utf8_new_memory();
     }
 
-    newstring copy_into_new_memory() {
-        newstring copy = newstring::allocate_new(alloc);
-        copy.count = count;
-        memcpy(copy.list, list, count*sizeof(list[0]));
-        return copy;
-    }
-
-    newstring copy_and_append(wc *suffix) {
-        newstring c = copy_into_new_memory();
-        c.append(suffix);
-        // c.count += wcslen(suffix);
-        // c.list = (wchar_t*)realloc(c.chars, (c.length+1)*sizeof(wchar_t));
-        // wcscat(c.chars, suffix);
-        return c;
-    }
+    //
+    // static
 
     static newstring allocate_new(int amount) {
         newstring str = {0};
@@ -184,6 +196,9 @@ struct newstring {
         return result;
     }
 
+    //
+    // misc / operators
+
     void free_all() { if (list) free(list); list=0; }
     void empty_out() { count = 0; } /*note we keep the allocated memory*/ /*should call it .drain()*/
     bool is_empty() { return count==0; }
@@ -195,6 +210,7 @@ struct newstring {
         }
         return true;
     }
+    bool operator!=(newstring o) { return !(*this==o); }
     static newstring new_empty() { newstring new_blank = {0}; return new_blank;  }
 };
 

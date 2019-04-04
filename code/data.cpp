@@ -18,6 +18,20 @@ int app_mode = BROWSING_THUMBS;
 u64 viewing_file_index = 0; // what file do we have open if we're in VIEWING_FILE mode
 
 newstring master_path;
+newstring proposed_master_path;// = newstring::allocate_new(256);
+
+
+void app_change_mode(int new_mode) {
+
+    if (app_mode == VIEWING_FILE && new_mode != VIEWING_FILE) {
+        // todo: remove tile stuff from memory or gpu ?
+    }
+
+    if (new_mode == SETTINGS) {
+        proposed_master_path.overwrite_with_copy_of(master_path);
+    }
+
+}
 
 
 // paths...
