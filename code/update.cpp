@@ -855,17 +855,47 @@ void view_tick(float actual_dt, int cw, int ch) {
 }
 
 
+newstring proposed_master_path = newstring::allocate_new(256);
 
 void settings_tick(float actual_dt, int cw, int ch) {
 
     float textboxwidth = 300;
-    ui_text("directory: ", {(float)cw/2-textboxwidth/2,(float)ch/2-UI_TEXT_SIZE}, UI_LEFT,UI_TOP, true, 0.66);
-    ui_textbox(&master_path, &master_path,
-               {(float)cw/2-textboxwidth/2,(float)ch/2,textboxwidth,UI_TEXT_SIZE},
-               actual_dt);
-    if (ui_button_text((void*)'x', "x", {(float)cw/2+textboxwidth/2,(float)ch/2}, UI_LEFT,UI_TOP, 0)) {
-        master_path.count = 0;
+    float x = (float)cw/2 - textboxwidth/2;
+    float y = (float)ch/2;
+    ui_text("directory: ", {x,y-UI_TEXT_SIZE}, UI_LEFT,UI_TOP, true, 0.66);
+    ui_textbox(&proposed_master_path, &proposed_master_path, {x,y,textboxwidth,UI_TEXT_SIZE}, actual_dt);
+    if (ui_button_text((void*)'x', "x", {x+textboxwidth,y}, UI_LEFT,UI_TOP, 0)) {
+        proposed_master_path.count = 0;
     }
+
+    if (win32_PathExists(proposed_master_path)) {
+        if (win32_IsDirectory(proposed_master_path)) {
+            ui_text("directory found", {x,y+UI_TEXT_SIZE}, UI_LEFT,UI_TOP, true, 0, 0xff00ff00);
+        } else {
+            ui_text("path not directory", {x,y+UI_TEXT_SIZE}, UI_LEFT,UI_TOP, true, 0, 0xff0000ff);
+        }
+    } else {
+        ui_text("path not found", {x,y+UI_TEXT_SIZE}, UI_LEFT,UI_TOP, true, 0, 0xff0000ff);
+    }
+
+
+    // ui_texti("media files: %i", all_items.count, cw/2, ch/2 + UI_TEXT_SIZE*line++, UI_CENTER,UI_CENTER);
+
+    // line++;
+    // ui_texti("items_without_matching_thumbs: %i", item_indices_without_thumbs.count, cw/2, ch/2 + UI_TEXT_SIZE*line++, UI_CENTER,UI_CENTER);
+
+    // line++;
+    // ui_texti("items_without_matching_metadata: %i", item_indices_without_metadata.count, cw/2, ch/2 + UI_TEXT_SIZE*line++, UI_CENTER,UI_CENTER);
+
+    // line++;
+    // ui_text(loading_status_msg, cw/2, ch/2 + UI_TEXT_SIZE*line++, UI_CENTER,UI_CENTER);
+    // ui_texti("files: %i of %i", loading_reusable_count, loading_reusable_max, cw/2, ch/2 + UI_TEXT_SIZE*line++, UI_CENTER,UI_CENTER);
+
+
+    // ui_render_elements(0, 0); // pass mouse pos for highlighting
+    // ui_reset(); // call at the end or start of every frame so buttons don't carry over between frames
+
+
 
     if (ui_button_text("close x", "close x", {(float)cw,0}, UI_RIGHT,UI_TOP, 0)) {
         app_mode = BROWSING_THUMBS;
