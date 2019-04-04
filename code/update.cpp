@@ -342,6 +342,9 @@ void DrawTagMenu(int cw, int ch,
 
     ui_text("filter: ", {(float)cw/2-50,0}, UI_RIGHT,UI_TOP, true, 0.66);
     ui_textbox(tagfilter, tagfilter, {(float)cw/2-50,0,100,UI_TEXT_SIZE}, g_dt);
+    if (ui_button_text((void*)'x', "x", {(float)cw/2+50,0}, UI_LEFT,UI_TOP, 0)) {
+        tagfilter->count = 0;
+    }
 
     float hgap = 12;
     float vgap = 3;
