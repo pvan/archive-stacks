@@ -254,15 +254,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     master_path = newstring::create_with_new_memory(L"E:\\inspiration test folder");
 
     // create item list with fullpath populated
-    // just adapt old method for now
-    newstring_pool itempaths = FindAllItemPaths(master_path);
-    items = item_pool::new_empty();
-    for (int i = 0; i < itempaths.count; i++) {
-        item newitem = {0};
-        newitem.fullpath = itempaths[i].to_old_string_temp();
-        newitem.subpath = itempaths[i].copy_into_new_memory().trim_common_prefix(master_path);
-        items.add(newitem);
-    }
+    items = CreateItemListFromMasterPath(master_path);
 
 
 

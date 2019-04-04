@@ -876,8 +876,11 @@ void settings_tick(float actual_dt, int cw, int ch) {
         if (win32_IsDirectory(proposed_master_path)) {
             ui_text("directory found", {x,y+UI_TEXT_SIZE}, UI_LEFT,UI_TOP, true, 0, 0xff00ff00);
 
+            item_pool proposed_items = CreateItemListFromMasterPath(proposed_master_path);
 
-
+            char buf[256];
+            sprintf(buf, "items found: %i", proposed_items.count);
+            ui_text(buf, {x,y+UI_TEXT_SIZE*4}, UI_LEFT,UI_TOP, true, 0);
 
         } else {
             ui_text("path not directory", {x,y+UI_TEXT_SIZE}, UI_LEFT,UI_TOP, true, 0, 0xff0000ff);

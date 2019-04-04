@@ -23,13 +23,23 @@ newstring proposed_master_path;// = newstring::allocate_new(256);
 
 void app_change_mode(int new_mode) {
 
+    // leaving VIEW
     if (app_mode == VIEWING_FILE && new_mode != VIEWING_FILE) {
         // todo: remove tile stuff from memory or gpu ?
     }
 
+    // leaving SETTINGS
+    if (app_mode == SETTINGS && new_mode != SETTINGS) {
+
+    }
+
+    // entering SETTINGS
     if (new_mode == SETTINGS) {
         proposed_master_path.overwrite_with_copy_of(master_path);
+
     }
+
+    app_mode = new_mode;
 
 }
 
@@ -62,7 +72,6 @@ newstring metadata_dir_name = newstring::create_with_new_memory(L"~metadata");
 newstring_pool FindAllItemPaths(newstring master_path) {
     newstring_pool top_folders = win32_GetAllFilesAndFoldersInDir(master_path);
     newstring_pool result = newstring_pool::new_empty();
-
 
     for (int folderI = 0; folderI < top_folders.count; folderI++) {
         if (win32_IsDirectory(top_folders[folderI])) {
@@ -260,9 +269,29 @@ struct item {
     int_pool tags;
 };
 
+// recommend create all items with this
+// note doesn't set thumbpath or metadata path or tags etc atm
+item CreateItemFromPath(newstring fullpath, newstring masterdir) {
+    item newitem = {0};
+    newitem.fullpath = fullpath.to_old_string_temp();
+    newitem.subpath = fullpath.copy_into_new_memory().trim_common_prefix(masterdir);
+    return newitem;
+}
+
 DEFINE_TYPE_POOL(item);
 
 item_pool items;
+
+
+item_pool CreateItemListFromMasterPath(newstring masterdir) {
+    newstring_pool itempaths = FindAllItemPaths(masterdir);
+    item_pool result = item_pool::new_empty();
+    for (int i = 0; i < itempaths.count; i++) {
+        item newitem = CreateItemFromPath(itempaths[i], masterdir);
+        result.add(newitem);
+    }
+    return result;
+}
 
 
 // todo: combine with reading resolution into one read/write_metadata function
