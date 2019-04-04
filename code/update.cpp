@@ -120,20 +120,26 @@ bool DrawTagsWithXColumns(int totalcols,
     // so you might have a natural break with the 3rd largest item,
     // but if the largest is so much bigger than the next two, that's what will be used
     //
-    // todo: test extreme values
+    // todo: test extreme values (half done when debugging for filtering)
     // todo: could maybe improve the result of this if instead of looking at max gap,
     // we look at some kind of area calculation that looks at gap*number of overrun items
+    //
+    // todo: evaluate the final result of how this is working
+    // (better way to do this? tweak the algo? or different approach?)
+    // feels like there's frequently just 1 or 2 items dangling in the last column,
+    // or a lot of space on the right end of the screen
 
     if (filtered_tag_indices.count == 0) {
         if (render) {
             float x = 0;
             float y = (0+1) * (UI_TEXT_SIZE+vgap);
-            ui_text("no tags matching filter", {x,y}, UI_LEFT,UI_TOP, true, 0.66, 0xffc0ffee);
+            ui_text("*no tags matching filter*", {x,y}, UI_LEFT,UI_TOP, true, 0.66, 0xffc0ffee);
         }
         return false; // within screen
     }
 
     int max_rows_per_col = (filtered_tag_indices.count + totalcols-1) / totalcols; // basically round up
+    assert(max_rows_per_col>0);
     int max_overrun_count = 3; // max number of items to allow to overrun per column
     if (max_rows_per_col<=max_overrun_count) max_overrun_count=0; // try limit overrun to 1 less than max rows per col
     float min_overrun_amount = 10+hgap;//hgap*2; // how far into next col we need to be
@@ -214,7 +220,7 @@ bool DrawTagsWithXColumns(int totalcols,
                 thiscolX += colwidths[c]; // sum of all previous columns
         }
 
-        // check for end of screen before potentially skipping this row (doesn't seem to help)
+        // check for end of screen before potentially skipping this row (not sure if matters)
         if (thiscolX + widths[ft] > cw) {
             // we're bleeding off screen right,
             // we found our max allowable column count (1 before this one)
@@ -349,8 +355,8 @@ void DrawTagMenu(int cw, int ch,
 
     int final_desired_cols = filtered_tag_indices.count;
 
-    // upperbound is 1 col for every tag
-    for (int totalcols = 1; totalcols < filtered_tag_indices.count; totalcols++) {
+    // upperbound is 1 col for every tag (note <= not <)
+    for (int totalcols = 1; totalcols <= filtered_tag_indices.count; totalcols++) {
         if (DrawTagsWithXColumns(
             totalcols,
             false, // don't draw actual buttons, this is jsut a test of the layout with this many columns
