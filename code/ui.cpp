@@ -419,7 +419,8 @@ void ui_textbox(ui_id id, newstring *text, rect r, float dt) {
         if (input.down.end) { ui_cursor_pos = text->count; }
 
         // done editing
-        if (input.down.mouseL && !ui_hot(id)) {
+        if ((input.down.mouseL && !ui_hot(id)) ||
+            input.down.enter) {
             ui_set_active(0);
         }
     } else {
