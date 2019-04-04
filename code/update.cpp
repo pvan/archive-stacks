@@ -15,10 +15,10 @@ bool tag_menu_open = false;  // is tag menu open in browsing mode?
 void ToggleTagMenu() { tag_menu_open = !tag_menu_open; }
 void ToggleTagBrowse(int tagindex) {
     // int tagindex = (u64)disguisedint;
-    if (browse_tags.has(tagindex)) {
-        browse_tags.remove(tagindex);
+    if (browse_tag_indices.has(tagindex)) {
+        browse_tag_indices.remove(tagindex);
     } else {
-        browse_tags.add(tagindex);
+        browse_tag_indices.add(tagindex);
     }
 
     // update display list here
@@ -44,13 +44,31 @@ void ToggleTagSelection(int tagindex) {
     SaveMetadataFile(); // keep close eye on this, if it gets too slow to do inline we can move to background thread
 }
 void SelectItemTagsAll() {
-    items[viewing_file_index].tags.empty_out();
-    for (int i = 0; i < tag_list.count; i++) {
-        items[viewing_file_index].tags.add(i);
+    if (filtered_view_tag_indices.count == 0) {
+        items[viewing_file_index].tags.empty_out();
+        for (int i = 0; i < tag_list.count; i++) {
+            items[viewing_file_index].tags.add(i);
+        }
+    } else {
+        // now just affect visible (filtered) tags
+        for (int ft = 0; ft < filtered_view_tag_indices.count; ft++) {
+            int tagi = filtered_view_tag_indices[ft];
+            if (!items[viewing_file_index].tags.has(tagi))
+                items[viewing_file_index].tags.add(tagi);
+        }
     }
 }
 void SelectItemTagsNone() {
-    items[viewing_file_index].tags.empty_out();
+    if (filtered_view_tag_indices.count == 0) {
+        items[viewing_file_index].tags.empty_out();
+    } else {
+        // now just affect visible (filtered) tags
+        for (int ft = 0; ft < filtered_view_tag_indices.count; ft++) {
+            int tagi = filtered_view_tag_indices[ft];
+            if (items[viewing_file_index].tags.has(tagi))
+                items[viewing_file_index].tags.remove(tagi);
+        }
+    }
 }
 
 void OpenFileToView(int item_index) {
@@ -91,10 +109,6 @@ void OpenFileToView(void *disguisedint) {
 
 
 
-
-
-newstring browse_tag_filter = newstring::allocate_new(128);
-newstring view_tag_filter = newstring::allocate_new(128);
 
 
 // helper function for DrawTagMenu
@@ -566,13 +580,12 @@ void browse_tick(float actual_dt, int cw, int ch) {
 
     // tag menu (browse)
     {
-        static int_pool filtered_tag_indices = int_pool::new_empty();
-        filtered_tag_indices.empty_out();
+        filtered_browse_tag_indices.empty_out();
         for (int i = 0; i < tag_list.count; i++) {
             // strstr returns pointer to substring in string
             // looks like strstr will work fine on utf8 strings
             if (strstr(tag_list[i].ToUTF8Reusable(), browse_tag_filter.to_utf8_reusable()) != 0) {
-                filtered_tag_indices.add(i);
+                filtered_browse_tag_indices.add(i);
             }
         }
         DrawTagMenu(cw, ch,
@@ -581,8 +594,8 @@ void browse_tick(float actual_dt, int cw, int ch) {
                     &ToggleTagBrowse,
                     &ToggleTagMenu,
                     tag_menu_open,
-                    &browse_tags,
-                    filtered_tag_indices,
+                    &browse_tag_indices,
+                    filtered_browse_tag_indices,
                     &browse_tag_filter);
     }
 
@@ -661,7 +674,7 @@ void browse_tick(float actual_dt, int cw, int ch) {
                 //     UI_PRINT("tag0: none");
                 // }
 
-            UI_PRINT("browse tags: %i", browse_tags.count);
+            UI_PRINT("browse tags: %i", browse_tag_indices.count);
             UI_PRINT("display list: %i", display_list.count);
 
             // int skiprender_count = 0;
@@ -785,13 +798,12 @@ void view_tick(float actual_dt, int cw, int ch) {
 
     // select tag menu (view)
     {
-        static int_pool filtered_tag_indices = int_pool::new_empty();
-        filtered_tag_indices.empty_out();
+        filtered_view_tag_indices.empty_out();
         for (int i = 0; i < tag_list.count; i++) {
             // strstr returns pointer to substring in string
             // todo: not sure if works on utf8 strings
             if (strstr(tag_list[i].ToUTF8Reusable(), view_tag_filter.to_utf8_reusable()) != 0) {
-                filtered_tag_indices.add(i);
+                filtered_view_tag_indices.add(i);
             }
         }
         DrawTagMenu(cw, ch,
@@ -801,7 +813,7 @@ void view_tick(float actual_dt, int cw, int ch) {
                     &ToggleTagSelectMenu,
                     tag_select_open,
                     &items[viewing_file_index].tags,
-                    filtered_tag_indices,
+                    filtered_view_tag_indices,
                     &view_tag_filter);
     }
 

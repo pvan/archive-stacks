@@ -568,19 +568,51 @@ void LoadMasterDataFileAndPopulateResolutionsAndTagsEtc(
 
 
 
+
+
+
+newstring browse_tag_filter = newstring::allocate_new(128);
+newstring view_tag_filter = newstring::allocate_new(128);
+
+
+int_pool filtered_browse_tag_indices = int_pool::new_empty();
+
+int_pool filtered_view_tag_indices = int_pool::new_empty();
+
+
 // master list of tag indices that are selected for browsing
-int_pool browse_tags;
+int_pool browse_tag_indices;
 
 void SelectAllBrowseTags() {
-    // set all tags as selected
-    browse_tags.empty_out();
-    for (int i = 0; i < tag_list.count; i++) {
-        browse_tags.add(i);
+    if (filtered_browse_tag_indices.count == 0) {
+        // set all tags as selected
+        browse_tag_indices.empty_out();
+        for (int i = 0; i < tag_list.count; i++) {
+            browse_tag_indices.add(i);
+        }
+    }
+    else {
+        // now just affect visible (filtered) tags
+        for (int ft = 0; ft < filtered_browse_tag_indices.count; ft++) {
+            int tagi = filtered_browse_tag_indices[ft];
+            if (!browse_tag_indices.has(tagi))
+                browse_tag_indices.add(tagi);
+        }
     }
 }
 
 void DeselectAllBrowseTags() {
-    browse_tags.empty_out();
+    if (filtered_browse_tag_indices.count == 0) {
+        browse_tag_indices.empty_out();
+    }
+    else {
+        // now just affect visible (filtered) tags
+        for (int ft = 0; ft < filtered_browse_tag_indices.count; ft++) {
+            int tagi = filtered_browse_tag_indices[ft];
+            if (browse_tag_indices.has(tagi))
+                browse_tag_indices.remove(tagi);
+        }
+    }
 }
 
 
@@ -596,7 +628,7 @@ void CreateDisplayListFromBrowseSelection() {
     for (int i = 0; i < items.count; i++) {
         // could iterate through item's tags or browse tags here first
         for (int t = 0; t < items[i].tags.count; t++) {
-            if (browse_tags.has(items[i].tags[t])) {
+            if (browse_tag_indices.has(items[i].tags[t])) {
                 display_list.add(i);
                 break; // next item
             }
