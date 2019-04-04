@@ -70,6 +70,7 @@ float time_now() { // ms
 
 
 bool running = true;
+HWND g_hwnd;
 
 #include "data.cpp"
 #include "tile.cpp"
@@ -228,7 +229,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         win_rect.right-win_rect.left, win_rect.bottom-win_rect.top,
         0, 0, hInstance, 0);
     if (!hwnd) { MessageBox(0, "CreateWindowEx failed", 0, 0); return 1; }
-
+    g_hwnd = hwnd;
 
     HDC hdc = GetDC(hwnd);
 

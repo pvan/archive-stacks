@@ -861,11 +861,14 @@ void settings_tick(float actual_dt, int cw, int ch) {
 
     float textboxwidth = 300;
     float x = (float)cw/2 - textboxwidth/2;
-    float y = (float)ch/2;
-    ui_text("directory: ", {x,y-UI_TEXT_SIZE}, UI_LEFT,UI_TOP, true, 0.66);
+    float y = (float)ch/4;
+    ui_text("directory: ", {x,y-UI_TEXT_SIZE}, UI_LEFT,UI_TOP, true, 0);
     ui_textbox(&proposed_master_path, &proposed_master_path, {x,y,textboxwidth,UI_TEXT_SIZE}, actual_dt);
     if (ui_button_text((void*)'x', "x", {x+textboxwidth,y}, UI_LEFT,UI_TOP, 0)) {
         proposed_master_path.count = 0;
+    }
+    if (ui_button_text("browse","browse", {x+textboxwidth+40,y}, UI_LEFT,UI_TOP, 0)) {
+        win32_OpenFileSelectDialog(g_hwnd, proposed_master_path);
     }
 
     if (win32_PathExists(proposed_master_path)) {

@@ -67,6 +67,61 @@ bool win32_PathExists(newstring path) { return win32_PathExists(path.to_wc_reusa
 
 
 
+// for GetOpenFileNameW
+#pragma comment(lib, "Comdlg32.lib")
+
+// for IFileOpenDialog and friends
+#include <shobjidl.h>
+#pragma comment(lib, "Ole32.lib")
+
+newstring win32_OpenFileSelectDialog(HWND hwnd, newstring startingDir) {
+
+    wc *buffer = (wc*)malloc(256 * sizeof(wc));
+
+    OPENFILENAMEW ofn = {0};
+    ofn.lStructSize = sizeof(OPENFILENAME);
+    ofn.hwndOwner = hwnd;
+    ofn.lpstrFile = buffer;
+    ofn.nMaxFile = 256;
+    // ofn.lpstrInitialDir
+
+    if (GetOpenFileNameW(&ofn)) {
+        newstring result = {0};
+        result = newstring::create_with_new_memory(ofn.lpstrFile);
+        return result;
+    } else {
+
+    }
+
+    // if (CoInitializeEx(0, COINIT_APARTMENTTHREADED|COINIT_DISABLE_OLE1DDE) >=0)
+    // {
+    //     IFileOpenDialog *pfo;
+    //     if (CoCreateInstance(CLSID_FileOpenDialog, 0, CLSCTX_ALL,
+    //                          IID_IFileOpenDialog, (void**)(&pfo)) >=0)
+    //     {
+    //         if (pfo->Show(0) >=0)
+    //         {
+    //             IShellItem *pitem;
+    //             if (pfo->GetResult(&pitem) >=0)
+    //             {
+    //                 PWSTR filepath;
+    //                 if (pitem->GetDisplayName(SIGDN_FILESYSPATH, &filepath) >=0)
+    //                 {
+    //                     MessageBoxW(0,filepath, L"yurp", MB_OK);
+    //                     CoTaskMemFree(filepath);
+    //                 }
+    //                 pitem->Release();
+    //             }
+    //         }
+    //         pfo->Release();
+    //     }
+    //     CoUninitialize();
+    // }
+
+    return startingDir;
+}
+
+
 // DATE / TIME
 
 u64 win32_GetModifiedTimeSinceEpoc(wchar_t *path)
