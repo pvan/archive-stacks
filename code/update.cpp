@@ -524,8 +524,6 @@ void browse_tick(float actual_dt, int cw, int ch) {
 
     // --render--
 
-    opengl_clear();
-
     for (u64 tileI = 0; tileI < tiles.count; tileI++) {
         tile& t = tiles[tileI];
         if (t.skip_rendering) continue; // this is set when tile is not selected for display
@@ -600,6 +598,11 @@ void browse_tick(float actual_dt, int cw, int ch) {
                     &browse_tag_indices,
                     filtered_browse_tag_indices,
                     &browse_tag_filter);
+    }
+
+    if (ui_button_text("settings", "settings", {(float)cw,0}, UI_RIGHT,UI_TOP, 0)) {
+        app_mode = SETTINGS;
+        // todo: make app mode switching into function?
     }
 
 
@@ -767,8 +770,6 @@ void view_tick(float actual_dt, int cw, int ch) {
 
     // --render--
 
-    opengl_clear();
-
     tile *t = &viewing_tile;
 
     // render tile
@@ -852,3 +853,27 @@ void view_tick(float actual_dt, int cw, int ch) {
 
     }
 }
+
+
+
+void settings_tick(float actual_dt, int cw, int ch) {
+
+    float textboxwidth = 300;
+    ui_text("directory: ", {(float)cw/2-textboxwidth/2,(float)ch/2-UI_TEXT_SIZE}, UI_LEFT,UI_TOP, true, 0.66);
+    ui_textbox(&master_path, &master_path,
+               {(float)cw/2-textboxwidth/2,(float)ch/2,textboxwidth,UI_TEXT_SIZE},
+               actual_dt);
+    if (ui_button_text((void*)'x', "x", {(float)cw/2+textboxwidth/2,(float)ch/2}, UI_LEFT,UI_TOP, 0)) {
+        master_path.count = 0;
+    }
+
+    if (ui_button_text("close x", "close x", {(float)cw,0}, UI_RIGHT,UI_TOP, 0)) {
+        app_mode = BROWSING_THUMBS;
+        // todo: make app mode switching into function?
+    }
+
+}
+
+
+
+

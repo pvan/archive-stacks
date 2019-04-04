@@ -71,18 +71,6 @@ float time_now() { // ms
 
 bool running = true;
 
-bool loading = true;
-bool need_init = true;
-
-// could add loading/etc to this framework
-const int BROWSING_THUMBS = 0;
-const int VIEWING_FILE = 1;
-int app_mode = BROWSING_THUMBS;
-
-u64 viewing_file_index = 0; // what file do we have open if we're in VIEWING_FILE mode
-
-string master_path;
-
 #include "data.cpp"
 #include "tile.cpp"
 
@@ -261,15 +249,17 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 
 
-    master_path = string::KeepMemory(L"E:\\inspiration test folder");
+    // master_path = string::KeepMemory(L"E:\\inspiration test folder");
+    master_path = newstring::create_with_new_memory(L"E:\\inspiration test folder");
 
     // create item list with fullpath populated
     // just adapt old method for now
-    string_pool itempaths = FindAllItemPaths(master_path);
+    newstring_pool itempaths = FindAllItemPaths(master_path);
     items = item_pool::new_empty();
     for (int i = 0; i < itempaths.count; i++) {
         item newitem = {0};
-        newitem.fullpath = itempaths[i];
+        newitem.fullpath = itempaths[i].to_old_string_temp();
+        newitem.subpath = itempaths[i].copy_into_new_memory().trim_common_prefix(master_path);
         items.add(newitem);
     }
 
@@ -355,6 +345,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         // common to all app modes
         if (input.down.tilde) show_debug_console = !show_debug_console;
 
+        opengl_clear();
 
         if (app_mode == BROWSING_THUMBS) {
             browse_tick(actual_dt, cw,ch);
@@ -362,15 +353,15 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         else if (app_mode == VIEWING_FILE) {
             view_tick(actual_dt, cw,ch);
         }
+        else if (app_mode == SETTINGS) {
+            settings_tick(actual_dt, cw,ch);
+        }
 
-
-        // // update ui in all app modes
-        // ui_update(cw,ch, input.current, input.down);
-        // ui_reset(); // call at the end or start of every frame so buttons don't carry over between frames
+        // common to all app modes
         ui_update();
 
-
         opengl_swap();
+
 
 
         if (!measured_first_frame_time) { metric_time_to_first_frame = time_now() - time_at_startup; measured_first_frame_time = true; }

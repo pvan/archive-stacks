@@ -6,6 +6,18 @@
 
 
 
+bool loading = true;
+bool need_init = true;
+
+// could add loading/etc to this framework
+const int BROWSING_THUMBS = 0;
+const int VIEWING_FILE = 1;
+const int SETTINGS = 2;
+int app_mode = BROWSING_THUMBS;
+
+u64 viewing_file_index = 0; // what file do we have open if we're in VIEWING_FILE mode
+
+newstring master_path;
 
 
 // paths...
@@ -30,23 +42,24 @@
 // string_pool metadata_without_matching_item;
 
 
-string_pool FindAllItemPaths(string master_path) {
-    string_pool top_folders = win32_GetAllFilesAndFoldersInDir(master_path);
-    string_pool result = string_pool::new_empty();
+newstring thumb_dir_name = newstring::create_with_new_memory(L"~thumbs");  // todo: where should these consts go
+newstring metadata_dir_name = newstring::create_with_new_memory(L"~metadata");
 
-    string ignore1 = string::Create("~thumbs");  // todo: these should be consts somewhere
-    string ignore2 = string::Create("~metadata");
+newstring_pool FindAllItemPaths(newstring master_path) {
+    newstring_pool top_folders = win32_GetAllFilesAndFoldersInDir(master_path);
+    newstring_pool result = newstring_pool::new_empty();
+
 
     for (int folderI = 0; folderI < top_folders.count; folderI++) {
         if (win32_IsDirectory(top_folders[folderI])) {
-            if (StringEndsWith(top_folders[folderI].chars, ignore1.chars) ||
-                StringEndsWith(top_folders[folderI].chars, ignore2.chars))
+            if (top_folders[folderI].ends_with(thumb_dir_name) ||
+                top_folders[folderI].ends_with(metadata_dir_name))
             {
-                DEBUGPRINT("Ignoring: %s\n", top_folders[folderI].ToUTF8Reusable());
+                DEBUGPRINT("Ignoring: %s\n", top_folders[folderI].to_utf8_reusable());
             } else {
-                string_pool subfiles = win32_GetAllFilesAndFoldersInDir(top_folders[folderI]);
+                newstring_pool subfiles = win32_GetAllFilesAndFoldersInDir(top_folders[folderI]);
                 for (int fileI = 0; fileI < subfiles.count; fileI++) {
-                    if (!win32_IsDirectory(subfiles[fileI].chars)) {
+                    if (!win32_IsDirectory(subfiles[fileI])) {
                         result.add(subfiles[fileI]);
                         // if (result.count > 1630) {
                         //     result.count++;
@@ -68,16 +81,16 @@ string_pool FindAllItemPaths(string master_path) {
     return result;
 }
 
-string_pool FindAllSubfolderPaths(string master_path, wc *subfolder) {
+newstring_pool FindAllSubfolderPaths(newstring master_path, wc *subfolder) {
 
-    string subfolder_path = master_path.CopyAndAppend(subfolder);
-    string_pool top_files = win32_GetAllFilesAndFoldersInDir(subfolder_path);
-    string_pool result = string_pool::new_empty();
+    newstring subfolder_path = master_path.copy_and_append(subfolder);
+    newstring_pool top_files = win32_GetAllFilesAndFoldersInDir(subfolder_path);
+    newstring_pool result = newstring_pool::new_empty();
     for (int folderI = 0; folderI < top_files.count; folderI++) {
         if (win32_IsDirectory(top_files[folderI])) {
-            string_pool subfiles = win32_GetAllFilesAndFoldersInDir(top_files[folderI]);
+            newstring_pool subfiles = win32_GetAllFilesAndFoldersInDir(top_files[folderI]);
             for (int fileI = 0; fileI < subfiles.count; fileI++) {
-                if (!win32_IsDirectory(subfiles[fileI].chars)) {
+                if (!win32_IsDirectory(subfiles[fileI])) {
                     // DEBUGPRINT(subfiles[fileI].ParentDirectoryNameReusable().ToUTF8Reusable());
                     result.add(subfiles[fileI]);
                 } else {
@@ -120,16 +133,21 @@ string_pool ItemsInFirstPoolButNotSecond(string_pool p1, string_pool p2) {
 string_pool tag_list;
 
 void SaveTagList() {
-    wc *path = master_path.CopyAndAppend(L"/~taglist.txt").chars;
+    // wc *path = master_path.CopyAndAppend(L"/~taglist.txt").chars;
+    wc *path = master_path.copy_into_new_memory().append(L"/~taglist.txt").to_wc_final();
+
+    // todo: what is proper saving protocol: save as copy then replace old when done?
 
     // create new blank file first
     if (tag_list.count > 0)
         Win32WriteBytesToFileW(path, tag_list[0].ToUTF8Reusable(), strlen(tag_list[0].ToUTF8Reusable()) + 1); // include the null-terminator
 
-    // then append
+    // then append each
     for (int i = 1; i < tag_list.count; i++) {
         Win32AppendBytesToFileW(path, tag_list[i].ToUTF8Reusable(), strlen(tag_list[i].ToUTF8Reusable()) + 1); // include the null-terminator
     }
+
+    free(path);
 
     // for (int i = 0 ; i < tag_list.count; i++) {
     //     DEBUGPRINT(tag_list[i].ToUTF8Reusable());
@@ -146,7 +164,7 @@ void AddNewTagAndSave(string tag) {
 }
 
 
-string_pool ReadTagListFromFileOrSomethingUsableOtherwise(string master_path) {
+string_pool ReadTagListFromFileOrSomethingUsableOtherwise(newstring master_path) {
     //char *path = DEFAULT_PATH"~tags\\~taglist.txt";
 
     // string path = master_path.CopyAndAppend(L"~taglist.txt");
@@ -165,7 +183,8 @@ string_pool ReadTagListFromFileOrSomethingUsableOtherwise(string master_path) {
     string_pool result = string_pool::new_empty();
     // result.add(string::Create(L"untagged"));  // always have this entry as index 0?? todo: decide
 
-    wc *path = master_path.CopyAndAppend(L"/~taglist.txt").chars;
+    // wc *path = master_path.CopyAndAppend(L"/~taglist.txt").chars;
+    wc *path = master_path.copy_into_new_memory().append(L"/~taglist.txt").to_wc_final();
 
     if (!win32_PathExists(path)) {
         result.add(string::KeepMemory(L"untagged"));  // always have this entry as index 0?? todo: decide
@@ -175,6 +194,8 @@ string_pool ReadTagListFromFileOrSomethingUsableOtherwise(string master_path) {
     void *fileMem;
     int fileSize;
     Win32ReadFileBytesIntoNewMemoryW(path, &fileMem, &fileSize);
+
+    free(path);
 
     char *fileChars = (char*)fileMem;
     int fileCharCount = fileSize / sizeof(char); // the same, but just to be sure
@@ -203,6 +224,8 @@ string_pool ReadTagListFromFileOrSomethingUsableOtherwise(string master_path) {
 struct item {
     string fullpath;
     string thumbpath;
+
+    newstring subpath;
     // string thumbpath128;
     // string thumbpath256;
     // string thumbpath512;
@@ -212,7 +235,9 @@ struct item {
     string justname() { wc *result = CopyJustFilename(fullpath.chars); return string::KeepMemory(result); }
     // string justsubpath() { wc *result = CopyJustFilename(fullpath.chars); return string::Create(result); }
 
-    wc *PointerToJustSubpath(string rootpath) { return PointerToFirstUniqueCharInSecondString(rootpath.chars, fullpath.chars); };
+    // wc *PointerToJustSubpath(newstring rootpath) {
+    //     return PointerToFirstUniqueCharInSecondString(rootpath.chars, fullpath.chars);
+    // };
 
     bool found_in_cache = false; // just metric for debugging
 
@@ -442,14 +467,13 @@ void SaveMetadataFile()
     for (int i = 0; i < items.count; i++) {
 
         // wc *justsubpath = PointerToFirstUniqueCharInSecondString(master_path.chars, items[i].fullpath.chars);
-        wc *justsubpath = items[i].PointerToJustSubpath(master_path);
 
         assert(item_resolutions[i].x == (int)item_resolutions[i].x); // for now i just want to know if any resolutions are't whole numbers
         assert(item_resolutions[i].y == (int)item_resolutions[i].y);
 
         fwprintf(file, L"%i,%i,", (int)item_resolutions[i].x, (int)item_resolutions[i].y);
         fwprintf(file, L"%llu,", modifiedTimes[i]);
-        fwprintf(file, L"%s", justsubpath);
+        fwprintf(file, L"%s", items[i].subpath.to_wc_reusable());
         fwprintf(file, L"%c", L'\0'); // note we add our own \0 after string for easier parsing later
         for (int j = 0; j < items[i].tags.count; j++) {
             fwprintf(file, L" %i", items[i].tags[j]);
@@ -508,8 +532,8 @@ void LoadMasterDataFileAndPopulateResolutionsAndTagsEtc(
         // use subpath to find item index
         int this_item_i = -1;
         for (int i = 0; i < items.count; i++) {
-            wc *justsubpath = items[i].PointerToJustSubpath(master_path);
-            if (wc_equals(justsubpath, subpath))
+            // wc *justsubpath = items[i].PointerToJustSubpath(master_path);
+            if (wc_equals(items[i].subpath.to_wc_reusable(), subpath))
             {
                 this_item_i = i;
                 break;

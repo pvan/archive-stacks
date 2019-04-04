@@ -30,7 +30,7 @@ char *next_open_reusable_mem() {
 // note this basic structure started as a copy of pool, see that if needing similar functionality
 struct newstring {
 
-    wc *list;
+    wc *list; // dont use this as a typical string (not null terminated!)
     int count;
     int alloc;
 
@@ -40,13 +40,6 @@ struct newstring {
             else { alloc *= 2; list = (wc*)realloc(list, alloc * sizeof(wc)); assert(list); }
         }
         list[count++] = newItem;
-    }
-
-    static newstring allocate_new(int amount) {
-        newstring str = {0};
-        str.alloc = amount;
-        str.list = (wc*)malloc(str.alloc * sizeof(wc)); assert(str.list);
-        return str;
     }
 
     void insert(wc newChar, int atIndex) {
@@ -68,11 +61,69 @@ struct newstring {
         count--;
     }
 
-    void append(wc newchar) { add(newchar); }
+    newstring append(wc newchar) { add(newchar); return *this; }
+    newstring append(wc *newchar) { for (wc *c=newchar;*c;c++) add(*c); return *this; }
     // void append(char newchar) { add((wc)newchar); }
     // void append(char *c) { for (;*c;c++) add((wc)c); }
 
     void rtrim(int amt) { assert(count>=amt && amt>=0); count-=amt; }
+    void ltrim(int amt) { assert(count>=amt && amt>=0);
+        int newlength = count-amt;
+        for (int i = 0; i < newlength; i++) {
+            list[i] = list[i+amt];
+        }
+        count = newlength;
+    }
+
+    bool ends_with(newstring o) {
+        if (o.count > count) return false;
+        for (int i = o.count-1; i >= 0; i--) {
+            if (list[i] != o.list[i]) return false;
+        }
+        return true;
+    }
+
+    newstring trim_common_prefix(newstring prefix) {
+        int common_char_count = 0;
+        for (int i = 0; i < prefix.count; i++) {
+            if (prefix[i] != list[i]) {
+                break;
+            }
+            common_char_count = i+1;
+        }
+        ltrim(common_char_count);
+        return *this;
+    }
+
+    // delete this when done with old system
+    string to_old_string_temp() {
+        string result = string::CreateWithNewMem(to_wc_reusable());
+        return result;
+    }
+
+    // "final" = now should no longer be changed (todo: enforce this with a bool)
+    // (consider: var to indicate if null terminated and remove/add as needed?)
+    wc *to_wc_final() {
+        append(L'\0');
+        return list;
+    }
+    wc *to_wc_reusable() {
+        // method without needing to temporarily add \0 to our orig string
+        int bytes_needed_without_null = count*sizeof(wc);
+        wc *result = (wc*)next_open_reusable_mem();
+        assert(bytes_needed_without_null+2 <= REUSABLE_MEM_BYTES); // +2 bytes for size of L'\0'
+        memcpy(result, list, bytes_needed_without_null); // no \0 yet
+        result[count] = L'\0';
+        return result;
+
+        // int bytes_needed_with_null = (count +1)*sizeof(wc); // need +1 for null terminator
+        // wc *result = (wc*)next_open_reusable_mem();
+        // assert(bytes_needed_with_null <= REUSABLE_MEM_BYTES);
+        // append(L'\0'); // temporary, for copying
+        // memcpy(result, list, bytes_needed_with_null);
+        // rtrim(1); // remove that \0
+        // return result;
+    }
 
     char *to_utf8_reusable() {
         // method without null terminator
@@ -109,12 +160,45 @@ struct newstring {
         return copy;
     }
 
-    void free_all() { if (list) free(list); }
+    newstring copy_and_append(wc *suffix) {
+        newstring c = copy_into_new_memory();
+        c.append(suffix);
+        // c.count += wcslen(suffix);
+        // c.list = (wchar_t*)realloc(c.chars, (c.length+1)*sizeof(wchar_t));
+        // wcscat(c.chars, suffix);
+        return c;
+    }
+
+    static newstring allocate_new(int amount) {
+        newstring str = {0};
+        str.alloc = amount;
+        str.list = (wc*)malloc(str.alloc * sizeof(wc)); assert(str.list);
+        return str;
+    }
+
+    static newstring create_with_new_memory(wc *instring) {
+        int len = wcslen(instring);
+        newstring result = newstring::allocate_new(len);
+        result.count = len;
+        memcpy(result.list, instring, len*sizeof(instring[0]));
+        return result;
+    }
+
+    void free_all() { if (list) free(list); list=0; }
     void empty_out() { count = 0; } /*note we keep the allocated memory*/ /*should call it .drain()*/
     bool is_empty() { return count==0; }
     wc& operator[] (int i) { assert(i>=0); assert(i<count); return list[i]; }
+    bool operator==(newstring o) {
+        if (count != o.count) return false;
+        for (int i = 0; i < count; i++) {
+            if( list[i] != o.list[i]) return false;
+        }
+        return true;
+    }
     static newstring new_empty() { newstring new_blank = {0}; return new_blank;  }
 };
+
+
 
 
 

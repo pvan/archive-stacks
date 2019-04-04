@@ -138,16 +138,6 @@ struct string
 };
 
 
-//
-// generic wchar* stuff
-
-
-bool wc_equals(wc *s1, wc *s2) {
-    int result = wcscmp(s1, s2);
-    return result == 0;
-}
-
-// for trimming master path off paths
 wc *PointerToFirstUniqueCharInSecondString(wc *master_path, wc *fullpath) {
     while (*master_path && *fullpath) {
         if (*master_path != *fullpath) return fullpath;
@@ -156,6 +146,31 @@ wc *PointerToFirstUniqueCharInSecondString(wc *master_path, wc *fullpath) {
     }
     return fullpath; // could be pointer to fullpath's \0 (if fullpath is shorter than master)
 }
+
+
+//
+// generic wchar* stuff
+
+
+// bool wc_equals(wchar_t *s1, wchar_t *s2) {
+//     int result = wcscmp(s1, s2);
+//     return result == 0;
+// }
+
+bool wc_equals(wc *s1, wc *s2) {
+    int result = wcscmp(s1, s2);
+    return result == 0;
+}
+
+// // for trimming master path off paths
+// wc *PointerToFirstUniqueCharInSecondString(wc *master_path, wc *fullpath) {
+//     while (*master_path && *fullpath) {
+//         if (*master_path != *fullpath) return fullpath;
+//         master_path++;
+//         fullpath++;
+//     }
+//     return fullpath; // could be pointer to fullpath's \0 (if fullpath is shorter than master)
+// }
 
 // void ExpandAndAppend(wc **s1, wc *s2) {
 //     int len1 = wcslen(*s1);

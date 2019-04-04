@@ -52,7 +52,7 @@
         } \
         OutputDebugString("WARNING: trying to remove an item from a(n) thetype##_list that doesn't have it\n"); \
     } \
-    void free_all() { if (pool) free(pool); } \
+    void free_all() { if (pool) free(pool); pool=0; } \
     void empty_out() { count = 0; } /*note we keep the allocated memory*/ /*should call it .drain()*/ \
     bool is_empty() { return count==0; } \
     thetype& operator[] (int i) { assert(i>=0); assert(i<count); return pool[i]; } \
@@ -62,6 +62,7 @@
 DEFINE_TYPE_POOL(int);
 DEFINE_TYPE_POOL(v2);
 DEFINE_TYPE_POOL(string);
+DEFINE_TYPE_POOL(newstring);
 DEFINE_TYPE_POOL(bool);
 DEFINE_TYPE_POOL(rect);
 DEFINE_TYPE_POOL(float);

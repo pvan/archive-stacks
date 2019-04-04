@@ -25,28 +25,30 @@ void CreateAllDirectoriesForPathIfNeeded(wchar_t *path)
 
 
 
-string_pool win32_GetAllFilesAndFoldersInDir(string path)
+newstring_pool win32_GetAllFilesAndFoldersInDir(newstring path)
 {
-    string_pool results = string_pool::new_empty();
+    newstring_pool results = newstring_pool::new_empty();
 
-    string dir_path = path.CopyAndAppend(L"/"); // for use when appending subfolders to this path
-    string search_path = dir_path.CopyAndAppend(L"*"); // wildcard for search
+    newstring dir_path = path.copy_and_append(L"/"); // for use when appending subfolders to this path
+    newstring search_path = dir_path.copy_and_append(L"*"); // wildcard for search
 
     WIN32_FIND_DATAW ffd;
-    HANDLE hFind = FindFirstFileW(search_path.chars, &ffd);
-    if (hFind == INVALID_HANDLE_VALUE) { return string_pool::new_empty(); }
+    HANDLE hFind = FindFirstFileW(search_path.to_wc_reusable(), &ffd);
+    if (hFind == INVALID_HANDLE_VALUE) { return newstring_pool::new_empty(); }
     do {
-        if(string::Equals(ffd.cFileName, L".") || string::Equals(ffd.cFileName, L"..")) continue;
+        if(wc_equals(ffd.cFileName, L".") || wc_equals(ffd.cFileName, L"..")) continue;
 
-        string full_path = dir_path.CopyAndAppend(ffd.cFileName);
+        newstring full_path = dir_path.copy_and_append(ffd.cFileName);
         results.add(full_path);
 
         // string this_path = string::Create(ffd.cFileName);
         // results.add(this_path);
 
         if (ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
+            // is directory
         }
         else {
+            // is file
         }
     }
     while (FindNextFileW(hFind, &ffd) != 0);
@@ -57,11 +59,11 @@ string_pool win32_GetAllFilesAndFoldersInDir(string path)
 
 bool win32_IsDirectory(wchar_t *path) { DWORD res = GetFileAttributesW(path); return res!=INVALID_FILE_ATTRIBUTES && res&FILE_ATTRIBUTE_DIRECTORY; }
 bool win32_IsDirectory(string path) { return win32_IsDirectory(path.chars); }
+bool win32_IsDirectory(newstring path) { return win32_IsDirectory(path.to_wc_reusable()); }
 
 bool win32_PathExists(wchar_t *path) { return GetFileAttributesW(path) != INVALID_FILE_ATTRIBUTES; }
 bool win32_PathExists(string path) { return win32_PathExists(path.chars); }
-// bool win32_PathExists(char *path) { return GetFileAttributes(path) != INVALID_FILE_ATTRIBUTES; }
-// bool win32_PathExists(string path) { return win32_PathExists(path.ToUTF8Reusable()); }
+bool win32_PathExists(newstring path) { return win32_PathExists(path.to_wc_reusable()); }
 
 
 
