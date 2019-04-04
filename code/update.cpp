@@ -821,6 +821,13 @@ void view_tick(float actual_dt, int cw, int ch) {
     }
 
 
+    // close button
+    if (ui_button_text("close X", "close X", {(float)cw,0}, UI_RIGHT,UI_TOP, 0)) {
+        app_mode = BROWSING_THUMBS;
+        // todo: make app mode switching into function?
+    }
+
+
     if (show_debug_console) {
 
         // debug tag count on right
