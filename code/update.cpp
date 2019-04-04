@@ -141,7 +141,7 @@ bool DrawTagsWithXColumns(int totalcols,
     int max_rows_per_col = (filtered_tag_indices.count + totalcols-1) / totalcols; // basically round up
     assert(max_rows_per_col>0);
     int max_overrun_count = 3; // max number of items to allow to overrun per column
-    if (max_rows_per_col<=max_overrun_count) max_overrun_count=0; // try limit overrun to 1 less than max rows per col
+    if (max_overrun_count > max_rows_per_col-1) max_overrun_count=max_rows_per_col-1; // not sure if needed with new "never skip the smallest width" and "don't skip anything on 1 row columns" checks done below
     float min_overrun_amount = 10+hgap;//hgap*2; // how far into next col we need to be
 
     // list of column widths for columns created so far
