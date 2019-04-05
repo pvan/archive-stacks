@@ -80,7 +80,7 @@ void OpenFileToView(int item_index) {
     // // note shallow copy, not pointer or deep copy
     // viewing_tile = tiles[viewing_file_index];
 
-    viewing_tile = tile::CreateFromItem(items[viewing_file_index]);
+    viewing_tile = CreateTileFromItem(items[viewing_file_index]);
 
     viewing_tile.needs_loading = true;
     viewing_tile.needs_unloading = false; // these are init to false in tile::Create,
@@ -888,6 +888,7 @@ void settings_tick(float actual_dt, int cw, int ch) {
         if (win32_IsDirectory(proposed_master_path)) {
             ui_text("directory found", {x,y+UI_TEXT_SIZE*1}, UI_LEFT,UI_TOP, true, 0, 0xff00ff00);
 
+            // proposed.free_all(); // todo: need this?
             proposed_items = CreateItemListFromMasterPath(proposed_master_path);
 
             // char buf[256];

@@ -72,8 +72,8 @@ float time_now() { // ms
 bool running = true;
 HWND g_hwnd;
 
-#include "data.cpp"
 #include "tile.cpp"
+#include "data.cpp"
 
 tile viewing_tile; // tile for our open file (created from fullpath rather than thumbpath like the "browsing" tiles are)
 

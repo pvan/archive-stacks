@@ -106,7 +106,7 @@ DWORD WINAPI RunBackgroundStartupThread( LPVOID lpParam ) {
             loading_reusable_count = i;
             loading_reusable_max = items.count;
 
-            tiles.add(tile::CreateFromItem(items[i])); // note: no longer reads timestamps
+            tiles.add(CreateTileFromItem(items[i])); // note: no longer reads timestamps
         }
         // AddRandomColorToTilePool
         {

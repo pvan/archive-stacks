@@ -11,6 +11,7 @@
 
 
 
+
 u64 viewing_file_index = 0; // what file do we have open if we're in VIEWING_FILE mode
 
 newstring master_path;
@@ -678,13 +679,37 @@ void SelectNewMasterDirectory(newstring newdir) {
 
 
 
-    // first free anything already created...
+    // 1. free anything already created...
 
+    // todo: some of these we probably don't have to free and can just reuse the memory
+
+    // 1a. list contents
+    for (int i = 0; i < tiles.count; i++) {
+        tiles[i].UnloadMedia();
+        if (tiles[i].name.chars) free(tiles[i].name.chars);
+    }
+    for (int i = 0; i < tag_list.count; i++) {
+        if (tag_list[i].chars) free(tag_list[i].chars);
+    }
+
+    // 1b. list themselves
     items.free_pool();
+    tiles.free_pool();
+    tag_list.free_pool();
+
+    modifiedTimes.free_pool();
+    item_resolutions.free_pool();
+    item_resolutions_valid.free_pool();
+
+    display_list.free_pool();
+
+    browse_tag_filter.free_all();
+    view_tag_filter.free_all();
 
 
 
-    // then setup for new directory...
+
+    // 2. setup for new directory...
 
     master_path.overwrite_with_copy_of(newdir);
 
@@ -698,4 +723,129 @@ void SelectNewMasterDirectory(newstring newdir) {
 
 
 }
+
+
+
+
+
+
+
+//
+// tile functions
+
+tile CreateTileFromFile(string path) {
+    tile newTile = {0};
+    assert(win32_PathExists(path));
+    assert(!win32_IsDirectory(path));
+    newTile.name = string::CreateWithNewMem(CopyJustFilename(path.chars));
+    return newTile;
+};
+
+tile CreateTileFromItem(item it) {
+    tile newTile = CreateTileFromFile(it.fullpath);
+    // newTile.paths_just_for_comparing_tiles = it;
+    return newTile;
+}
+
+
+
+// although our pools aren't intended to have any guaranteed static order, we put one in order here anyway
+void SortTilePoolByDate(tile_pool *pool)
+{
+    for (int d = 0; d < pool->count-1; d++) {
+        int anyswap = false;
+
+        for (int j = 0; j < pool->count-1; j++) {
+            // if (pool->pool[j].modifiedTimeSinceLastEpoc > pool->pool[j+1].modifiedTimeSinceLastEpoc) {
+            if (modifiedTimes[j] > modifiedTimes[j+1]) {
+
+                // swap
+                tile temp = pool->pool[j];
+                pool->pool[j] = pool->pool[j+1];
+                pool->pool[j+1] = temp;
+
+                anyswap = true;
+            }
+        }
+        if (!anyswap) break;
+    }
+}
+
+
+
+// position tiles selected in display list
+// tiles not selected... do what with them? set flag to ignore when rendering?
+int ArrangeTilesForDisplayList(int_pool displaylist, tile_pool *tiles, float desired_tile_width, int dest_width) {
+
+    desired_tile_width = fmax(desired_tile_width, MIN_TILE_WIDTH);
+    float realWidth;
+    int cols = CalcColumnsNeededForDesiredWidth(desired_tile_width, dest_width, &realWidth);
+
+    float *colbottoms = (float*)malloc(cols*sizeof(float));
+    for (int c = 0; c < cols; c++)
+        colbottoms[c] = 0;
+
+    // do something like this?
+    // for (int i = 0; i < tiles->count; i++) {
+    //     tiles->pool[i].pos={-1000,-1000};
+    //     tiles->pool[i].size={0,0};
+    // }
+
+    // for (int j = 0; j < stubRectCount; j++) {
+    for (int i = 0; i < tiles->count; i++) {
+
+        if (!displaylist.has(i)) {
+            // make sure we force unselected tiles to not render
+            tiles->pool[i].skip_rendering = true;
+            continue; // next tile
+        }
+        tiles->pool[i].skip_rendering = false;
+
+        tile& thisTile = tiles->pool[i];
+        v2& thisRes = item_resolutions[i];
+
+        // todo: should be set to min of 10 from trying to find resolution originally
+        // assert(thisTile.size.w >= 10 && thisTile.size.h >= 10);
+        if (thisRes.w < 10) thisRes.w = 10;
+        if (thisRes.h < 10) thisRes.h = 10;
+
+        float aspect_ratio = thisRes.w / thisRes.h;
+
+        thisTile.size.w = realWidth;
+        thisTile.size.h = realWidth / aspect_ratio;
+
+        // if (thisTile.size.w > 3000 || thisTile.size.h > 3000) {
+        //     assert(false);
+        // }
+
+        int shortestCol = 0;
+        for (int c = 1; c < cols; c++)
+            if (colbottoms[c] < colbottoms[shortestCol])
+                shortestCol = c;
+
+        float x = shortestCol * realWidth;
+        float y = colbottoms[shortestCol];
+
+        thisTile.pos = {x, y};
+
+        colbottoms[shortestCol] += thisTile.size.h;
+    }
+
+
+
+    float total_height;
+    total_height = 0;
+    int longestCol = 0;
+    for (int c = 1; c < cols; c++)
+        if (colbottoms[c] > colbottoms[longestCol])
+            longestCol = c;
+    total_height = colbottoms[longestCol];
+
+    free(colbottoms);
+
+
+    return total_height;
+}
+
+
 
