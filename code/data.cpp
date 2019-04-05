@@ -227,6 +227,7 @@ struct item {
     string thumbpath;
 
     newstring subpath;
+
     // string thumbpath128;
     // string thumbpath256;
     // string thumbpath512;
@@ -255,15 +256,17 @@ item CreateItemFromPath(newstring fullpath, newstring masterdir) {
     newitem.fullpath = fullpath.to_old_string_temp();
     newitem.subpath = fullpath.copy_into_new_memory().trim_common_prefix(masterdir);
 
+    newstring thumbpath = CombinePathsIntoNewMemory(masterdir, thumb_dir_name, newitem.subpath);
+
     // for now, special case for txt...
     // we need txt thumbs to be something other than txt so we can open them
     // with our ffmpeg code that specifically "ignores all .txt files" atm
     // but we need most thumbs to have original extensions to (for example) animate correctly
     if (fullpath.ends_with(L".txt")) {
-        newitem.thumbpath = ItemPathToSubfolderPath(fullpath, thumb_dir_name, L".bmp").to_old_string_temp();
-    } else {
-        newitem.thumbpath = ItemPathToSubfolderPath(fullpath, thumb_dir_name, L"").to_old_string_temp();
+        thumbpath.append(L".bmp");
     }
+    newitem.thumbpath = thumbpath.to_old_string_temp();
+    thumbpath.free_all();
 
     return newitem;
 }

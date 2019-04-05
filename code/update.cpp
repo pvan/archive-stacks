@@ -899,10 +899,10 @@ void settings_tick(float actual_dt, int cw, int ch) {
         win32_OpenFolderSelectDialog(g_hwnd, &proposed_master_path);
     }
 
-    // add trailing \ if not present (needed for other code atm)
-    if (!proposed_master_path.ends_with(L"\\") && proposed_master_path.ends_with(L"/")) {
-        proposed_master_path.append(L'\\');
-    }
+    // // add trailing \ if not present (needed for other code atm)
+    // if (!proposed_master_path.ends_with(L"\\") && proposed_master_path.ends_with(L"/")) {
+    //     proposed_master_path.append(L'\\');
+    // }
 
     // detect change in proposed path
     if (proposed_master_path != last_proposed_master_path) {
@@ -931,7 +931,11 @@ void settings_tick(float actual_dt, int cw, int ch) {
             {
 
             }
-            ui_texti("thumbnail files found: %i", proposed_thumbs_found.count, {x+buttonr.w+10,y+UI_TEXT_SIZE*3}, UI_LEFT,UI_TOP, true, 0);
+            if (proposed_thumbs_found.count == proposed_items.count) {
+                ui_texti("thumbnail files found: %i", proposed_thumbs_found.count, {x+buttonr.w+10,y+UI_TEXT_SIZE*3}, UI_LEFT,UI_TOP, true, 0, 0xff00ff00);
+            } else {
+                ui_texti("thumbnail files found: %i", proposed_thumbs_found.count, {x+buttonr.w+10,y+UI_TEXT_SIZE*3}, UI_LEFT,UI_TOP, true, 0);
+            }
 
         } else {
             ui_text("path not directory", {x,y+UI_TEXT_SIZE*1}, UI_LEFT,UI_TOP, true, 0, 0xff0000ff);

@@ -29,7 +29,9 @@ newstring_pool win32_GetAllFilesAndFoldersInDir(newstring path)
 {
     newstring_pool results = newstring_pool::new_empty();
 
-    newstring dir_path = path.copy_and_append(L"/"); // for use when appending subfolders to this path
+    newstring dir_path = path.copy_into_new_memory(); // for use when appending subfolders to this path
+    if (!dir_path.ends_with(L"/") && !dir_path.ends_with(L"\\")) // todo: not fully tested, code at time of comment works if we just append '/' no matter what
+        dir_path.append(L"/");
     newstring search_path = dir_path.copy_and_append(L"*"); // wildcard for search
 
     WIN32_FIND_DATAW ffd;

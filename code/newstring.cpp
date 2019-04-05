@@ -191,6 +191,7 @@ struct newstring {
 
     //
     // export to new memory (caller has to free)
+
     wc *to_wc_new_memory() {
         int bytes_needed_with_null = (count+1)*sizeof(wc);
         wc *result = (wc*)malloc(bytes_needed_with_null);
@@ -252,44 +253,22 @@ struct newstring {
 
 
 
-// subfolder needs to not have leading and trailing /, eg; "~thumbs" not "/~thumbs/"
-// todo: improve this function
-newstring ItemPathToSubfolderPath(newstring mainpath, newstring subfolder, wc *suffix) {
-
-    // TODO: warning: this wouldn't work on items not in a subdirectory, see xgz
-
-    wc *mainpath_copy = mainpath.to_wc_new_memory();
-    wc *subfolder_copy = subfolder.to_wc_new_memory();
-
-    wc *parent = CopyJustParentDirectoryPath(mainpath_copy);
-    wc *assumed_master_dir = CopyJustParentDirectoryPath(parent);
-
-    wc *directory = CopyJustParentDirectoryName(mainpath_copy);
-    wc *filename = CopyJustFilename(mainpath_copy);
-
-    wc *result = (wc*)malloc((wcslen(assumed_master_dir) +
-                             wcslen(L"/") +
-                             wcslen(subfolder_copy) +
-                             wcslen(L"/") +
-                             wcslen(directory) +
-                             wcslen(L"/") +
-                             wcslen(filename) +
-                             wcslen(suffix) +
-                             1) * sizeof(wc));
-    swprintf(result, L"%s/%s/%s/%s%s", assumed_master_dir, subfolder_copy, directory, filename, suffix);
-
-    free(mainpath_copy);
-    free(subfolder_copy);
-    free(parent);
-    free(assumed_master_dir);
-    free(directory);
-    free(filename);
-
-    newstring resultString = newstring::create_with_new_memory(result);
-    return resultString;
+// returns new string with the 3 paths strings combined into one (with joining slashes where needed)
+// could use a simple path_combine(1,2) and call twice instead (needed anywhere other than creating thumbpaths?)
+//
+// should work whether or not paths have trailing or leading slashes (double slashes are not checked for atm)
+// eg "E:/test folder" or "E:/test folder\" or "/~thumbs/" or "thumbs" or "/paintings/1.jpg" or "paintings/1.jpg"
+newstring CombinePathsIntoNewMemory(newstring masterdir, newstring subdir_name, newstring subpath) {
+    newstring result = masterdir.copy_into_new_memory();
+    if (!result.ends_with(L"\\") && !result.ends_with(L"/") && subdir_name[0] != L'\\' && subdir_name[0] != L'/') {
+        result.append(L'/');
+    }
+    result.append(subdir_name);
+    if (!result.ends_with(L"\\") && !result.ends_with(L"/") && subpath[0] != L'\\' && subpath[0] != L'/') {
+        result.append(L'/');
+    }
+    result.append(subpath);
+    return result;
 }
-
-
-
 
 
