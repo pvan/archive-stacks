@@ -28,9 +28,12 @@ int loading_reusable_max = 0;
 
 DWORD WINAPI RunBackgroundStartupThread( LPVOID lpParam ) {
 
-    // read paths
-    loading_status_msg = "Creating cache paths...";
-    PopulateThumbnailPathsForAllItems(&items);
+    // not needed, now we create thumbnail path for each item when creating that item
+    // (could move that item creation here, though, if too slow on main thread,
+    //  but should be fine, it's just string manipulation -- no hd reads)
+    // // read paths
+    // loading_status_msg = "Creating cache paths...";
+    // PopulateThumbnailPathsForAllItems(&items);
 
     // create work queue for rest of loading thread (do after reading paths)
     item_indices_without_thumbs = int_pool::new_empty();

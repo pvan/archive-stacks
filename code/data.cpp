@@ -67,7 +67,7 @@ void app_change_mode(int new_mode) {
 
 
 newstring thumb_dir_name = newstring::create_with_new_memory(L"~thumbs");  // todo: where should these consts go
-newstring metadata_dir_name = newstring::create_with_new_memory(L"~metadata");
+// newstring metadata_dir_name = newstring::create_with_new_memory(L"~metadata");
 
 newstring_pool FindAllItemPaths(newstring master_path) {
     newstring_pool top_folders = win32_GetAllFilesAndFoldersInDir(master_path);
@@ -75,9 +75,9 @@ newstring_pool FindAllItemPaths(newstring master_path) {
 
     for (int folderI = 0; folderI < top_folders.count; folderI++) {
         if (win32_IsDirectory(top_folders[folderI])) {
-            if (top_folders[folderI].ends_with(thumb_dir_name) ||
-                top_folders[folderI].ends_with(metadata_dir_name))
-            {
+            if (top_folders[folderI].ends_with(thumb_dir_name)
+                // || top_folders[folderI].ends_with(metadata_dir_name)
+            ) {
                 DEBUGPRINT("Ignoring: %s\n", top_folders[folderI].to_utf8_reusable());
             } else {
                 newstring_pool subfiles = win32_GetAllFilesAndFoldersInDir(top_folders[folderI]);
@@ -273,8 +273,20 @@ struct item {
 // note doesn't set thumbpath or metadata path or tags etc atm
 item CreateItemFromPath(newstring fullpath, newstring masterdir) {
     item newitem = {0};
+
     newitem.fullpath = fullpath.to_old_string_temp();
     newitem.subpath = fullpath.copy_into_new_memory().trim_common_prefix(masterdir);
+
+    // for now, special case for txt...
+    // we need txt thumbs to be something other than txt so we can open them
+    // with our ffmpeg code that specifically "ignores all .txt files" atm
+    // but we need most thumbs to have original extensions to (for example) animate correctly
+    if (fullpath.ends_with(L".txt")) {
+        newitem.thumbpath = ItemPathToSubfolderPath(fullpath, thumb_dir_name, L".bmp").to_old_string_temp();
+    } else {
+        newitem.thumbpath = ItemPathToSubfolderPath(fullpath, thumb_dir_name, L"").to_old_string_temp();
+    }
+
     return newitem;
 }
 
@@ -283,22 +295,22 @@ DEFINE_TYPE_POOL(item);
 item_pool items;
 
 
-// after creating items, thumbnail paths are created with this
-// (todo: put thumbnail path creation in CreateItemFromPath() ?)
-void PopulateThumbnailPathsForAllItems(item_pool *itemlist) {
-    for (int i = 0; i < itemlist->count; i++) {
-        // for now, special case for txt...
-        // we need txt thumbs to be something other than txt so we can open them
-        // with our ffmpeg code that specifically "ignores all .txt files" atm
-        // but we need most thumbs to have original extensions to (for example) animate correctly
-        if (StringEndsWith(itemlist->pool[i].fullpath.chars, L".txt")) {
-            items[i].thumbpath = ItemPathToSubfolderPath(itemlist->pool[i].fullpath, L"~thumbs", L".bmp");
-        } else {
-            items[i].thumbpath = ItemPathToSubfolderPath(itemlist->pool[i].fullpath, L"~thumbs", L"");
-        }
-        // items[i].metadatapath = ItemPathToSubfolderPath(itemlist->pool[i].fullpath, L"~metadata", L"");
-    }
-}
+// // after creating items, thumbnail paths are created with this
+// // (todo: put thumbnail path creation in CreateItemFromPath() ?)
+// void PopulateThumbnailPathsForAllItems(item_pool *itemlist) {
+//     for (int i = 0; i < itemlist->count; i++) {
+//         // for now, special case for txt...
+//         // we need txt thumbs to be something other than txt so we can open them
+//         // with our ffmpeg code that specifically "ignores all .txt files" atm
+//         // but we need most thumbs to have original extensions to (for example) animate correctly
+//         if (StringEndsWith(itemlist->pool[i].fullpath.chars, L".txt")) {
+//             items[i].thumbpath = ItemPathToSubfolderPath(itemlist->pool[i].fullpath, L"~thumbs", L".bmp");
+//         } else {
+//             items[i].thumbpath = ItemPathToSubfolderPath(itemlist->pool[i].fullpath, L"~thumbs", L"");
+//         }
+//         // items[i].metadatapath = ItemPathToSubfolderPath(itemlist->pool[i].fullpath, L"~metadata", L"");
+//     }
+// }
 
 
 
@@ -548,6 +560,7 @@ void SaveMetadataFile()
 DEFINE_TYPE_POOL(wc);
 
 newstring archive_save_filename = newstring::create_with_new_memory(L"\\~meta.txt");
+// newstring thumbnail_directory_name = newstring::create_with_new_memory(L"~thumbs");
 
 void LoadMasterDataFileAndPopulateResolutionsAndTagsEtc(
                                                      // item_pool *itemslocal,

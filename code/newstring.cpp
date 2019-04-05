@@ -82,10 +82,18 @@ struct newstring {
         count = newlength;
     }
 
-    bool ends_with(newstring o) {
-        if (o.count > count) return false;
-        for (int i = o.count-1; i >= 0; i--) {
-            if (list[i] != o.list[i]) return false;
+    bool ends_with(newstring suffix) {
+        if (suffix.count > count) return false;
+        for (int i = suffix.count-1; i >= 0; i--) {
+            if (list[i] != suffix.list[i]) return false;
+        }
+        return true;
+    }
+    bool ends_with(wc *suffix) {
+        int suffixcount = wcslen(suffix);
+        if (suffixcount > count) return false;
+        for (int i = suffixcount-1; i >= 0; i--) {
+            if (list[i] != suffix[i]) return false;
         }
         return true;
     }
@@ -149,6 +157,15 @@ struct newstring {
         append(L'\0');
         return list;
     }
+
+    // todo: combine these like so?
+    // to_X_using_memory(memory)
+    // to_X_resuable() {to_X_using_memory(next_open_resuable_mem());}
+    // to_X_new_memory() {newmem = malloc; to_X_using_memory(newmem);}
+
+    //
+    // export to temporary, reusable memory (caller doesn't need to free, but memory can be overwritten immediately)
+
     wc *to_wc_reusable() {
         // method without needing to temporarily add \0 to our orig string
         int bytes_needed_without_null = count*sizeof(wc);
@@ -158,7 +175,6 @@ struct newstring {
         result[count] = L'\0';
         return result;
     }
-
     char *to_utf8_reusable() {
         // method without null terminator
         int bytes_needed_with_null = WideCharToMultiByte(CP_UTF8,0,  list,count,  0,0,  0,0) +1; // need +1 for null terminator if passing count instead of -1
@@ -173,6 +189,16 @@ struct newstring {
         return to_utf8_reusable();
     }
 
+    //
+    // export to new memory (caller has to free)
+    wc *to_wc_new_memory() {
+        int bytes_needed_with_null = (count+1)*sizeof(wc);
+        wc *result = (wc*)malloc(bytes_needed_with_null);
+        assert(result);
+        memcpy(result, list, bytes_needed_with_null-2); // list doesn't have \0 (-2 for that)
+        result[count] = L'\0';
+        return result;
+    }
     char *to_utf8_new_memory() {
         // method without null terminator
         int bytes_needed_with_null = WideCharToMultiByte(CP_UTF8,0,  list,count,  0,0,  0,0) +1; // need +1 for null terminator if passing count instead of -1
@@ -223,6 +249,45 @@ struct newstring {
     static newstring new_empty() { newstring new_blank = {0}; return new_blank;  }
 };
 
+
+
+
+// subfolder needs to not have leading and trailing /, eg; "~thumbs" not "/~thumbs/"
+// todo: improve this function
+newstring ItemPathToSubfolderPath(newstring mainpath, newstring subfolder, wc *suffix) {
+
+    // TODO: warning: this wouldn't work on items not in a subdirectory, see xgz
+
+    wc *mainpath_copy = mainpath.to_wc_new_memory();
+    wc *subfolder_copy = subfolder.to_wc_new_memory();
+
+    wc *parent = CopyJustParentDirectoryPath(mainpath_copy);
+    wc *assumed_master_dir = CopyJustParentDirectoryPath(parent);
+
+    wc *directory = CopyJustParentDirectoryName(mainpath_copy);
+    wc *filename = CopyJustFilename(mainpath_copy);
+
+    wc *result = (wc*)malloc((wcslen(assumed_master_dir) +
+                             wcslen(L"/") +
+                             wcslen(subfolder_copy) +
+                             wcslen(L"/") +
+                             wcslen(directory) +
+                             wcslen(L"/") +
+                             wcslen(filename) +
+                             wcslen(suffix) +
+                             1) * sizeof(wc));
+    swprintf(result, L"%s/%s/%s/%s%s", assumed_master_dir, subfolder_copy, directory, filename, suffix);
+
+    free(mainpath_copy);
+    free(subfolder_copy);
+    free(parent);
+    free(assumed_master_dir);
+    free(directory);
+    free(filename);
+
+    newstring resultString = newstring::create_with_new_memory(result);
+    return resultString;
+}
 
 
 
