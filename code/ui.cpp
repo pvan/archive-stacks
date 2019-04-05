@@ -426,6 +426,7 @@ void ui_textbox(ui_id id, newstring *text, rect r, float dt) {
     } else {
         if (ui_hot(id) && input.up.mouseL) {
             ui_set_active(id);
+            ui_cursor_pos = text->count;
         }
     }
 
@@ -437,7 +438,7 @@ void ui_textbox(ui_id id, newstring *text, rect r, float dt) {
     float bgalpha = 0.8;
 
     if (ui_active(id)) {
-        bgcolor = 0xff7777ff;
+        bgcolor = 0xffffffaa;
         bgalpha = 0.8;
     }
 
@@ -445,7 +446,7 @@ void ui_textbox(ui_id id, newstring *text, rect r, float dt) {
     ui_rect(r, bgcolor, bgalpha);
 
     // --hl--
-    if (ui_hot(id)) {
+    if (ui_hot(id) && !ui_active(id)) { // for now try not highlighting when active and see how it feels
         ui_rect(r, 0xffffffff, 0.3);
     }
 

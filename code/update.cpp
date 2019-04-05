@@ -563,8 +563,8 @@ void browse_tick(float actual_dt, int cw, int ch) {
 
 
     // scroll bar
+    float SCROLL_WIDTH = 25;
     {
-        float SCROLL_WIDTH = 25;
 
         float amtDown = last_scroll_pos; // note this is set above
 
@@ -600,7 +600,7 @@ void browse_tick(float actual_dt, int cw, int ch) {
                     &browse_tag_filter);
     }
 
-    if (ui_button_text("settings", "settings", {(float)cw,0}, UI_RIGHT,UI_TOP, 0)) {
+    if (ui_button_text("settings", "settings", {(float)cw-SCROLL_WIDTH,0}, UI_RIGHT,UI_TOP, 0)) {
         app_change_mode(SETTINGS);
     }
 
@@ -863,7 +863,7 @@ void settings_tick(float actual_dt, int cw, int ch) {
     if (ui_button_text((void*)'x', "x", {x+textboxwidth,y}, UI_LEFT,UI_TOP, 0)) {
         proposed_master_path.count = 0;
     }
-    if (ui_button_text("browse","browse", {x+textboxwidth+40,y}, UI_LEFT,UI_TOP, 0)) {
+    if (ui_button_text("browse","browse", {x+textboxwidth+30,y}, UI_LEFT,UI_TOP, 0)) {
         // newstring prev_proposed = proposed_master_path.copy_into_new_memory();
         win32_OpenFolderSelectDialog(g_hwnd, &proposed_master_path);
         // if (proposed_master_path != prev_proposed) {
