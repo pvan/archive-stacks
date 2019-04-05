@@ -413,10 +413,10 @@ bitmap tf_create_bitmap(char *text, int fsize, float alpha, bool centerH, bool c
 
 
 
-void CreateDummyThumb(string inpath, string outpath, string dummytext) {
+void CreateDummyThumb(string inpath, string outpath, newstring dummytext) {
     CreateAllDirectoriesForPathIfNeeded(outpath.chars);
     OutputDebugString("Saving bmp!!\n");
-    bitmap img = tf_create_bitmap(dummytext.ToUTF8Reusable(), 64, 255, true, true, 200);
+    bitmap img = tf_create_bitmap(dummytext.to_utf8_reusable(), 64, 255, true, true, 200);
         int result = stbi_write_bmp(outpath.ToUTF8Reusable(), img.w, img.h, 4, img.data);
         if (!result) { OutputDebugString("ERROR SAVING BITMAP\n"); }
     free(img.data);

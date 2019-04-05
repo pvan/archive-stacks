@@ -228,13 +228,15 @@ struct item {
 
     newstring subpath;
 
+    newstring justname;
+
     // string thumbpath128;
     // string thumbpath256;
     // string thumbpath512;
     // string metadatapath; //cached metadata
     bool operator==(item o) { return fullpath==o.fullpath; } // for now just check fullpath
 
-    string justname() { wc *result = CopyJustFilename(fullpath.chars); return string::KeepMemory(result); }
+    // string justname() { wc *result = CopyJustFilename(fullpath.chars); return string::KeepMemory(result); }
     // string justsubpath() { wc *result = CopyJustFilename(fullpath.chars); return string::Create(result); }
 
     // wc *PointerToJustSubpath(newstring rootpath) {
@@ -267,6 +269,9 @@ item CreateItemFromPath(newstring fullpath, newstring masterdir) {
     }
     newitem.thumbpath = thumbpath.to_old_string_temp();
     thumbpath.free_all();
+
+    newitem.justname = newitem.subpath.copy_into_new_memory();
+    trim_everything_after_last_slash(newitem.justname);
 
     return newitem;
 }

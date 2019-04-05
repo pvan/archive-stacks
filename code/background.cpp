@@ -70,7 +70,7 @@ DWORD WINAPI RunBackgroundStartupThread( LPVOID lpParam ) {
         // item it = items[item_indices_without_thumbs[i]];
         string fullpath = items[item_indices_without_thumbs[i]].fullpath;
         string thumbpath = items[item_indices_without_thumbs[i]].thumbpath;
-        string justname = items[item_indices_without_thumbs[i]].justname();
+        newstring justname = items[item_indices_without_thumbs[i]].justname;
         if (ffmpeg_can_open(fullpath)) {
             DEBUGPRINT("creating media thumb for %s\n", fullpath.ToUTF8Reusable());
             DownresFileAtPathToPath(fullpath, thumbpath);

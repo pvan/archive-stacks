@@ -69,6 +69,15 @@ struct newstring {
         count--;
     }
 
+    // if not found, return start of string
+    int find_last(wc c) {
+        int result = 0;
+        for (int i = 0; i < count; i++) {
+            if (list[i] == c) result = i;
+        }
+        return result;
+    }
+
     newstring append(wc newchar) { add(newchar); return *this; }
     newstring append(wc *suffix) { for (wc *c=suffix;*c;c++) add(*c); return *this; }
     newstring append(newstring suffix) { for (int i=0;i<suffix.count;i++) add(suffix[i]); return *this; }
@@ -271,4 +280,12 @@ newstring CombinePathsIntoNewMemory(newstring masterdir, newstring subdir_name, 
     return result;
 }
 
+
+// for finding filenames from paths
+void trim_everything_after_last_slash(newstring probably_a_path) {
+    int last_bslash_index = probably_a_path.find_last(L'\\');
+    int last_fslash_index = probably_a_path.find_last(L'/');
+    int last_slash_index = max(last_bslash_index, last_fslash_index);
+    probably_a_path.ltrim(last_slash_index+1); //+1 include trimming the slash
+}
 
