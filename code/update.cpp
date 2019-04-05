@@ -859,14 +859,14 @@ void settings_tick(float actual_dt, int cw, int ch) {
 
     float x = (float)cw/2 - textboxwidth/2;
     float y = (float)ch/4;
-    ui_text("current directory: ", {x,y-UI_TEXT_SIZE}, UI_LEFT,UI_TOP, true, 0);
+    ui_text("current directory: ", {x-50,y-UI_TEXT_SIZE}, UI_LEFT,UI_TOP, true, 0);
     ui_text(master_path.to_utf8_reusable(), {x,y}, UI_LEFT,UI_TOP, true, .5);
     ui_texti("items: %i", items.count, {x,y+UI_TEXT_SIZE*1}, UI_LEFT,UI_TOP, true, 0);
     ui_texti("tags: %i", tag_list.count, {x,y+UI_TEXT_SIZE*2}, UI_LEFT,UI_TOP, true, 0);
 
     x = (float)cw/2 - textboxwidth/2;
     y = (float)ch/2;
-    ui_text("new directory: ", {x,y-UI_TEXT_SIZE}, UI_LEFT,UI_TOP, true, 0);
+    ui_text("new directory: ", {x-50,y-UI_TEXT_SIZE}, UI_LEFT,UI_TOP, true, 0);
     ui_textbox(&proposed_master_path, &proposed_master_path, {x,y,textboxwidth,UI_TEXT_SIZE}, actual_dt);
     if (ui_button_text((void*)'x', "x", {x+textboxwidth,y}, UI_LEFT,UI_TOP, 0)) {
         proposed_master_path.count = 0;
@@ -894,6 +894,11 @@ void settings_tick(float actual_dt, int cw, int ch) {
                 ui_text("archive data found", {x,y+UI_TEXT_SIZE*3}, UI_LEFT,UI_TOP, true, 0, 0xff00ff00);
             } else {
                 ui_text("archive data not found", {x,y+UI_TEXT_SIZE*3}, UI_LEFT,UI_TOP, true, 0);
+            }
+
+            if (ui_button_text("new dir", "switch to new directory", {x,y+UI_TEXT_SIZE*4}, UI_LEFT,UI_TOP, 0))
+            {
+
             }
 
         } else {

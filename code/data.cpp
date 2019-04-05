@@ -283,6 +283,25 @@ DEFINE_TYPE_POOL(item);
 item_pool items;
 
 
+// after creating items, thumbnail paths are created with this
+// (todo: put thumbnail path creation in CreateItemFromPath() ?)
+void PopulateThumbnailPathsForAllItems(item_pool *itemlist) {
+    for (int i = 0; i < itemlist->count; i++) {
+        // for now, special case for txt...
+        // we need txt thumbs to be something other than txt so we can open them
+        // with our ffmpeg code that specifically "ignores all .txt files" atm
+        // but we need most thumbs to have original extensions to (for example) animate correctly
+        if (StringEndsWith(itemlist->pool[i].fullpath.chars, L".txt")) {
+            items[i].thumbpath = ItemPathToSubfolderPath(itemlist->pool[i].fullpath, L"~thumbs", L".bmp");
+        } else {
+            items[i].thumbpath = ItemPathToSubfolderPath(itemlist->pool[i].fullpath, L"~thumbs", L"");
+        }
+        items[i].metadatapath = ItemPathToSubfolderPath(itemlist->pool[i].fullpath, L"~metadata", L"");
+    }
+}
+
+
+
 item_pool CreateItemListFromMasterPath(newstring masterdir) {
     newstring_pool itempaths = FindAllItemPaths(masterdir);
     item_pool result = item_pool::new_empty();

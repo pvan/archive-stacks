@@ -447,7 +447,7 @@ void ui_textbox(ui_id id, newstring *text, rect r, float dt) {
 
     // --hl--
     if (ui_hot(id) && !ui_active(id)) { // for now try not highlighting when active and see how it feels
-        ui_rect(r, 0xffffffff, 0.3);
+        ui_rect(r, 0xffffffff, 0.5);
     }
 
     // --text--
