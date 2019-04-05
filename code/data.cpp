@@ -18,30 +18,8 @@ int app_mode = BROWSING_THUMBS;
 u64 viewing_file_index = 0; // what file do we have open if we're in VIEWING_FILE mode
 
 newstring master_path;
-newstring proposed_master_path;// = newstring::allocate_new(256);
 
 
-void app_change_mode(int new_mode) {
-
-    // leaving VIEW
-    if (app_mode == VIEWING_FILE && new_mode != VIEWING_FILE) {
-        // todo: remove tile stuff from memory or gpu ?
-    }
-
-    // leaving SETTINGS
-    if (app_mode == SETTINGS && new_mode != SETTINGS) {
-
-    }
-
-    // entering SETTINGS
-    if (new_mode == SETTINGS) {
-        proposed_master_path.overwrite_with_copy_of(master_path);
-
-    }
-
-    app_mode = new_mode;
-
-}
 
 
 // paths...
@@ -737,3 +715,24 @@ void CreateDisplayListFromBrowseSelection() {
         }
     }
 }
+
+
+
+//
+// data for settings tab, proposed new master directory stuff
+
+// not all here?
+// todo: store here or with similar (like put proposed_path next to master_path?)
+
+newstring proposed_master_path;
+newstring last_proposed_master_path; // for tracking changes to path (change will trigger background work)
+
+bool proposed_path_reevaluate = false; // trigger for our background thread to start analysing new path
+
+item_pool proposed_items;
+
+
+int_pool proposed_thumbs_found = int_pool::new_empty();
+
+
+

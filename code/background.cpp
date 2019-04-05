@@ -18,8 +18,8 @@ void CreateCachedMetadataFile(string origpath, string thumbpath, string metapath
     CreateCachedResolution(metapath, res);
 }
 
-int_pool item_indices_without_thumbs;
-int_pool item_indices_without_metadata;
+int_pool item_indices_without_thumbs; // todo: move to data tab? or keep bg related stuff in bg?
+// int_pool item_indices_without_metadata;
 
 
 char *loading_status_msg = "Starting...";
@@ -37,7 +37,7 @@ DWORD WINAPI RunBackgroundStartupThread( LPVOID lpParam ) {
 
     // create work queue for rest of loading thread (do after reading paths)
     item_indices_without_thumbs = int_pool::new_empty();
-    item_indices_without_metadata = int_pool::new_empty();
+    // item_indices_without_metadata = int_pool::new_empty();
     for (int i = 0; i < items.count; i++) {
         loading_status_msg = "Looking for existing caches...";
         loading_reusable_count = i;
@@ -307,6 +307,26 @@ DWORD WINAPI RunBackgroundLoadingThread( LPVOID lpParam ) {
                     }
                     // DEBUGPRINT("loading: %s\n", tiles[i].thumbpath.ToUTF8Reusable());
                 }
+            }
+        } else if (app_mode == SETTINGS) {
+            if (proposed_path_reevaluate) {
+                loading_status_msg = "Looking for existing thumbnails...";
+                proposed_path_reevaluate = false;
+                proposed_thumbs_found = int_pool::new_empty();
+                if (proposed_items.count > 0) {
+                    // item_indices_without_metadata = int_pool::new_empty();
+                    for (int i = 0; i < proposed_items.count; i++) {
+                        // loading_status_msg = "Looking for existing caches...";
+                        // loading_reusable_count = i;
+                        // loading_reusable_max = items.count;
+
+                        if (win32_PathExists(proposed_items[i].thumbpath)) {
+                            proposed_thumbs_found.add(i);
+                        }
+                    }
+                }
+            } else {
+                loading_status_msg = "Waiting...";
             }
         }
         // static bool first_loop = true;

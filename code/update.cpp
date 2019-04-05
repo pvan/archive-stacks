@@ -8,6 +8,28 @@ float clickRectX;
 float clickRectY;
 
 
+void app_change_mode(int new_mode) {
+
+    // leaving VIEW
+    if (app_mode == VIEWING_FILE && new_mode != VIEWING_FILE) {
+        // todo: remove tile stuff from memory or gpu ?
+    }
+
+    // leaving SETTINGS
+    if (app_mode == SETTINGS && new_mode != SETTINGS) {
+
+    }
+
+    // entering SETTINGS
+    if (new_mode == SETTINGS) {
+        proposed_master_path.overwrite_with_copy_of(master_path);
+        proposed_path_reevaluate = true;
+    }
+
+    app_mode = new_mode;
+
+}
+
 //
 // button click handlers
 
@@ -857,6 +879,8 @@ void settings_tick(float actual_dt, int cw, int ch) {
 
     float textboxwidth = 300;
 
+    ui_text(loading_status_msg, {(float)cw/2,(float)ch}, UI_CENTER,UI_BOTTOM, true, 0);
+
     float x = (float)cw/2 - textboxwidth/2;
     float y = (float)ch/4;
     ui_text("current directory: ", {x-50,y-UI_TEXT_SIZE}, UI_LEFT,UI_TOP, true, 0);
@@ -872,19 +896,25 @@ void settings_tick(float actual_dt, int cw, int ch) {
         proposed_master_path.count = 0;
     }
     if (ui_button_text("browse","browse", {x+textboxwidth+30,y}, UI_LEFT,UI_TOP, 0)) {
-        // newstring prev_proposed = proposed_master_path.copy_into_new_memory();
         win32_OpenFolderSelectDialog(g_hwnd, &proposed_master_path);
-        // if (proposed_master_path != prev_proposed) {
-
-        // }
-        // prev_proposed.free_all();
     }
+
+    // add trailing \ if not present (needed for other code atm)
+    if (!proposed_master_path.ends_with(L"\\") && proposed_master_path.ends_with(L"/")) {
+        proposed_master_path.append(L'\\');
+    }
+
+    // detect change in proposed path
+    if (proposed_master_path != last_proposed_master_path) {
+        proposed_path_reevaluate = true;
+    }
+    last_proposed_master_path.overwrite_with_copy_of(proposed_master_path);
 
     if (win32_PathExists(proposed_master_path)) {
         if (win32_IsDirectory(proposed_master_path)) {
             ui_text("directory found", {x,y+UI_TEXT_SIZE*1}, UI_LEFT,UI_TOP, true, 0, 0xff00ff00);
 
-            item_pool proposed_items = CreateItemListFromMasterPath(proposed_master_path);
+            proposed_items = CreateItemListFromMasterPath(proposed_master_path);
 
             // char buf[256];
             // sprintf(buf, "items found: %i", proposed_items.count);
@@ -896,10 +926,12 @@ void settings_tick(float actual_dt, int cw, int ch) {
                 ui_text("archive data not found", {x,y+UI_TEXT_SIZE*3}, UI_LEFT,UI_TOP, true, 0);
             }
 
-            if (ui_button_text("new dir", "switch to new directory", {x,y+UI_TEXT_SIZE*4}, UI_LEFT,UI_TOP, 0))
+            rect buttonr = {0};
+            if (ui_button_text("new dir", "switch to new directory", {x,y+UI_TEXT_SIZE*4}, UI_LEFT,UI_TOP, &buttonr))
             {
 
             }
+            ui_texti("thumbnail files found: %i", proposed_thumbs_found.count, {x+buttonr.w+10,y+UI_TEXT_SIZE*3}, UI_LEFT,UI_TOP, true, 0);
 
         } else {
             ui_text("path not directory", {x,y+UI_TEXT_SIZE*1}, UI_LEFT,UI_TOP, true, 0, 0xff0000ff);
