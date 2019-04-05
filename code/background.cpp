@@ -313,7 +313,7 @@ DWORD WINAPI RunBackgroundLoadingThread( LPVOID lpParam ) {
                 loading_status_msg = "Looking for existing thumbnails...";
                 proposed_path_reevaluate = false;
                 proposed_thumbs_found = int_pool::new_empty();
-                if (proposed_items.count > 0) {
+                if (proposed_items.count > 0) { // note if proposed_items haven't been created yet, we won't find any thumbs
                     // item_indices_without_metadata = int_pool::new_empty();
                     for (int i = 0; i < proposed_items.count; i++) {
                         // loading_status_msg = "Looking for existing caches...";

@@ -904,11 +904,6 @@ void settings_tick(float actual_dt, int cw, int ch) {
     //     proposed_master_path.append(L'\\');
     // }
 
-    // detect change in proposed path
-    if (proposed_master_path != last_proposed_master_path) {
-        proposed_path_reevaluate = true;
-    }
-    last_proposed_master_path.overwrite_with_copy_of(proposed_master_path);
 
     if (win32_PathExists(proposed_master_path)) {
         if (win32_IsDirectory(proposed_master_path)) {
@@ -943,6 +938,12 @@ void settings_tick(float actual_dt, int cw, int ch) {
     } else {
         ui_text("path not found", {x,y+UI_TEXT_SIZE*1}, UI_LEFT,UI_TOP, true, 0, 0xff0000ff);
     }
+
+    // detect change in proposed path
+    if (proposed_master_path != last_proposed_master_path) {
+        proposed_path_reevaluate = true;
+    }
+    last_proposed_master_path.overwrite_with_copy_of(proposed_master_path);
 
 
     // ui_texti("media files: %i", all_items.count, cw/2, ch/2 + UI_TEXT_SIZE*line++, UI_CENTER,UI_CENTER);
