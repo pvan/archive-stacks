@@ -26,6 +26,7 @@ char *loading_status_msg = "Starting...";
 int loading_reusable_count = 0;
 int loading_reusable_max = 0;
 
+bool background_startup_thread_launched = false;
 DWORD WINAPI RunBackgroundStartupThread( LPVOID lpParam ) {
 
     // not needed, now we create thumbnail path for each item when creating that item
@@ -276,10 +277,15 @@ DWORD WINAPI RunBackgroundStartupThread( LPVOID lpParam ) {
     loading_status_msg = "Done loading!";
 
     app_change_mode(INIT);
+
+    background_startup_thread_launched = false;
     return 0;
 }
-void LaunchBackgroundStartupLoop() {
-    CreateThread(0, 0, RunBackgroundStartupThread, 0, 0, 0);
+void LaunchBackgroundStartupLoopIfNeeded() {
+    if (!background_startup_thread_launched) {
+        CreateThread(0, 0, RunBackgroundStartupThread, 0, 0, 0);
+        background_startup_thread_launched = true;
+    }
 }
 
 
@@ -338,8 +344,12 @@ DWORD WINAPI RunBackgroundLoadingThread( LPVOID lpParam ) {
     }
     return 0;
 }
-void LaunchBackgroundLoadingLoop() {
-    CreateThread(0, 0, RunBackgroundLoadingThread, 0, 0, 0);
+bool background_loading_thread_launched = false;
+void LaunchBackgroundLoadingLoopIfNeeded() {
+    if (!background_loading_thread_launched) {
+        CreateThread(0, 0, RunBackgroundLoadingThread, 0, 0, 0);
+        background_loading_thread_launched = true;
+    }
 }
 
 
@@ -357,7 +367,11 @@ DWORD WINAPI RunBackgroundUnloadingThread( LPVOID lpParam ) {
     }
     return 0;
 }
-void LaunchBackgroundUnloadingLoop() {
-    CreateThread(0, 0, RunBackgroundUnloadingThread, 0, 0, 0);
+bool background_unloading_thread_launched = false;
+void LaunchBackgroundUnloadingLoopIfNeeded() {
+    if (!background_unloading_thread_launched) {
+        CreateThread(0, 0, RunBackgroundUnloadingThread, 0, 0, 0);
+        background_unloading_thread_launched = true;
+    }
 }
 

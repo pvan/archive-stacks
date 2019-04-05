@@ -115,8 +115,8 @@ void init_app(item_pool all_items, int cw, int ch) {
     // ArrangeTilesInOrder(&tiles, master_desired_tile_width, cw); // requires resolutions to be set
 
     // constant-churning loop to load items on screen, and unlod those off the screen
-    LaunchBackgroundLoadingLoop();
-    LaunchBackgroundUnloadingLoop();
+    LaunchBackgroundLoadingLoopIfNeeded();
+    LaunchBackgroundUnloadingLoopIfNeeded();
 
     SaveMetadataFile();
 }
@@ -229,7 +229,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 
 
-    LaunchBackgroundStartupLoop();
+    LaunchBackgroundStartupLoopIfNeeded();
 
 
     while(running)
