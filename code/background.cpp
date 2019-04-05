@@ -275,7 +275,7 @@ DWORD WINAPI RunBackgroundStartupThread( LPVOID lpParam ) {
 
     loading_status_msg = "Done loading!";
 
-    loading = false;
+    app_change_mode(INIT);
     return 0;
 }
 void LaunchBackgroundStartupLoop() {

@@ -121,35 +121,6 @@ void init_app(item_pool all_items, int cw, int ch) {
     SaveMetadataFile();
 }
 
-// done every frame while loading during startup
-void load_tick(item_pool all_items, int cw, int ch) {
-
-    // ui_progressbar(cw/2, ch2)
-
-    opengl_clear();
-
-    int line = -1;
-
-    // ui_texti("media files: %i", all_items.count, cw/2, ch/2 + UI_TEXT_SIZE*line++, UI_CENTER,UI_CENTER);
-
-    // line++;
-    // ui_texti("items_without_matching_thumbs: %i", item_indices_without_thumbs.count, cw/2, ch/2 + UI_TEXT_SIZE*line++, UI_CENTER,UI_CENTER);
-
-    // line++;
-    // ui_texti("items_without_matching_metadata: %i", item_indices_without_metadata.count, cw/2, ch/2 + UI_TEXT_SIZE*line++, UI_CENTER,UI_CENTER);
-
-    // line++;
-    // ui_text(loading_status_msg, cw/2, ch/2 + UI_TEXT_SIZE*line++, UI_CENTER,UI_CENTER);
-    // ui_texti("files: %i of %i", loading_reusable_count, loading_reusable_max, cw/2, ch/2 + UI_TEXT_SIZE*line++, UI_CENTER,UI_CENTER);
-
-
-    // ui_render_elements(0, 0); // pass mouse pos for highlighting
-    // ui_reset(); // call at the end or start of every frame so buttons don't carry over between frames
-
-
-    opengl_swap();
-
-}
 
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
@@ -312,16 +283,17 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 
 
-        // runs until background startup loading is done
-        if (loading) {
-            load_tick(items, cw, ch);
-            continue;
-        }
+        // // runs until background startup loading is done
+        // if (loading) {
+        //     load_tick(items, cw, ch);
+        //     continue;
+        // }
 
-        // ran once when startup loading is done
-        if (need_init) {
+        // ran once when loading is done
+        if (app_mode == INIT) {
             init_app(items, cw, ch);
-            need_init = false;
+            // need_init = false;
+            app_mode = BROWSING_THUMBS;
         }
 
 
@@ -348,6 +320,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         }
         else if (app_mode == SETTINGS) {
             settings_tick(actual_dt, cw,ch);
+        }
+        else if (app_mode == LOADING) {
+            load_tick(actual_dt, cw,ch);
         }
 
         // common to all app modes

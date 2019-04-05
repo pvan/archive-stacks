@@ -6,14 +6,10 @@
 
 
 
-bool loading = true;
-bool need_init = true;
+// bool loading = true;
+// bool need_init = true;
 
-// could add loading/etc to this framework
-const int BROWSING_THUMBS = 0;
-const int VIEWING_FILE = 1;
-const int SETTINGS = 2;
-int app_mode = BROWSING_THUMBS;
+
 
 u64 viewing_file_index = 0; // what file do we have open if we're in VIEWING_FILE mode
 
@@ -24,30 +20,11 @@ newstring master_path;
 newstring archive_save_filename = newstring::create_with_new_memory(L"\\~meta.txt");
 
 
-// paths...
-
-// string_pool files_full; // string collection of paths to all item files
-// string_pool files_thumb; // string collection of paths to the thumbnail files
-// // string_pool files_thumb128; // string collection of paths to the thumbnail files
-// // string_pool files_thumb256; // string collection of paths to the thumbnail files
-// // string_pool files_thumb512; // string collection of paths to the thumbnail files
-// string_pool files_metadata; // paths to metadata files (resolution, probably tags eventually)
-
-
-// // TODO: rename, these should be "thumbpaths_that_need_creation" or something
-// // because they are not item paths but the paths to the files that don't exist yet
-// // kind of just for loading....
-// string_pool existing_thumbs;
-// string_pool items_without_matching_thumbs;
-// string_pool thumbs_without_matching_item;
-
-// string_pool existing_metadata;
-// string_pool items_without_matching_metadata;
-// string_pool metadata_without_matching_item;
-
 
 newstring thumb_dir_name = newstring::create_with_new_memory(L"~thumbs");  // todo: where should these consts go
 // newstring metadata_dir_name = newstring::create_with_new_memory(L"~metadata");
+
+
 
 newstring_pool FindAllItemPaths(newstring master_path) {
     newstring_pool top_folders = win32_GetAllFilesAndFoldersInDir(master_path);
@@ -259,6 +236,7 @@ item CreateItemFromPath(newstring fullpath, newstring masterdir) {
     // with our ffmpeg code that specifically "ignores all .txt files" atm
     // but we need most thumbs to have original extensions to (for example) animate correctly
     if (fullpath.ends_with(L".txt")) {
+        DEBUGPRINT("HERE");
         thumbpath.append(L".bmp");
     }
     newitem.thumbpath = thumbpath.to_old_string_temp();
@@ -626,6 +604,9 @@ void CreateDisplayListFromBrowseSelection() {
 
 
 
+
+
+
 //
 // data for settings tab, proposed new master directory stuff
 
@@ -641,6 +622,50 @@ item_pool proposed_items;
 
 
 int_pool proposed_thumbs_found = int_pool::new_empty();
+
+
+
+
+
+// could add loading/etc to this framework
+const int BROWSING_THUMBS = 0;
+const int VIEWING_FILE = 1;
+const int SETTINGS = 2;
+const int LOADING = 3;
+const int INIT = 4;
+int app_mode = LOADING;
+
+void app_change_mode(int new_mode) {
+
+    // leaving VIEW
+    if (app_mode == VIEWING_FILE && new_mode != VIEWING_FILE) {
+        // todo: remove tile stuff from memory or gpu ?
+    }
+
+    // leaving SETTINGS
+    if (app_mode == SETTINGS && new_mode != SETTINGS) {
+
+    }
+
+    // leaving LOADING
+    if (app_mode == LOADING && new_mode != LOADING) {
+        assert(new_mode == INIT);
+    }
+
+    // entering SETTINGS
+    if (new_mode == SETTINGS) {
+        proposed_master_path.overwrite_with_copy_of(master_path);
+        proposed_path_reevaluate = true;
+    }
+
+    // entering LOADING (creating thumbnail files, etc)
+    if (new_mode == LOADING) {
+
+    }
+
+    app_mode = new_mode;
+}
+
 
 
 
