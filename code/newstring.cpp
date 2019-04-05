@@ -93,16 +93,22 @@ struct newstring {
 
     bool ends_with(newstring suffix) {
         if (suffix.count > count) return false;
+        int j = count-1;
         for (int i = suffix.count-1; i >= 0; i--) {
-            if (list[i] != suffix.list[i]) return false;
+            assert(j>=0); // shouldn't trigger since we check that suffix.count>count
+            if (list[j] != suffix.list[i]) return false;
+            j--;
         }
         return true;
     }
     bool ends_with(wc *suffix) {
         int suffixcount = wcslen(suffix);
         if (suffixcount > count) return false;
+        int j = count-1;
         for (int i = suffixcount-1; i >= 0; i--) {
-            if (list[i] != suffix[i]) return false;
+            assert(j>=0); // shouldn't trigger since we check that suffix.count>count
+            if (list[j] != suffix[i]) return false;
+            j--;
         }
         return true;
     }

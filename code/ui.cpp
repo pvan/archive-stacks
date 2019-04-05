@@ -166,19 +166,10 @@ rect ui_texti(char *text, int value, rect r, int hpos, int vpos, bool render, fl
     sprintf(ui_text_reusable_buffer, text, value);
     return ui_text(ui_text_reusable_buffer, r, hpos, vpos, render, bgalpha, textcol);
 }
-// rect ui_texti(char *text, int v1, int v2, rect r, int hpos, int vpos) {
-//     sprintf(ui_text_reusable_buffer, text, v1, v2);
-//     return ui_text(ui_text_reusable_buffer, r, hpos, vpos);
-// }
-
-// rect ui_textf(char *text, float value, rect r, int hpos, int vpos) {
-//     sprintf(ui_text_reusable_buffer, text, value);
-//     return ui_text(ui_text_reusable_buffer, r, hpos, vpos);
-// }
-// rect ui_textf(char *text, float f1, float f2, rect r, int hpos, int vpos) {
-//     sprintf(ui_text_reusable_buffer, text, f1, f2);
-//     return ui_text(ui_text_reusable_buffer, r, hpos, vpos);
-// }
+rect ui_textii(char *text, int v1, int v2, rect r, int hpos, int vpos, bool render, float bgalpha, u32 textcol = 0xffffffff) {
+    sprintf(ui_text_reusable_buffer, text, v1, v2);
+    return ui_text(ui_text_reusable_buffer, r, hpos, vpos, render, bgalpha, textcol);
+}
 
 
 // semi-debugish function

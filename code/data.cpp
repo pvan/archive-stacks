@@ -236,7 +236,6 @@ item CreateItemFromPath(newstring fullpath, newstring masterdir) {
     // with our ffmpeg code that specifically "ignores all .txt files" atm
     // but we need most thumbs to have original extensions to (for example) animate correctly
     if (fullpath.ends_with(L".txt")) {
-        DEBUGPRINT("HERE");
         thumbpath.append(L".bmp");
     }
     newitem.thumbpath = thumbpath.to_old_string_temp();

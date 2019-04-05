@@ -966,7 +966,7 @@ void load_tick(float actual_dt, int cw, int ch) {
 
     line++;
     ui_text(loading_status_msg, {(float)cw/2, (float)ch/2 + UI_TEXT_SIZE*line++}, UI_CENTER,UI_CENTER, true, 0);
-    // ui_texti("files: %i of %i", loading_reusable_count, loading_reusable_max, cw/2, ch/2 + UI_TEXT_SIZE*line++, UI_CENTER,UI_CENTER);
+    ui_textii("files: %i of %i", loading_reusable_count, loading_reusable_max, {(float)cw/2, (float)ch/2 + UI_TEXT_SIZE*line++}, UI_CENTER,UI_CENTER, true, 0);
 
 }
 
