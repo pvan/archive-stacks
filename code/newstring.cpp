@@ -286,6 +286,16 @@ newstring CombinePathsIntoNewMemory(newstring masterdir, newstring subdir_name, 
     return result;
 }
 
+// todo: combine with above
+newstring CombinePathsIntoNewMemory(newstring base, newstring tail) {
+    newstring result = base.copy_into_new_memory();
+    if (!result.ends_with(L"\\") && !result.ends_with(L"/") && tail[0] != L'\\' && tail[0] != L'/') {
+        result.append(L'/');
+    }
+    result.append(tail);
+    return result;
+}
+
 
 bool PathsAreSame(newstring path1, newstring path2) {
     // feels like there should be an easier way..

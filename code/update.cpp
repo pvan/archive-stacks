@@ -895,11 +895,13 @@ void settings_tick(float actual_dt, int cw, int ch) {
             // sprintf(buf, "items found: %i", proposed_items.count);
             ui_texti("items found: %i", proposed_items.count, {x,y+UI_TEXT_SIZE*2}, UI_LEFT,UI_TOP, true, 0);
 
-            if (win32_PathExists(proposed_master_path.append_reusable(archive_save_filename))) {
+            newstring combinedpath = CombinePathsIntoNewMemory(proposed_master_path, archive_save_filename);
+            if (win32_PathExists(combinedpath)) {
                 ui_text("archive data found", {x,y+UI_TEXT_SIZE*3}, UI_LEFT,UI_TOP, true, 0, 0xff00ff00);
             } else {
                 ui_text("archive data not found", {x,y+UI_TEXT_SIZE*3}, UI_LEFT,UI_TOP, true, 0);
             }
+            combinedpath.free_all();
 
             rect buttonr = {0};
             if (ui_button_text("new dir", "switch to new directory", {x,y+UI_TEXT_SIZE*4}, UI_LEFT,UI_TOP, &buttonr))
@@ -907,6 +909,8 @@ void settings_tick(float actual_dt, int cw, int ch) {
                 // not using straight == here because of / and things
                 if (!PathsAreSame(proposed_master_path, master_path)) {
                     SelectNewMasterDirectory(proposed_master_path);
+                    return; // no need to do anything else here (draw, etc)
+                            // we are switching to loading screen
                 } else {
                     MessageBox(0,"paths are the same",0,0);
                 }

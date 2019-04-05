@@ -6,24 +6,16 @@
 
 
 
-// bool loading = true;
-// bool need_init = true;
-
-
-
-
 u64 viewing_file_index = 0; // what file do we have open if we're in VIEWING_FILE mode
+
 
 newstring master_path;
 
 
-
-newstring archive_save_filename = newstring::create_with_new_memory(L"\\~meta.txt");
-
-
-
-newstring thumb_dir_name = newstring::create_with_new_memory(L"~thumbs");  // todo: where should these consts go
-// newstring metadata_dir_name = newstring::create_with_new_memory(L"~metadata");
+// todo: capitalize/const these?
+newstring archive_save_filename = newstring::create_with_new_memory(L"~meta.txt");
+newstring archive_tag_list_filename = newstring::create_with_new_memory(L"~taglist.txt");
+newstring thumb_dir_name = newstring::create_with_new_memory(L"~thumbs");
 
 
 
@@ -114,8 +106,7 @@ string_pool ItemsInFirstPoolButNotSecond(string_pool p1, string_pool p2) {
 string_pool tag_list;
 
 void SaveTagList() {
-    // wc *path = master_path.CopyAndAppend(L"/~taglist.txt").chars;
-    wc *path = master_path.copy_into_new_memory().append(L"/~taglist.txt").to_wc_final();
+    wc *path = CombinePathsIntoNewMemory(master_path, archive_tag_list_filename).to_wc_final();
 
     // todo: what is proper saving protocol: save as copy then replace old when done?
 
@@ -146,7 +137,6 @@ void AddNewTagAndSave(string tag) {
 
 
 string_pool ReadTagListFromFileOrSomethingUsableOtherwise(newstring master_path) {
-    //char *path = DEFAULT_PATH"~tags\\~taglist.txt";
 
     // string path = master_path.CopyAndAppend(L"~taglist.txt");
     // if (!win32_PathExists(path.chars)) return;
@@ -164,8 +154,7 @@ string_pool ReadTagListFromFileOrSomethingUsableOtherwise(newstring master_path)
     string_pool result = string_pool::new_empty();
     // result.add(string::Create(L"untagged"));  // always have this entry as index 0?? todo: decide
 
-    // wc *path = master_path.CopyAndAppend(L"/~taglist.txt").chars;
-    wc *path = master_path.copy_into_new_memory().append(L"/~taglist.txt").to_wc_final();
+    wc *path = CombinePathsIntoNewMemory(master_path, archive_tag_list_filename).to_wc_final();
 
     if (!win32_PathExists(path)) {
         result.add(string::KeepMemory(L"untagged"));  // always have this entry as index 0?? todo: decide
@@ -400,7 +389,7 @@ void InitAllDataLists(int count) {
 
 void SaveMetadataFile()
 {
-    wc *path = master_path.copy_and_append(archive_save_filename).to_wc_final();
+    wc *path = CombinePathsIntoNewMemory(master_path, archive_save_filename).to_wc_final();
 
     FILE *file = _wfopen(path, L"w, ccs=UTF-16LE");
     if (!file) {
@@ -434,7 +423,8 @@ void LoadMasterDataFileAndPopulateResolutionsAndTagsEtc(
                                                      // bool_pool *res_are_valid,
                                                      int *progress)
 {
-    wc *path = master_path.copy_and_append(archive_save_filename).to_wc_final();
+    // wc *path = master_path.copy_and_append(archive_save_filename).to_wc_final();
+    wc *path = CombinePathsIntoNewMemory(master_path, archive_save_filename).to_wc_final();
     if (!win32_PathExists(path)) {
         DEBUGPRINT("master metadata cache file doesn't exist");
         return;
