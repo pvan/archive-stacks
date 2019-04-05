@@ -257,7 +257,7 @@ struct newstring {
     bool operator==(newstring o) {
         if (count != o.count) return false;
         for (int i = 0; i < count; i++) {
-            if( list[i] != o.list[i]) return false;
+            if(list[i] != o.list[i]) return false;
         }
         return true;
     }
@@ -287,6 +287,29 @@ newstring CombinePathsIntoNewMemory(newstring masterdir, newstring subdir_name, 
 }
 
 
+bool PathsAreSame(newstring path1, newstring path2) {
+    // feels like there should be an easier way..
+    // like an OS call, or a more general string parsing function or find replace function to make?
+    // i guess this isn't too bad
+    newstring copy1 = path1.copy_into_new_memory();
+    newstring copy2 = path2.copy_into_new_memory();
+
+    if (copy1.ends_with(L"\\") || copy1.ends_with(L"/")) copy1.rtrim(1);
+    if (copy2.ends_with(L"\\") || copy2.ends_with(L"/")) copy2.rtrim(1);
+
+    // basically a copy of string equals but ignoring slashes and case
+    if (copy1.count != copy2.count) return false;
+    for (int i = 0; i < copy1.count; i++) {
+        if (towlower(copy1[i]) != towlower(copy2[i])) {
+            if (copy1[i] != L'\\' && copy1[i] != L'/' ||
+                copy2[i] != L'\\' && copy2[i] != L'/')
+            return false;
+        }
+    }
+    return true;
+}
+
+
 // for finding filenames from paths
 void trim_everything_after_last_slash(newstring probably_a_path) {
     int last_bslash_index = probably_a_path.find_last(L'\\');
@@ -294,4 +317,5 @@ void trim_everything_after_last_slash(newstring probably_a_path) {
     int last_slash_index = max(last_bslash_index, last_fslash_index);
     probably_a_path.ltrim(last_slash_index+1); //+1 include trimming the slash
 }
+
 

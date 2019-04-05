@@ -282,6 +282,7 @@ DWORD WINAPI RunBackgroundStartupThread( LPVOID lpParam ) {
     return 0;
 }
 void LaunchBackgroundStartupLoopIfNeeded() {
+    assert(!background_startup_thread_launched); // for now check if we're trying to launch multiple
     if (!background_startup_thread_launched) {
         CreateThread(0, 0, RunBackgroundStartupThread, 0, 0, 0);
         background_startup_thread_launched = true;

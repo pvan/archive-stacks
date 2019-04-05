@@ -254,9 +254,9 @@ bool DrawTagsWithXColumns(int totalcols,
             //     ui_text(buf, {(float)cw,h}, UI_RIGHT,UI_TOP, true, .5);
             // }
 
-            colwidths.free_all();
-            widthsincol.free_all();
-            skiprows.free_all();
+            colwidths.free_pool();
+            widthsincol.free_pool();
+            skiprows.free_pool();
             return true;
         }
 
@@ -306,9 +306,9 @@ bool DrawTagsWithXColumns(int totalcols,
     //     ui_text(buf, {w,h}, UI_RIGHT,UI_TOP, true, .5);
     // }
 
-    colwidths.free_all();
-    widthsincol.free_all();
-    skiprows.free_all();
+    colwidths.free_pool();
+    widthsincol.free_pool();
+    skiprows.free_pool();
     return false;
 }
 
@@ -903,7 +903,12 @@ void settings_tick(float actual_dt, int cw, int ch) {
             rect buttonr = {0};
             if (ui_button_text("new dir", "switch to new directory", {x,y+UI_TEXT_SIZE*4}, UI_LEFT,UI_TOP, &buttonr))
             {
-                app_change_mode(LOADING);
+                // not using straight == here because of / and things
+                if (!PathsAreSame(proposed_master_path, master_path)) {
+                    SelectNewMasterDirectory(proposed_master_path);
+                } else {
+                    MessageBox(0,"paths are the same",0,0);
+                }
             }
             if (proposed_thumbs_found.count == proposed_items.count) {
                 ui_texti("thumbnail files found: %i", proposed_thumbs_found.count, {x+buttonr.w+10,y+UI_TEXT_SIZE*3}, UI_LEFT,UI_TOP, true, 0, 0xff00ff00);
@@ -923,25 +928,6 @@ void settings_tick(float actual_dt, int cw, int ch) {
         proposed_path_reevaluate = true;
     }
     last_proposed_master_path.overwrite_with_copy_of(proposed_master_path);
-
-
-    // ui_texti("media files: %i", all_items.count, cw/2, ch/2 + UI_TEXT_SIZE*line++, UI_CENTER,UI_CENTER);
-
-    // line++;
-    // ui_texti("items_without_matching_thumbs: %i", item_indices_without_thumbs.count, cw/2, ch/2 + UI_TEXT_SIZE*line++, UI_CENTER,UI_CENTER);
-
-    // line++;
-    // ui_texti("items_without_matching_metadata: %i", item_indices_without_metadata.count, cw/2, ch/2 + UI_TEXT_SIZE*line++, UI_CENTER,UI_CENTER);
-
-    // line++;
-    // ui_text(loading_status_msg, cw/2, ch/2 + UI_TEXT_SIZE*line++, UI_CENTER,UI_CENTER);
-    // ui_texti("files: %i of %i", loading_reusable_count, loading_reusable_max, cw/2, ch/2 + UI_TEXT_SIZE*line++, UI_CENTER,UI_CENTER);
-
-
-    // ui_render_elements(0, 0); // pass mouse pos for highlighting
-    // ui_reset(); // call at the end or start of every frame so buttons don't carry over between frames
-
-
 
     if (ui_button_text("close x", "close x", {(float)cw,0}, UI_RIGHT,UI_TOP, 0)) {
         app_change_mode(BROWSING_THUMBS);

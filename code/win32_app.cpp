@@ -102,7 +102,7 @@ bool show_debug_console = false;
 #include "update.cpp"
 
 
-// done once after startup loading is done
+// done once after start loading is done or new directory selected
 void init_app(item_pool all_items, int cw, int ch) {
 
     SelectAllBrowseTags();
@@ -222,14 +222,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 
     // master_path = string::KeepMemory(L"E:\\inspiration test folder");
-    master_path = newstring::create_with_new_memory(L"E:\\inspiration test folder");
-
-    // create item list with fullpath populated
-    items = CreateItemListFromMasterPath(master_path);
-
-
-
-    LaunchBackgroundStartupLoopIfNeeded();
+    // master_path = newstring::create_with_new_memory(L"E:\\inspiration test folder");
+    SelectNewMasterDirectory(newstring::create_with_new_memory(L"E:\\inspiration test folder"));
 
 
     while(running)

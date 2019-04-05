@@ -666,5 +666,36 @@ void app_change_mode(int new_mode) {
 }
 
 
+void LaunchBackgroundStartupLoopIfNeeded();
 
+void SelectNewMasterDirectory(newstring newdir) {
+    // basically need to undo everything we create when loading
+    // see, at the very least, backgroundstartupthread and init_app()
+
+
+    // or should we put all this stuff in app_change_mode, or even call this from there?
+    app_change_mode(LOADING); // this will switch our background threads to idle (atm at least)
+
+
+
+    // first free anything already created...
+
+    items.free_pool();
+
+
+
+    // then setup for new directory...
+
+    master_path.overwrite_with_copy_of(newdir);
+
+    // create item list with fullpath populated
+    items = CreateItemListFromMasterPath(master_path);
+
+
+    LaunchBackgroundStartupLoopIfNeeded();
+
+
+
+
+}
 
