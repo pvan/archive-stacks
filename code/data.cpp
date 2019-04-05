@@ -21,6 +21,8 @@ newstring master_path;
 
 
 
+newstring archive_save_filename = newstring::create_with_new_memory(L"\\~meta.txt");
+
 
 // paths...
 
@@ -224,24 +226,17 @@ string_pool ReadTagListFromFileOrSomethingUsableOtherwise(newstring master_path)
 
 struct item {
     string fullpath;
+
     string thumbpath;
+    // string thumbpath128; // like this?
+    // string thumbpath256;
+    // string thumbpath512;
 
     newstring subpath;
 
     newstring justname;
 
-    // string thumbpath128;
-    // string thumbpath256;
-    // string thumbpath512;
-    // string metadatapath; //cached metadata
     bool operator==(item o) { return fullpath==o.fullpath; } // for now just check fullpath
-
-    // string justname() { wc *result = CopyJustFilename(fullpath.chars); return string::KeepMemory(result); }
-    // string justsubpath() { wc *result = CopyJustFilename(fullpath.chars); return string::Create(result); }
-
-    // wc *PointerToJustSubpath(newstring rootpath) {
-    //     return PointerToFirstUniqueCharInSecondString(rootpath.chars, fullpath.chars);
-    // };
 
     bool found_in_cache = false; // just metric for debugging
 
@@ -251,7 +246,7 @@ struct item {
 };
 
 // recommend create all items with this
-// note doesn't set thumbpath or metadata path or tags etc atm
+// should now set all paths stored in item (but not tags)
 item CreateItemFromPath(newstring fullpath, newstring masterdir) {
     item newitem = {0};
 
@@ -259,7 +254,6 @@ item CreateItemFromPath(newstring fullpath, newstring masterdir) {
     newitem.subpath = fullpath.copy_into_new_memory().trim_common_prefix(masterdir);
 
     newstring thumbpath = CombinePathsIntoNewMemory(masterdir, thumb_dir_name, newitem.subpath);
-
     // for now, special case for txt...
     // we need txt thumbs to be something other than txt so we can open them
     // with our ffmpeg code that specifically "ignores all .txt files" atm
@@ -281,24 +275,6 @@ DEFINE_TYPE_POOL(item);
 item_pool items;
 
 
-// // after creating items, thumbnail paths are created with this
-// // (todo: put thumbnail path creation in CreateItemFromPath() ?)
-// void PopulateThumbnailPathsForAllItems(item_pool *itemlist) {
-//     for (int i = 0; i < itemlist->count; i++) {
-//         // for now, special case for txt...
-//         // we need txt thumbs to be something other than txt so we can open them
-//         // with our ffmpeg code that specifically "ignores all .txt files" atm
-//         // but we need most thumbs to have original extensions to (for example) animate correctly
-//         if (StringEndsWith(itemlist->pool[i].fullpath.chars, L".txt")) {
-//             items[i].thumbpath = ItemPathToSubfolderPath(itemlist->pool[i].fullpath, L"~thumbs", L".bmp");
-//         } else {
-//             items[i].thumbpath = ItemPathToSubfolderPath(itemlist->pool[i].fullpath, L"~thumbs", L"");
-//         }
-//         // items[i].metadatapath = ItemPathToSubfolderPath(itemlist->pool[i].fullpath, L"~metadata", L"");
-//     }
-// }
-
-
 
 item_pool CreateItemListFromMasterPath(newstring masterdir) {
     newstring_pool itempaths = FindAllItemPaths(masterdir);
@@ -311,35 +287,6 @@ item_pool CreateItemListFromMasterPath(newstring masterdir) {
 }
 
 
-// // todo: combine with reading resolution into one read/write_metadata function
-// bool PopulateTagsFromCachedFileIfPossible(item *it) {
-
-//     string path = it->metadatapath;
-
-//     if (!win32_PathExists(path)) return false;
-
-//     // wchar version
-//     FILE *file = _wfopen(path.chars, L"rb");
-//     if (!file) {  DEBUGPRINT("error reading %s\n", path.ToUTF8Reusable()); return false; }
-//     float notused;
-//     // int result = fwscanf(file, L"%f,%f", &notused, &notused); // skip resolution
-
-//     while (true) {
-//         char ch = fgetc(file);
-//         if (ch == EOF) { fclose(file); return false; }
-//         if (ch == '\n') break; // read until first new line
-//     }
-
-//     // if (feof(file)) return false;
-//     int next_index = 0;
-//     // if (!feof(file)) {
-//         fwscanf(file, L"%i\n", &next_index);
-//     //     if (feof(file)) return false;
-//         it->tags.add(next_index);
-//     // }
-//     fclose(file);
-//     return true;
-// }
 
 static string laststr = string::CreateWithNewMem(L"empty");
 bool PopulateTagFromPath(item *it) {
@@ -371,27 +318,12 @@ bool PopulateTagFromPath(item *it) {
     return true;
 }
 
-// // done async in loading thread now
-// // consider: pass pool into this or keep items global??
-// void PopulateItemPaths_DEP() {
-//     for (int i = 0; i < items.count; i++) {
-//         items[i].thumbpath = ItemPathToSubfolderPath(items[i].fullpath, L"~thumbs");
-//         // items[i].thumbpath128 = ItemPathToSubfolderPath(items[i].fullpath, L"~thumbs128");
-//         // items[i].thumbpath256 = ItemPathToSubfolderPath(items[i].fullpath, L"~thumbs256");
-//         // items[i].thumbpath512 = ItemPathToSubfolderPath(items[i].fullpath, L"~thumbs512");
-//         items[i].metadatapath = ItemPathToSubfolderPath(items[i].fullpath, L"~metadata");
-//     }
-// }
-
-
-
 
 
 // for now, these are separate lists
 // consider: combine with item struct?
 // -wouldn't need to init list of same length as items
 // -but i kind of like as separate for now
-
 
 //
 // modified times
@@ -446,32 +378,6 @@ void CreateCachedResolution(string path, v2 size) {
     fclose(file);
 }
 
-// void PopulateResolutionsFromSeparateFileCaches(item_pool *items, int *progress) {
-//     for (int i = 0; i < items->count; i++) {
-//         *progress = i;
-
-//         item_resolutions.add({0,0});
-//         v2& res = item_resolutions[i];
-
-//         if (GetCachedResolutionIfPossible(items->pool[i].metadatapath, &res)) {
-//             // DEBUGPRINT("read res: %f, %f\n", t.resolution.x, t.resolution.y);
-//             // successfully loaded cached resolution
-//             continue;
-//         } else {
-//             // consider: should we try reading orig files here for resolution?
-//             // 1 - we should have metadata for any file now
-//             //     (since they are creating during loading, before this is done)
-//             // but 2 - we are doing this async during loading as well now,
-//             //         so we should be okay that it might take a while
-//             // for now: don't try to load.. should we maybe even assert(false)?
-//             // DEBUGPRINT("Couldn't load cached resolution from metadata for item: %s", t.paths.fullpath.ToUTF8Reusable());
-//             DEBUGPRINT("Couldn't load cached resolution from metadata for item: %s", items->pool[i].fullpath.ToUTF8Reusable());
-//             res = {7,7};
-//             assert(false);
-//         }
-
-//     }
-// }
 
 
 // used to fallback to thumbnail, still do that? maybe even start with that? (faster?)
@@ -516,8 +422,7 @@ void InitAllDataLists(int count) {
 
 void SaveMetadataFile()
 {
-    // wc *path = L"D:\\Users\\phil\\Desktop\\meta.txt";
-    wc *path = L"E:\\inspiration test folder\\~meta.txt";
+    wc *path = master_path.copy_and_append(archive_save_filename).to_wc_final();
 
     FILE *file = _wfopen(path, L"w, ccs=UTF-16LE");
     if (!file) {
@@ -525,9 +430,6 @@ void SaveMetadataFile()
         return;
     }
     for (int i = 0; i < items.count; i++) {
-
-        // wc *justsubpath = PointerToFirstUniqueCharInSecondString(master_path.chars, items[i].fullpath.chars);
-
         assert(item_resolutions[i].x == (int)item_resolutions[i].x); // for now i just want to know if any resolutions are't whole numbers
         assert(item_resolutions[i].y == (int)item_resolutions[i].y);
 
@@ -540,13 +442,13 @@ void SaveMetadataFile()
         }
         fwprintf(file, L"\n");
     }
+
+    free(path);
 }
 
-// for reading strings one wchar at a time (used as a stretch buffer, basically)
-DEFINE_TYPE_POOL(wc);
 
-newstring archive_save_filename = newstring::create_with_new_memory(L"\\~meta.txt");
-// newstring thumbnail_directory_name = newstring::create_with_new_memory(L"~thumbs");
+
+DEFINE_TYPE_POOL(wc);  // used only in LoadMasterDataFileAndPopulateResolutionsAndTagsEtc, todo: remove when not needed
 
 void LoadMasterDataFileAndPopulateResolutionsAndTagsEtc(
                                                      // item_pool *itemslocal,
@@ -554,8 +456,6 @@ void LoadMasterDataFileAndPopulateResolutionsAndTagsEtc(
                                                      // bool_pool *res_are_valid,
                                                      int *progress)
 {
-    // wc *path = L"D:\\Users\\phil\\Desktop\\meta.txt";
-    // wc *path = L"E:\\inspiration test folder\\~meta.txt";
     wc *path = master_path.copy_and_append(archive_save_filename).to_wc_final();
     if (!win32_PathExists(path)) {
         DEBUGPRINT("master metadata cache file doesn't exist");
@@ -582,7 +482,7 @@ void LoadMasterDataFileAndPopulateResolutionsAndTagsEtc(
         if (numread < 0) {DEBUGPRINT("e2 %i\n",linesread);goto fileclose;} // eof (or maybe badly formed file?)
 
         // read subpath
-        wc_pool result_string = wc_pool::new_empty();
+        wc_pool result_string = wc_pool::new_empty(); // todo: replace with newstring and remove wc_pool define
         wc nextchar;
         do {
             numread = fwscanf(file, L"%c", &nextchar);
@@ -729,7 +629,7 @@ void CreateDisplayListFromBrowseSelection() {
 //
 // data for settings tab, proposed new master directory stuff
 
-// not all here?
+// all here?
 // todo: store here or with similar (like put proposed_path next to master_path?)
 
 newstring proposed_master_path;
