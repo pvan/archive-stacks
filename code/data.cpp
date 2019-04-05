@@ -252,7 +252,7 @@ struct item {
     // string thumbpath128;
     // string thumbpath256;
     // string thumbpath512;
-    string metadatapath; //cached metadata
+    // string metadatapath; //cached metadata
     bool operator==(item o) { return fullpath==o.fullpath; } // for now just check fullpath
 
     string justname() { wc *result = CopyJustFilename(fullpath.chars); return string::KeepMemory(result); }
@@ -296,7 +296,7 @@ void PopulateThumbnailPathsForAllItems(item_pool *itemlist) {
         } else {
             items[i].thumbpath = ItemPathToSubfolderPath(itemlist->pool[i].fullpath, L"~thumbs", L"");
         }
-        items[i].metadatapath = ItemPathToSubfolderPath(itemlist->pool[i].fullpath, L"~metadata", L"");
+        // items[i].metadatapath = ItemPathToSubfolderPath(itemlist->pool[i].fullpath, L"~metadata", L"");
     }
 }
 
@@ -313,35 +313,35 @@ item_pool CreateItemListFromMasterPath(newstring masterdir) {
 }
 
 
-// todo: combine with reading resolution into one read/write_metadata function
-bool PopulateTagsFromCachedFileIfPossible(item *it) {
+// // todo: combine with reading resolution into one read/write_metadata function
+// bool PopulateTagsFromCachedFileIfPossible(item *it) {
 
-    string path = it->metadatapath;
+//     string path = it->metadatapath;
 
-    if (!win32_PathExists(path)) return false;
+//     if (!win32_PathExists(path)) return false;
 
-    // wchar version
-    FILE *file = _wfopen(path.chars, L"rb");
-    if (!file) {  DEBUGPRINT("error reading %s\n", path.ToUTF8Reusable()); return false; }
-    float notused;
-    // int result = fwscanf(file, L"%f,%f", &notused, &notused); // skip resolution
+//     // wchar version
+//     FILE *file = _wfopen(path.chars, L"rb");
+//     if (!file) {  DEBUGPRINT("error reading %s\n", path.ToUTF8Reusable()); return false; }
+//     float notused;
+//     // int result = fwscanf(file, L"%f,%f", &notused, &notused); // skip resolution
 
-    while (true) {
-        char ch = fgetc(file);
-        if (ch == EOF) { fclose(file); return false; }
-        if (ch == '\n') break; // read until first new line
-    }
+//     while (true) {
+//         char ch = fgetc(file);
+//         if (ch == EOF) { fclose(file); return false; }
+//         if (ch == '\n') break; // read until first new line
+//     }
 
-    // if (feof(file)) return false;
-    int next_index = 0;
-    // if (!feof(file)) {
-        fwscanf(file, L"%i\n", &next_index);
-    //     if (feof(file)) return false;
-        it->tags.add(next_index);
-    // }
-    fclose(file);
-    return true;
-}
+//     // if (feof(file)) return false;
+//     int next_index = 0;
+//     // if (!feof(file)) {
+//         fwscanf(file, L"%i\n", &next_index);
+//     //     if (feof(file)) return false;
+//         it->tags.add(next_index);
+//     // }
+//     fclose(file);
+//     return true;
+// }
 
 static string laststr = string::CreateWithNewMem(L"empty");
 bool PopulateTagFromPath(item *it) {
@@ -448,32 +448,32 @@ void CreateCachedResolution(string path, v2 size) {
     fclose(file);
 }
 
-void PopulateResolutionsFromSeparateFileCaches(item_pool *items, int *progress) {
-    for (int i = 0; i < items->count; i++) {
-        *progress = i;
+// void PopulateResolutionsFromSeparateFileCaches(item_pool *items, int *progress) {
+//     for (int i = 0; i < items->count; i++) {
+//         *progress = i;
 
-        item_resolutions.add({0,0});
-        v2& res = item_resolutions[i];
+//         item_resolutions.add({0,0});
+//         v2& res = item_resolutions[i];
 
-        if (GetCachedResolutionIfPossible(items->pool[i].metadatapath, &res)) {
-            // DEBUGPRINT("read res: %f, %f\n", t.resolution.x, t.resolution.y);
-            // successfully loaded cached resolution
-            continue;
-        } else {
-            // consider: should we try reading orig files here for resolution?
-            // 1 - we should have metadata for any file now
-            //     (since they are creating during loading, before this is done)
-            // but 2 - we are doing this async during loading as well now,
-            //         so we should be okay that it might take a while
-            // for now: don't try to load.. should we maybe even assert(false)?
-            // DEBUGPRINT("Couldn't load cached resolution from metadata for item: %s", t.paths.fullpath.ToUTF8Reusable());
-            DEBUGPRINT("Couldn't load cached resolution from metadata for item: %s", items->pool[i].fullpath.ToUTF8Reusable());
-            res = {7,7};
-            assert(false);
-        }
+//         if (GetCachedResolutionIfPossible(items->pool[i].metadatapath, &res)) {
+//             // DEBUGPRINT("read res: %f, %f\n", t.resolution.x, t.resolution.y);
+//             // successfully loaded cached resolution
+//             continue;
+//         } else {
+//             // consider: should we try reading orig files here for resolution?
+//             // 1 - we should have metadata for any file now
+//             //     (since they are creating during loading, before this is done)
+//             // but 2 - we are doing this async during loading as well now,
+//             //         so we should be okay that it might take a while
+//             // for now: don't try to load.. should we maybe even assert(false)?
+//             // DEBUGPRINT("Couldn't load cached resolution from metadata for item: %s", t.paths.fullpath.ToUTF8Reusable());
+//             DEBUGPRINT("Couldn't load cached resolution from metadata for item: %s", items->pool[i].fullpath.ToUTF8Reusable());
+//             res = {7,7};
+//             assert(false);
+//         }
 
-    }
-}
+//     }
+// }
 
 
 // used to fallback to thumbnail, still do that? maybe even start with that? (faster?)

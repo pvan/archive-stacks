@@ -44,10 +44,10 @@ DWORD WINAPI RunBackgroundStartupThread( LPVOID lpParam ) {
             item_indices_without_thumbs.add(i);
             DEBUGPRINT("this doesn't exist? %s\n", items[i].thumbpath.ToUTF8Reusable());
         }
-        if (!win32_PathExists(items[i].metadatapath)) {
-            item_indices_without_metadata.add(i);
-            DEBUGPRINT("this doesn't exist? %s\n", items[i].metadatapath.ToUTF8Reusable());
-        }
+        // if (!win32_PathExists(items[i].metadatapath)) {
+        //     item_indices_without_metadata.add(i);
+        //     DEBUGPRINT("this doesn't exist? %s\n", items[i].metadatapath.ToUTF8Reusable());
+        // }
     }
 
     // // force re-create thumbnails
