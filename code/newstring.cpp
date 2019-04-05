@@ -70,7 +70,8 @@ struct newstring {
     }
 
     newstring append(wc newchar) { add(newchar); return *this; }
-    newstring append(wc *newchar) { for (wc *c=newchar;*c;c++) add(*c); return *this; }
+    newstring append(wc *suffix) { for (wc *c=suffix;*c;c++) add(*c); return *this; }
+    newstring append(newstring suffix) { for (int i=0;i<suffix.count;i++) add(suffix[i]); return *this; }
 
     void rtrim(int amt) { assert(count>=amt && amt>=0); count-=amt; }
     void ltrim(int amt) { assert(count>=amt && amt>=0);
@@ -119,9 +120,17 @@ struct newstring {
     newstring copy_and_append(wc *suffix) {
         newstring c = copy_into_new_memory();
         c.append(suffix);
-        // c.count += wcslen(suffix);
-        // c.list = (wchar_t*)realloc(c.chars, (c.length+1)*sizeof(wchar_t));
-        // wcscat(c.chars, suffix);
+        return c;
+    }
+    newstring copy_and_append(newstring suffix) {
+        newstring c = copy_into_new_memory();
+        c.append(suffix);
+        return c;
+    }
+
+    newstring append_reusable(newstring suffix) {
+        newstring c = copy_into_new_memory();
+        c.append(suffix);
         return c;
     }
 
@@ -134,7 +143,7 @@ struct newstring {
     //
     // conversions / exports
 
-    // "final" = now should no longer be changed (todo: enforce this with a bool)
+    // "final" meaning our internal structure is broken, no more changes should be made (todo: enforce this with a bool)
     // (consider: var to indicate if null terminated and remove/add as needed?)
     wc *to_wc_final() {
         append(L'\0');

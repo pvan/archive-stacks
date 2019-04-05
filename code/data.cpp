@@ -528,6 +528,8 @@ void SaveMetadataFile()
 // for reading strings one wchar at a time (used as a stretch buffer, basically)
 DEFINE_TYPE_POOL(wc);
 
+newstring archive_save_filename = newstring::create_with_new_memory(L"\\~meta.txt");
+
 void LoadMasterDataFileAndPopulateResolutionsAndTagsEtc(
                                                      // item_pool *itemslocal,
                                                      // v2_pool *resolutions,
@@ -535,7 +537,8 @@ void LoadMasterDataFileAndPopulateResolutionsAndTagsEtc(
                                                      int *progress)
 {
     // wc *path = L"D:\\Users\\phil\\Desktop\\meta.txt";
-    wc *path = L"E:\\inspiration test folder\\~meta.txt";
+    // wc *path = L"E:\\inspiration test folder\\~meta.txt";
+    wc *path = master_path.copy_and_append(archive_save_filename).to_wc_final();
     if (!win32_PathExists(path)) {
         DEBUGPRINT("master metadata cache file doesn't exist");
         return;
