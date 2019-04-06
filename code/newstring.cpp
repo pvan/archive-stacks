@@ -299,7 +299,7 @@ newstring CombinePathsIntoNewMemory(newstring base, newstring tail) {
 
 bool PathsAreSame(newstring path1, newstring path2) {
     // feels like there should be an easier way..
-    // like an OS call, or a more general string parsing function or find replace function to make?
+    // like an OS call, or a more general string parsing or find replace function to make?
     // i guess this isn't too bad
 
     newstring copy1 = path1.copy_into_new_memory();
@@ -309,8 +309,13 @@ bool PathsAreSame(newstring path1, newstring path2) {
     if (copy2.ends_with(L"\\") || copy2.ends_with(L"/")) copy2.rtrim(1);
 
     // also check front of strings, in case of checking subpaths
+    // don't really need this if we also trim leading slashes (below)
     if (copy1[0] == L'/') copy1[0] = L'\\';
     if (copy2[0] == L'/') copy2[0] = L'\\';
+
+    // should we match "/example/file.txt" and "example/file.txt"? I guess so
+    if (copy1[0] == L'/' || copy1[0] == L'\\') copy1.ltrim(1);
+    if (copy2[0] == L'/' || copy2[0] == L'\\') copy2.ltrim(1);
 
     // basically a copy of string equals but ignoring slashes (and case for windows)
     if (copy1.count != copy2.count) return false;
