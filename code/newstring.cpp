@@ -307,12 +307,17 @@ bool PathsAreSame(newstring path1, newstring path2) {
     if (copy1.ends_with(L"\\") || copy1.ends_with(L"/")) copy1.rtrim(1);
     if (copy2.ends_with(L"\\") || copy2.ends_with(L"/")) copy2.rtrim(1);
 
-    // basically a copy of string equals but ignoring slashes and case
+    // basically a copy of string equals but ignoring slashes (and case for windows)
     if (copy1.count != copy2.count) return false;
     for (int i = 0; i < copy1.count; i++) {
+        // don't flag mismatched slashes, just keep on looking at the rest of the string
+        if ((copy1[i] == L'\\' || copy1[i] == L'/') &&
+            (copy2[i] != L'\\' || copy2[i] != L'/'))
+        {
+            continue;
+        }
+        // note tolower for windows paths (not case sensitive)
         if (towlower(copy1[i]) != towlower(copy2[i])) {
-            if (copy1[i] != L'\\' && copy1[i] != L'/' ||
-                copy2[i] != L'\\' && copy2[i] != L'/')
             return false;
         }
     }
