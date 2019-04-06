@@ -277,6 +277,8 @@ DWORD WINAPI RunBackgroundStartupThread( LPVOID lpParam ) {
                     }
                 }
             }
+
+            SaveTagList();
         }
 
         // // read cached resolutions...

@@ -883,28 +883,41 @@ void settings_tick(float actual_dt, int cw, int ch) {
     //     proposed_master_path.append(L'\\');
     // }
 
-
+    int row = 1;
     if (win32_PathExists(proposed_master_path)) {
         if (win32_IsDirectory(proposed_master_path)) {
-            ui_text("directory found", {x,y+UI_TEXT_SIZE*1}, UI_LEFT,UI_TOP, true, 0, 0xff00ff00);
+            ui_text("directory found", {x,y+UI_TEXT_SIZE*row++}, UI_LEFT,UI_TOP, true, 0, 0xff00ff00);
 
             // proposed.free_all(); // todo: need this?
             proposed_items = CreateItemListFromMasterPath(proposed_master_path);
 
             // char buf[256];
             // sprintf(buf, "items found: %i", proposed_items.count);
-            ui_texti("items found: %i", proposed_items.count, {x,y+UI_TEXT_SIZE*2}, UI_LEFT,UI_TOP, true, 0);
+            ui_texti("items found: %i", proposed_items.count, {x,y+UI_TEXT_SIZE*row++}, UI_LEFT,UI_TOP, true, 0);
 
-            newstring combinedpath = CombinePathsIntoNewMemory(proposed_master_path, archive_save_filename);
-            if (win32_PathExists(combinedpath)) {
-                ui_text("archive data found", {x,y+UI_TEXT_SIZE*3}, UI_LEFT,UI_TOP, true, 0, 0xff00ff00);
+            newstring archivesavepath = CombinePathsIntoNewMemory(proposed_master_path, archive_save_filename);
+            if (win32_PathExists(archivesavepath)) {
+                ui_text("archive data found", {x,y+UI_TEXT_SIZE*row++}, UI_LEFT,UI_TOP, true, 0, 0xff00ff00);
             } else {
-                ui_text("archive data not found", {x,y+UI_TEXT_SIZE*3}, UI_LEFT,UI_TOP, true, 0);
+                ui_text("archive data not found", {x,y+UI_TEXT_SIZE*row++}, UI_LEFT,UI_TOP, true, 0);
             }
-            combinedpath.free_all();
+            archivesavepath.free_all();
 
-            rect buttonr = {0};
-            if (ui_button_text("new dir", "switch to new directory", {x,y+UI_TEXT_SIZE*4}, UI_LEFT,UI_TOP, &buttonr))
+            if (proposed_thumbs_found.count == proposed_items.count && proposed_items.count>0) {
+                ui_texti("thumbnail files found: %i", proposed_thumbs_found.count, {x,y+UI_TEXT_SIZE*row++}, UI_LEFT,UI_TOP, true, 0, 0xff00ff00);
+            } else {
+                ui_texti("thumbnail files found: %i", proposed_thumbs_found.count, {x,y+UI_TEXT_SIZE*row++}, UI_LEFT,UI_TOP, true, 0);
+            }
+
+            newstring archivetagpath = CombinePathsIntoNewMemory(proposed_master_path, archive_tag_list_filename);
+            if (win32_PathExists(archivetagpath)) {
+                ui_text("archive tag list found", {x,y+UI_TEXT_SIZE*row++}, UI_LEFT,UI_TOP, true, 0, 0xff00ff00);
+            } else {
+                ui_text("archive tag list found", {x,y+UI_TEXT_SIZE*row++}, UI_LEFT,UI_TOP, true, 0);
+            }
+            archivetagpath.free_all();
+
+            if (ui_button_text("new dir", "switch to new directory", {x,y+UI_TEXT_SIZE*row++}, UI_LEFT,UI_TOP, 0))
             {
                 // not using straight == here because of / and things
                 if (!PathsAreSame(proposed_master_path, master_path)) {
@@ -914,11 +927,6 @@ void settings_tick(float actual_dt, int cw, int ch) {
                 } else {
                     MessageBox(0,"paths are the same",0,0);
                 }
-            }
-            if (proposed_thumbs_found.count == proposed_items.count) {
-                ui_texti("thumbnail files found: %i", proposed_thumbs_found.count, {x+buttonr.w+10,y+UI_TEXT_SIZE*3}, UI_LEFT,UI_TOP, true, 0, 0xff00ff00);
-            } else {
-                ui_texti("thumbnail files found: %i", proposed_thumbs_found.count, {x+buttonr.w+10,y+UI_TEXT_SIZE*3}, UI_LEFT,UI_TOP, true, 0);
             }
 
         } else {

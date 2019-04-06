@@ -138,7 +138,6 @@ void AddNewTagAndSave(string tag) {
 
 string_pool ReadTagListFromFileOrSomethingUsableOtherwise(newstring master_path) {
 
-    // string path = master_path.CopyAndAppend(L"~taglist.txt");
     // if (!win32_PathExists(path.chars)) return;
     // // wchar version
     // FILE *file = _wfopen(path.chars, L"rb");
