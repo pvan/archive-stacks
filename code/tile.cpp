@@ -29,7 +29,7 @@ struct tile
     // file data
     // string fullpath;
     // item paths_just_for_comparing_tiles; // just used for == (for tile_pool)
-    string name; // just for printing i think
+    // string name; // just for printing i think
     // u64 modifiedTimeSinceLastEpoc;
 
     // thumbnail data
@@ -99,7 +99,7 @@ struct tile
     }
 
 
-    bool operator== (tile o) { return pos==o.pos && size==o.size && name==o.name; }
+    bool operator== (tile o) { return pos==o.pos && size==o.size;}// && name==o.name; }
 
 
 };

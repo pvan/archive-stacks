@@ -40,7 +40,8 @@ DWORD WINAPI RunBackgroundStartupThread( LPVOID lpParam ) {
     for (int i = 0; i < tiles.count; i++) {
         loading_reusable_count = i;
         tiles[i].UnloadMedia();
-        if (tiles[i].name.chars) free(tiles[i].name.chars);
+        // loading_reusable_count = 100000+i;
+        // if (tiles[i].name.chars) free(tiles[i].name.chars);
     }
     loading_status_msg = "Unloading previous tags...";
     loading_reusable_max = tag_list.count;
@@ -167,6 +168,7 @@ DWORD WINAPI RunBackgroundStartupThread( LPVOID lpParam ) {
 
             loading_status_msg = "Reading master metadata file...";
             loading_reusable_max = items.count;
+            loading_reusable_count = 0;
 
             // first read list of master tags
             tag_list = ReadTagListFromFileOrSomethingUsableOtherwise(master_path);
@@ -272,7 +274,7 @@ DWORD WINAPI RunBackgroundStartupThread( LPVOID lpParam ) {
                     if (PopulateTagFromPath(&items[i])) {
                         // DEBUGPRINT("read tag from directory for %s\n", tiles[i].name.ToUTF8Reusable());
                     } else {
-                        DEBUGPRINT("unable to read tag from directory for %s\n", tiles[i].name.ToUTF8Reusable());
+                        // DEBUGPRINT("unable to read tag from directory for %s\n", tiles[i].name.ToUTF8Reusable());
                         assert(false);
                     }
                 }

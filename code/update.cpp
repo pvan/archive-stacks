@@ -648,7 +648,7 @@ void browse_tick(float actual_dt, int cw, int ch) {
                 int i = debug_info_tile_index_mouse_was_on;
                 UI_PRINT("tile_index_mouse_was_on: %i", debug_info_tile_index_mouse_was_on);
 
-                UI_PRINT("name: %s", tiles[i].name.ToUTF8Reusable());
+                UI_PRINT("name: %s", items[i].justname.to_utf8_reusable());
 
                 if (tiles[i].media.vfc && tiles[i].media.vfc->iformat)
                     UI_PRINT("format name: %s", (char*)tiles[i].media.vfc->iformat->name);

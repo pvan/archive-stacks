@@ -690,7 +690,7 @@ tile CreateTileFromFile(string path) {
     tile newTile = {0};
     assert(win32_PathExists(path));
     assert(!win32_IsDirectory(path));
-    newTile.name = string::CreateWithNewMem(CopyJustFilename(path.chars));
+    // newTile.name = string::CreateWithNewMem(CopyJustFilename(path.chars));
     return newTile;
 };
 
