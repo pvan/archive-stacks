@@ -414,8 +414,6 @@ void SaveMetadataFile()
 
 
 
-DEFINE_TYPE_POOL(wc);  // used only in LoadMasterDataFileAndPopulateResolutionsAndTagsEtc, todo: remove when not needed
-
 void LoadMasterDataFileAndPopulateResolutionsAndTagsEtc(
                                                      // item_pool *itemslocal,
                                                      // v2_pool *resolutions,
@@ -449,31 +447,34 @@ void LoadMasterDataFileAndPopulateResolutionsAndTagsEtc(
         if (numread < 0) {DEBUGPRINT("e2 %i\n",linesread);goto fileclose;} // eof (or maybe badly formed file?)
 
         // read subpath
-        wc_pool result_string = wc_pool::new_empty(); // todo: replace with newstring and remove wc_pool define
-        wc nextchar;
-        do {
+        newstring subpath = newstring::allocate_new(256);
+        wc nextchar = L'a'; // just some non-0 initialization (overwritten before used)
+        while (nextchar != L'\0') { // note we exit below so we could probably just use while(1) here
             numread = fwscanf(file, L"%c", &nextchar);
             if (numread < 0) {DEBUGPRINT("e3 %i\n",linesread);goto fileclose;} // eof (or maybe badly formed file?)
-            result_string.add(nextchar);
-        } while (nextchar != L'\0');
-        result_string.add(L'\0'); // add \0 to end of array, we're going to treat array as a string
-
-        wc *subpath = &result_string.pool[0]; // will only work if array ends in \0
+            if (nextchar == L'\0') break; // don't add the actual null terminator (new string class isn't null terminated)
+            subpath.add(nextchar);
+        }
+        // note we want to exit loop without null terminator attached to our string subpath
+        // so we can get a 1-1 comparison with our items[i].subpath
+        // todo: maybe ignore null terminators in all string checks with new string class? or better to assert them somewhere
 
         // use subpath to find item index
         int this_item_i = -1;
         for (int i = 0; i < items.count; i++) {
             // wc *justsubpath = items[i].PointerToJustSubpath(master_path);
-            if (wc_equals(items[i].subpath.to_wc_reusable(), subpath))
+            // if (wc_equals(items[i].subpath.to_wc_reusable(), subpath))
+            if (PathsAreSame(items[i].subpath, subpath))
             {
                 this_item_i = i;
                 break;
             }
         }
         if (this_item_i == -1) {
-            DEBUGPRINT("ERROR: subpath in metadata list not found in item list: %s\n", string::KeepMemory(subpath).ToUTF8Reusable());
+            DEBUGPRINT("ERROR: subpath in metadata list not found in item list: %s\n", subpath.to_utf8_reusable());
             assert(false);
         }
+        subpath.free_all();
         (*progress)++;
 
         // todo: could put this with its parsing code if we put subpath first in the file
@@ -663,6 +664,9 @@ void SelectNewMasterDirectory(newstring newdir) {
     // see, at the very least, backgroundstartupthread and init_app()
 
     master_path.overwrite_with_copy_of(newdir);
+    // todo: should probably do something like this:
+    // master_path.find_replace(L'/', L'\\');
+    // if (master_path.ends_with(L"\\")) master_path.rtrim(1);
 
     // or should we put all this stuff in app_change_mode, or even call this from there?
     app_change_mode(LOADING); // this will switch our background threads to idle (atm at least)
