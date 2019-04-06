@@ -157,7 +157,7 @@ string_pool ReadTagListFromFileOrSomethingUsableOtherwise(newstring master_path)
     wc *path = CombinePathsIntoNewMemory(master_path, archive_tag_list_filename).to_wc_final();
 
     if (!win32_PathExists(path)) {
-        result.add(string::KeepMemory(L"untagged"));  // always have this entry as index 0?? todo: decide
+        result.add(string::CreateWithNewMem(L"untagged"));  // always have this entry as index 0?? todo: decide
         return result;
     }
 
@@ -663,53 +663,13 @@ void SelectNewMasterDirectory(newstring newdir) {
     // basically need to undo everything we create when loading
     // see, at the very least, backgroundstartupthread and init_app()
 
+    master_path.overwrite_with_copy_of(newdir);
 
     // or should we put all this stuff in app_change_mode, or even call this from there?
     app_change_mode(LOADING); // this will switch our background threads to idle (atm at least)
 
-
-
-    // 1. free anything already created...
-
-    // todo: some of these we probably don't have to free and can just reuse the memory
-
-    // 1a. list contents
-    for (int i = 0; i < tiles.count; i++) {
-        tiles[i].UnloadMedia();
-        if (tiles[i].name.chars) free(tiles[i].name.chars);
-    }
-    for (int i = 0; i < tag_list.count; i++) {
-        if (tag_list[i].chars) free(tag_list[i].chars);
-    }
-
-    // 1b. list themselves
-    items.free_pool();
-    tiles.free_pool();
-    tag_list.free_pool();
-
-    modifiedTimes.free_pool();
-    item_resolutions.free_pool();
-    item_resolutions_valid.free_pool();
-
-    display_list.free_pool();
-
-    browse_tag_filter.free_all();
-    view_tag_filter.free_all();
-
-
-
-
-    // 2. setup for new directory...
-
-    master_path.overwrite_with_copy_of(newdir);
-
-    // create item list with fullpath populated
-    items = CreateItemListFromMasterPath(master_path);
-
-
+    // most of the loading will be done here, including setup/unloading previous
     LaunchBackgroundStartupLoopIfNeeded();
-
-
 
 
 }

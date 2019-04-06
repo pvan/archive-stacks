@@ -29,6 +29,48 @@ int loading_reusable_max = 0;
 bool background_startup_thread_launched = false;
 DWORD WINAPI RunBackgroundStartupThread( LPVOID lpParam ) {
 
+
+    // 1. free anything already created...
+
+    // todo: some of these we probably don't have to free and can just reuse the memory
+
+    loading_status_msg = "Unloading previous media...";
+    loading_reusable_max = tiles.count;
+    // 1a. list contents
+    for (int i = 0; i < tiles.count; i++) {
+        loading_reusable_count = i;
+        tiles[i].UnloadMedia();
+        if (tiles[i].name.chars) free(tiles[i].name.chars);
+    }
+    loading_status_msg = "Unloading previous tags...";
+    loading_reusable_max = tag_list.count;
+    for (int i = 0; i < tag_list.count; i++) {
+        loading_reusable_count = i;
+        if (tag_list.pool[i].chars) free(tag_list.pool[i].chars);
+    }
+
+    // 1b. list themselves
+    loading_status_msg = "Unloading previous item lists...";
+    items.free_pool();
+    tiles.free_pool();
+    tag_list.free_pool();
+
+    loading_status_msg = "Unloading previous item metadata lists...";
+    modifiedTimes.free_pool();
+    item_resolutions.free_pool();
+    item_resolutions_valid.free_pool();
+
+    loading_status_msg = "Unloading previous item index lists...";
+    display_list.free_pool();
+    browse_tag_filter.free_all();
+    view_tag_filter.free_all();
+
+
+    // 2. load everything for new path...
+
+    // create item list with fullpath populated
+    items = CreateItemListFromMasterPath(master_path);
+
     // not needed, now we create thumbnail path for each item when creating that item
     // (could move that item creation here, though, if too slow on main thread,
     //  but should be fine, it's just string manipulation -- no hd reads)
