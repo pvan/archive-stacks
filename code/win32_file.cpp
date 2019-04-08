@@ -56,6 +56,9 @@ newstring_pool win32_GetAllFilesAndFoldersInDir(newstring path)
     while (FindNextFileW(hFind, &ffd) != 0);
     FindClose(hFind);
 
+    dir_path.free_all();
+    search_path.free_all();
+
     return results;
 }
 

@@ -888,7 +888,7 @@ void settings_tick(float actual_dt, int cw, int ch) {
         if (win32_IsDirectory(proposed_master_path)) {
             ui_text("directory found", {x,y+UI_TEXT_SIZE*row++}, UI_LEFT,UI_TOP, true, 0, 0xff00ff00);
 
-            // proposed.free_all(); // todo: need this?
+            free_all_items_memory(proposed_items); // cleanup from last frame
             proposed_items = CreateItemListFromMasterPath(proposed_master_path);
 
             // char buf[256];
@@ -945,6 +945,9 @@ void settings_tick(float actual_dt, int cw, int ch) {
     if (ui_button_text("close x", "close x", {(float)cw,0}, UI_RIGHT,UI_TOP, 0)) {
         app_change_mode(BROWSING_THUMBS);
     }
+
+    memdebug_print();
+    memdebug_reset();
 
 }
 

@@ -151,11 +151,11 @@ struct newstring {
         return c;
     }
 
-    newstring append_reusable(newstring suffix) {
-        newstring c = copy_into_new_memory();
-        c.append(suffix);
-        return c;
-    }
+    // newstring append_reusable(newstring suffix) {
+    //     newstring c = copy_into_new_memory();
+    //     c.append(suffix);
+    //     return c;
+    // }
 
     // delete this when done with old system
     string to_old_string_temp() {
@@ -318,7 +318,11 @@ bool PathsAreSame(newstring path1, newstring path2) {
     if (copy2[0] == L'/' || copy2[0] == L'\\') copy2.ltrim(1);
 
     // basically a copy of string equals but ignoring slashes (and case for windows)
-    if (copy1.count != copy2.count) return false;
+    if (copy1.count != copy2.count) {
+        copy1.free_all();
+        copy2.free_all();
+        return false;
+    }
     for (int i = 0; i < copy1.count; i++) {
         // don't flag mismatched slashes, just keep on looking at the rest of the string
         if ((copy1[i] == L'\\' || copy1[i] == L'/') &&
@@ -328,9 +332,13 @@ bool PathsAreSame(newstring path1, newstring path2) {
         }
         // note tolower for windows paths (not case sensitive)
         if (towlower(copy1[i]) != towlower(copy2[i])) {
+            copy1.free_all();
+            copy2.free_all();
             return false;
         }
     }
+    copy1.free_all();
+    copy2.free_all();
     return true;
 }
 

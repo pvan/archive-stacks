@@ -7,7 +7,7 @@
 
 #include "types.h"
 
-// #include "memdebug.h" // will slow down our free()s especially
+#include "memdebug.h" // will slow down our free()s especially
 
 char debugprintbuffer[256];
 void DEBUGPRINT(int i) { sprintf(debugprintbuffer, "%i\n", i); OutputDebugString(debugprintbuffer); }
@@ -221,9 +221,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 
 
-    // master_path = string::KeepMemory(L"E:\\inspiration test folder");
-    // master_path = newstring::create_with_new_memory(L"E:\\inspiration test folder");
-    SelectNewMasterDirectory(newstring::create_with_new_memory(L"E:\\inspiration test folder"));
+    SelectNewMasterDirectory(newstring::create_with_new_memory(L"E:\\inspiration test folder2"));
 
 
     while(running)
@@ -288,6 +286,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             init_app(items, cw, ch);
             // need_init = false;
             app_mode = BROWSING_THUMBS;
+            // memdebug_reset();
         }
 
 
@@ -317,6 +316,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         }
         else if (app_mode == LOADING) {
             load_tick(actual_dt, cw,ch);
+            // memdebug_reset();
         }
 
         // common to all app modes

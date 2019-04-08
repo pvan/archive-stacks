@@ -28,7 +28,7 @@ newstring_pool FindAllItemPaths(newstring master_path) {
             if (top_folders[folderI].ends_with(thumb_dir_name)
                 // || top_folders[folderI].ends_with(metadata_dir_name)
             ) {
-                DEBUGPRINT("Ignoring: %s\n", top_folders[folderI].to_utf8_reusable());
+                // DEBUGPRINT("Ignoring: %s\n", top_folders[folderI].to_utf8_reusable());
             } else {
                 newstring_pool subfiles = win32_GetAllFilesAndFoldersInDir(top_folders[folderI]);
                 for (int fileI = 0; fileI < subfiles.count; fileI++) {
@@ -77,7 +77,9 @@ newstring_pool FindAllSubfolderPaths(newstring master_path, wc *subfolder) {
             // files in top folder, add?
             // todo: see xgz
         }
+        top_files[folderI].free_all();
     }
+    subfolder_path.free_all();
     return result;
 }
 
@@ -259,6 +261,13 @@ item CreateItemFromPath(newstring fullpath, newstring masterdir) {
 
 DEFINE_TYPE_POOL(item);
 
+void free_all_items_memory(item_pool its) {
+    for (int i = 0; i < its.count; i++) {
+        its[i].free_all();
+    }
+}
+
+
 item_pool items;
 
 
@@ -269,6 +278,7 @@ item_pool CreateItemListFromMasterPath(newstring masterdir) {
     for (int i = 0; i < itempaths.count; i++) {
         item newitem = CreateItemFromPath(itempaths[i], masterdir);
         result.add(newitem);
+        itempaths[i].free_all();
     }
     return result;
 }
@@ -280,8 +290,7 @@ bool PopulateTagFromPathsForItem(item it, int itemindex) {
     wc *directory = CopyJustParentDirectoryName(it.fullpath.chars);
     assert(directory);
     assert(directory[0]);
-    // if (!directory) return false; //todo: assert these instead?
-    // if (directory[0] == 0) return false;
+
     string dir = string::KeepMemory(directory);
 
     if (laststr != dir) {
@@ -289,19 +298,14 @@ bool PopulateTagFromPathsForItem(item it, int itemindex) {
     }
 
     if (!tag_list.has(dir)) {
-        // DEBUGPRINT("\n\nok so you're telling me tag_list doesn't have %s\n", dir.ToUTF8Reusable());
-        // DEBUGPRINT("and here's the list:");
-        // for (int i = 0; i < tag_list.count; i++) {
-        //     DEBUGPRINT(" %s, ", tag_list[i].ToUTF8Reusable());
-        // }
         AddNewTag(dir);
     }
     int index = tag_list.index_of(dir);
     if (index == -1) return false;
     item_tags[itemindex].add(index);
-    // if (tag_list.count != lastcount) {
-    //     DEBUGPRINT("change"); }
-    // lastcount = tag_list.count;
+
+    free(directory);
+
     return true;
 }
 
@@ -391,12 +395,6 @@ v2 ReadResolutionFromFile(item it) {
 }
 
 
-// todo: replace inits with .init(count) in the collection?
-
-void InitAllDataLists(int count) {
-    InitModifiedTimes(count);
-    InitResolutionsListToMatchItemList(count);
-}
 
 //
 ////
@@ -441,7 +439,6 @@ void LoadMasterDataFileAndPopulateResolutionsAndTagsEtc(
                                                      // bool_pool *res_are_valid,
                                                      int *progress)
 {
-    // wc *path = master_path.copy_and_append(archive_save_filename).to_wc_final();
     wc *path = CombinePathsIntoNewMemory(master_path, archive_save_filename).to_wc_final();
     if (!win32_PathExists(path)) {
         DEBUGPRINT("master metadata cache file doesn't exist");
@@ -472,7 +469,7 @@ void LoadMasterDataFileAndPopulateResolutionsAndTagsEtc(
         wc nextchar = L'a'; // just some non-0 initialization (overwritten before used)
         while (nextchar != L'\0') { // note we exit below so we could probably just use while(1) here
             numread = fwscanf(file, L"%c", &nextchar);
-            if (numread < 0) {DEBUGPRINT("e3 %i\n",linesread);goto fileclose;} // eof (or maybe badly formed file?)
+            if (numread < 0) {DEBUGPRINT("e3 %i\n",linesread);subpath.free_all();goto fileclose;} // eof (or maybe badly formed file?)
             if (nextchar == L'\0') break; // don't add the actual null terminator (new string class isn't null terminated)
             subpath.add(nextchar);
         }
@@ -539,6 +536,7 @@ void LoadMasterDataFileAndPopulateResolutionsAndTagsEtc(
 
     fileclose:
     fclose(file);
+    free(path);
 
 }
 

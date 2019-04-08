@@ -86,8 +86,8 @@ DWORD WINAPI RunBackgroundStartupThread( LPVOID lpParam ) {
     view_tag_filter.free_all();
 
 
-    // memdebug_print();
-    // memdebug_reset();
+    memdebug_print();
+    memdebug_reset();
 
     // 2. load everything for new path...
 
@@ -150,6 +150,7 @@ DWORD WINAPI RunBackgroundStartupThread( LPVOID lpParam ) {
         }
         item_indices_without_thumbs.count--; // should add .pop()
     }
+    item_indices_without_thumbs.free_pool();
 
     // // create cached metadata files
     // // do metadata second because it uses thumbnails as a fallback
@@ -200,7 +201,8 @@ DWORD WINAPI RunBackgroundStartupThread( LPVOID lpParam ) {
             tag_list = ReadTagListFromFileOrSomethingUsableOtherwise(master_path);
 
             // also create resolution list, etc, to match length of items
-            InitAllDataLists(items.count);
+            InitModifiedTimes(items.count);
+            InitResolutionsListToMatchItemList(items.count);
 
             LoadMasterDataFileAndPopulateResolutionsAndTagsEtc(
                                                             // &items,
@@ -245,6 +247,8 @@ DWORD WINAPI RunBackgroundStartupThread( LPVOID lpParam ) {
                 item_resolutions[item_index] = ReadResolutionFromFile(items[item_index]);
             }
 
+            unset_resolution_indices.free_pool();
+
             // method without needing to pre-figure which we need (wrong max progress)
             // loading_reusable_max = items.count;
             // for (int i = 0; i < items.count; i++) {
@@ -275,6 +279,8 @@ DWORD WINAPI RunBackgroundStartupThread( LPVOID lpParam ) {
                 int item_index = unset_times_indices[i];
                 modifiedTimes[item_index] = ReadModifedTimeFromFile(items[item_index]);
             }
+
+            unset_times_indices.free_pool();
 
             // method without needing to pre-figure which we need (wrong max progress)
             // loading_reusable_max = items.count;
