@@ -645,18 +645,29 @@ void CreateDisplayListFromBrowseSelection() {
 // all here?
 // todo: store here or with similar (like put proposed_path next to master_path?)
 
-newstring proposed_master_path;
-newstring last_proposed_master_path; // for tracking changes to path (change will trigger background work)
+newstring proposed_master_path;      // string in the settings textbox
+newstring last_proposed_master_path; // string in the settings textbox last frame (for tracking changes -- change will trigger msg to bg thread)
+newstring proposed_path_msg;  // string used to pass proposed path to background thread (owned by main thread and changed when textbox path changes, bg just makes copy)
+newstring bg_path_copy;   // actual string background uses (makes copy of proposed_path_msg)
 
 bool proposed_path_reevaluate = false; // trigger for our background thread to start analysing new path
-// bool background_items_copying = false; // lock proposed items for bg thread to copy
-int proposed_items_checkout = 0; // kind of a mutex lock, which thread checked out proposed_items for modification?
+bool proposed_path_msg_available = true; // can the main thread overwrite proposed_path_msg? or is bg thread making a copy of it right now?
 
+// lists filled in by bg thread and displayed in settings menu
 item_pool proposed_items;
-
-
 int_pool proposed_thumbs_found = int_pool::new_empty();
 
+
+
+
+
+// call whenever proposed path changes in settings menu
+// will trigger messages for bg thread to update proposed_items, thumbs, etc
+void TriggerSettingsPathChange(newstring newpath) {
+    while(!proposed_path_msg_available); // wait for bg to finish copying msg
+    proposed_path_msg.overwrite_with_copy_of(newpath);
+    proposed_path_reevaluate = true;
+}
 
 
 
@@ -689,8 +700,7 @@ void app_change_mode(int new_mode) {
     // entering SETTINGS
     if (new_mode == SETTINGS) {
         proposed_master_path.overwrite_with_copy_of(master_path);
-        proposed_items = CreateItemListFromMasterPath(proposed_master_path);
-        proposed_path_reevaluate = true;
+        TriggerSettingsPathChange(proposed_master_path);
     }
 
     // entering LOADING (creating thumbnail files, etc)

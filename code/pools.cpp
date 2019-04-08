@@ -52,7 +52,7 @@
         } \
         OutputDebugString("WARNING: trying to remove an item from a(n) thetype##_list that doesn't have it\n"); \
     } \
-    void free_pool() { if (pool){free(pool);} pool=0; alloc=0; count=0; } /* note doesn't free children */ \
+    void free_pool() { count=0; alloc=0; if (pool){free(pool);} pool=0; } /* note zero out count first for potential race conditions */ \
     void empty_out() { count = 0; } /*note we keep the allocated memory*/ /*should call it .drain()*/ \
     bool is_empty() { return count==0; } \
     thetype& operator[] (int i) { assert(i>=0); assert(i<count); return pool[i]; } \

@@ -888,12 +888,12 @@ void settings_tick(float actual_dt, int cw, int ch) {
         if (win32_IsDirectory(proposed_master_path)) {
             ui_text("directory found", {x,y+UI_TEXT_SIZE*row++}, UI_LEFT,UI_TOP, true, 0, 0xff00ff00);
 
-            // alternatively, could skip getting new items this frame and try again next frame
-            while (proposed_items_checkout!=0) 0; // just wait until done, shouldn't take too long
-            proposed_items_checkout = 1;
-            free_all_item_pool_memory(&proposed_items); // free at end now, see below for notes
-            proposed_items = CreateItemListFromMasterPath(proposed_master_path);
-            proposed_items_checkout = 0;
+            // // alternatively, could skip getting new items this frame and try again next frame
+            // while (proposed_items_checkout!=0) 0; // just wait until done, shouldn't take too long
+            // proposed_items_checkout = 1;
+            // free_all_item_pool_memory(&proposed_items); // free at end now, see below for notes
+            // proposed_items = CreateItemListFromMasterPath(proposed_master_path);
+            // proposed_items_checkout = 0;
 
             // char buf[256];
             // sprintf(buf, "items found: %i", proposed_items.count);
@@ -943,12 +943,19 @@ void settings_tick(float actual_dt, int cw, int ch) {
 
     // detect change in proposed path
     if (proposed_master_path != last_proposed_master_path) {
-        proposed_path_reevaluate = true;
+        TriggerSettingsPathChange(proposed_master_path);
     }
     last_proposed_master_path.overwrite_with_copy_of(proposed_master_path);
 
     if (ui_button_text("close x", "close x", {(float)cw,0}, UI_RIGHT,UI_TOP, 0)) {
         app_change_mode(BROWSING_THUMBS);
+    }
+
+
+    if (show_debug_console) {
+        UI_PRINTRESET();
+        UI_PRINT("dt: %f", actual_dt);
+        UI_PRINT("max dt: %f", metric_max_dt);
     }
 
     // // for now, cleanup here at end of frame to get a better sense of frame leaks

@@ -394,24 +394,34 @@ DWORD WINAPI RunBackgroundLoadingThread( LPVOID lpParam ) {
                 }
             }
         } else if (app_mode == SETTINGS) {
-            if (proposed_path_reevaluate && proposed_items_checkout==0) { // also wait until we have proposed items access
+            if (proposed_path_reevaluate) { // also wait until we have proposed items access
                 proposed_path_reevaluate = false;
 
-                proposed_items_checkout = 2; // flag to not change proposed_items in other thread
-                item_pool bg_item_copy = copy_item_pool(proposed_items); // could be big! todo: better way to do this?
-                proposed_items_checkout = 0;
+                loading_status_msg = "Looking for items in proposed path...";
+
+                // first copy string from main thread so we can use without it getting changed mid-process
+                proposed_path_msg_available = false;
+                bg_path_copy.overwrite_with_copy_of(proposed_path_msg);
+                proposed_path_msg_available = true;
+
+                free_all_item_pool_memory(&proposed_items);
+                proposed_items = CreateItemListFromMasterPath(bg_path_copy);
+
+                // proposed_items_checkout = 2; // flag to not change proposed_items in other thread
+                // item_pool bg_item_copy = copy_item_pool(proposed_items); // could be big! todo: better way to do this?
+                // proposed_items_checkout = 0;
 
                 loading_status_msg = "Looking for existing thumbnails...";
                 proposed_thumbs_found = int_pool::new_empty();
-                for (int i = 0; i < bg_item_copy.count; i++) {
+                for (int i = 0; i < proposed_items.count; i++) {
                     // loading_reusable_count = i;
                     // loading_reusable_max = bg_item_copy.count;
 
-                    if (win32_PathExists(bg_item_copy[i].thumbpath)) {
+                    if (win32_PathExists(proposed_items[i].thumbpath)) {
                         proposed_thumbs_found.add(i);
                     }
                 }
-                free_all_item_pool_memory(&bg_item_copy);
+                // free_all_item_pool_memory(&bg_item_copy);
             } else {
                 loading_status_msg = "Waiting...";
             }
