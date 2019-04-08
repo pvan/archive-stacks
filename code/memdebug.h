@@ -92,7 +92,10 @@ void memdebug_print()
         if (!md_records[i].free) {
             char buf[256];
             // if (strstr(md_records[i].file, "newstring") != 0) {
-            //     sprintf(buf, "%s (line %u), %u bytes : %ls \n", md_records[i].file, md_records[i].line, md_records[i].size, (wc*)md_records[i].ptr);
+            //     // int counthack = (int)(((char*)md_records[i].ptr) + sizeof(wc*)); // pull count out of newstring struct
+            //     void *address_of_count = (char*)md_records[i].ptr + sizeof(wc*);
+            //     int count = *(int*)address_of_count; // super sketch because count could be changed by the time we're here
+            //     sprintf(buf, "%s (line %u), %u bytes : %.*ls \n", md_records[i].file, md_records[i].line, md_records[i].size, count, (wc*)md_records[i].ptr);
             // } else {
                 sprintf(buf, "%s (line %u), %u bytes \n", md_records[i].file, md_records[i].line, md_records[i].size);
             // }
