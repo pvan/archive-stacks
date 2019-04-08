@@ -202,6 +202,7 @@ DWORD WINAPI RunBackgroundStartupThread( LPVOID lpParam ) {
     items = CreateItemListFromMasterPath(master_path);
 
     // create an tag list for every item (all empty to start)
+    item_tags.empty_out();
     for (int i = 0; i < items.count; i++)
         item_tags.add(int_pool::new_empty());
 
@@ -222,7 +223,7 @@ DWORD WINAPI RunBackgroundStartupThread( LPVOID lpParam ) {
 
         if (!win32_PathExists(items[i].thumbpath)) {
             item_indices_without_thumbs.add(i);
-            DEBUGPRINT("this doesn't exist? %s\n", items[i].thumbpath.to_utf8_reusable());
+            // DEBUGPRINT("this doesn't exist? %s\n", items[i].thumbpath.to_utf8_reusable());
         }
         // if (!win32_PathExists(items[i].metadatapath)) {
         //     item_indices_without_metadata.add(i);
@@ -317,6 +318,7 @@ DWORD WINAPI RunBackgroundStartupThread( LPVOID lpParam ) {
         DEBUGPRINT("items_found_in_cache %i\n", items_found_in_cache);
         DEBUGPRINT("resolutions_read %i\n", resolutions_read);
         DEBUGPRINT("tags_read %i\n", tags_read);
+        DEBUGPRINT("tag_list.count %i\n", tag_list.count);
         DEBUGPRINT("--------");
 
 

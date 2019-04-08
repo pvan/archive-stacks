@@ -373,12 +373,39 @@ bool PathsAreSame(string path1, string path2) {
 
 
 // for finding filenames from paths
+void trim_everything_before_last_slash(string probably_a_path) {
+    int last_bslash_index = probably_a_path.find_last(L'\\');
+    int last_fslash_index = probably_a_path.find_last(L'/');
+    int last_slash_index = max(last_bslash_index, last_fslash_index);
+    probably_a_path.ltrim(last_slash_index+1); //+1 include L trimming the slash
+}
+
+
 void trim_everything_after_last_slash(string probably_a_path) {
     int last_bslash_index = probably_a_path.find_last(L'\\');
     int last_fslash_index = probably_a_path.find_last(L'/');
     int last_slash_index = max(last_bslash_index, last_fslash_index);
-    probably_a_path.ltrim(last_slash_index+1); //+1 include trimming the slash
+    probably_a_path.rtrim(probably_a_path.count - last_slash_index);
 }
+
+
+// edits memory of string passed in (no new memory)
+string strip_to_just_parent_directory(string path) {
+
+    // remove any trailing slash
+    if (path.ends_with(L"\\") || path.ends_with(L"/")) {
+        path.rtrim(1);
+    }
+
+    // remove filename (including slash)
+    trim_everything_after_last_slash(path);
+
+    // remove parent path, left with just the original parent directory name
+    trim_everything_before_last_slash(path);
+
+    return path;
+}
+
 
 
 
@@ -417,30 +444,4 @@ void CopyStringWithCharsEscaped(wc *outbuffer, int outsize, wc *instring, wc cha
     *dest = 0;
     assert(outbuffer+newsize-1 == dest);
 }
-
-
-
-wc *CopyJustParentDirectoryName(wc *source) {
-    wc *temp = (wc*)malloc((wcslen(source)+1) * sizeof(wc));
-    memcpy(temp, source, (wcslen(source)+1) * sizeof(wc));
-
-    wc *c = temp;
-    while (*c) c++; // foward to end
-    while (*c == '/' || *c == '\\') {*c = 0; c--;} // remove all trailing / or \
-
-    while (*c != '/' && *c != '\\' && c > temp) c--;  // rewind to last slash in string (or first char)
-    *c = 0; // zap the slash and everything after it
-
-    while (*c != '/' && *c != '\\' && c > temp) c--;  // rewind again to find the new last slash
-    c++; // don't include the slash itself
-    // result = c; // that's our new starting point // nope! we'll lose our original malloc'd pointer
-
-    wc *result = (wc*)malloc((wcslen(c)+1) * sizeof(wc));
-    memcpy(result, c, (wcslen(c)+1) * sizeof(wc));
-    free(temp);
-
-    return result;
-}
-
-
 

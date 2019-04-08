@@ -297,7 +297,7 @@ item CreateItemFromPath(string fullpath, string masterdir) {
     // thumbpath.free_all();
 
     newitem.justname = newitem.subpath.copy_into_new_memory();
-    trim_everything_after_last_slash(newitem.justname);
+    trim_everything_before_last_slash(newitem.justname);
 
     return newitem;
 }
@@ -339,26 +339,28 @@ item_pool CreateItemListFromMasterPath(string masterdir) {
 
 
 
-string laststr = string::new_empty();// = string::create_with_new_memory(L"empty");
+string laststr = string::new_empty();
 bool PopulateTagFromPathsForItem(item it, int itemindex) {
-    wc *directory = CopyJustParentDirectoryName(it.fullpath.to_wc_reusable());
-    assert(directory);
-    assert(directory[0]);
 
-    string dir = string::create_using_passed_in_memory(directory);
+    string dircopy = strip_to_just_parent_directory(it.fullpath.copy_into_new_memory());
+    assert(dircopy.count>0);
 
-    if (laststr != dir) {
-        laststr = dir.copy_into_new_memory();
+    if (laststr != dircopy) {
+        laststr = dircopy.copy_into_new_memory();
     }
 
-    if (!tag_list.has(dir)) {
-        AddNewTag(dir);
+    bool free_string_when_done = false;
+    if (!tag_list.has(dircopy)) {
+        AddNewTag(dircopy);
+    } else {
+        free_string_when_done = true;
     }
-    int index = tag_list.index_of(dir);
+    int index = tag_list.index_of(dircopy);
     if (index == -1) return false;
     item_tags[itemindex].add(index);
 
-    free(directory);
+    if (free_string_when_done)
+        dircopy.free_all();
 
     return true;
 }
