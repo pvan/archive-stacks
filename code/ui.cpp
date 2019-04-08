@@ -416,7 +416,7 @@ void ui_textbox(ui_id id, string *text, rect r, float dt) {
         if (input.down.numDecimal) { text->insert(L'.', ui_cursor_pos); ui_cursor_pos++; }
 
         // deleting text
-        if (input.down.backspace && ui_cursor_pos>0) { text->rtrim(1); ui_cursor_pos--; }
+        if (input.down.backspace && ui_cursor_pos>0) { text->del_at(ui_cursor_pos-1); }
         if (input.down.del && ui_cursor_pos<text->count) { text->del_at(ui_cursor_pos); }
 
         // moving cursor
