@@ -481,6 +481,7 @@ void SaveMetadataFile()
         fwprintf(file, L"\n");
     }
 
+    fclose(file);
     free(path);
 }
 
