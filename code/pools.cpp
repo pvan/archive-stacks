@@ -67,10 +67,19 @@
 DEFINE_TYPE_POOL(int);
 DEFINE_TYPE_POOL(v2);
 DEFINE_TYPE_POOL(string);
-DEFINE_TYPE_POOL(newstring);
 DEFINE_TYPE_POOL(bool);
 DEFINE_TYPE_POOL(rect);
 DEFINE_TYPE_POOL(float);
+
+DEFINE_TYPE_POOL(newstring);
+
+void deep_free_string_pool(newstring_pool pool) {
+    for (int i = 0; i < pool.count; i++) {
+        pool[i].free_all();
+    }
+    pool.free_pool();
+}
+
 
 // add generic sort to pool struct? (would require > operator on all pool types)
 void sort_float_pool(float_pool *floats) {

@@ -91,11 +91,11 @@ void memdebug_print()
     for (int i = 0; i < md_r_count; i++) {
         if (!md_records[i].free) {
             char buf[256];
-            if (strstr(md_records[i].file, "newstring") != 0) {
-                sprintf(buf, "%s (line %u), %u bytes : %ls \n", md_records[i].file, md_records[i].line, md_records[i].size, (wc*)md_records[i].ptr);
-            } else {
+            // if (strstr(md_records[i].file, "newstring") != 0) {
+            //     sprintf(buf, "%s (line %u), %u bytes : %ls \n", md_records[i].file, md_records[i].line, md_records[i].size, (wc*)md_records[i].ptr);
+            // } else {
                 sprintf(buf, "%s (line %u), %u bytes \n", md_records[i].file, md_records[i].line, md_records[i].size);
-            }
+            // }
             OutputDebugString(buf);
         }
     }

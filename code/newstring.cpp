@@ -250,7 +250,7 @@ struct newstring {
     //
     // misc / operators
 
-    void free_all() { if (list) free(list); list=0; }
+    void free_all() { if (list) {assert(alloc>0);free(list);} list=0; }
     void empty_out() { count = 0; } /*note we keep the allocated memory*/ /*should call it .drain()*/
     bool is_empty() { return count==0; }
     wc& operator[] (int i) { assert(i>=0); assert(i<count); return list[i]; }

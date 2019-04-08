@@ -39,18 +39,22 @@ newstring_pool FindAllItemPaths(newstring master_path) {
                         //     result.count--;
                         // }
                     } else {
+                        subfiles[fileI].free_all();
                         // wchar_t tempbuf[123];
                         // swprintf(tempbuf, L"%s is dir!\n", subfiles[fileI].chars);
                         // // OutputDebugStringW(tempbuf);
                         // MessageBoxW(0,tempbuf,0,0);
                     }
                 }
+                subfiles.free_pool();
+                // deep_free_string_pool(subfiles);
             }
         } else {
             // files in top folder, add?
             // todo: see xgz
         }
     }
+    deep_free_string_pool(top_folders);
     return result;
 }
 
@@ -67,19 +71,21 @@ newstring_pool FindAllSubfolderPaths(newstring master_path, wc *subfolder) {
                     // DEBUGPRINT(subfiles[fileI].ParentDirectoryNameReusable().ToUTF8Reusable());
                     result.add(subfiles[fileI]);
                 } else {
+                    subfiles[fileI].free_all();
                     // wchar_t tempbuf[123];
                     // swprintf(tempbuf, L"%s is dir!\n", subfiles[fileI].chars);
                     // // OutputDebugStringW(tempbuf);
                     // MessageBoxW(0,tempbuf,0,0);
                 }
             }
+            // deep_free_string_pool(subfiles);
+            subfiles.free_pool();
         } else {
             // files in top folder, add?
             // todo: see xgz
         }
-        top_files[folderI].free_all();
     }
-    subfolder_path.free_all();
+    deep_free_string_pool(top_files);
     return result;
 }
 
@@ -261,10 +267,11 @@ item CreateItemFromPath(newstring fullpath, newstring masterdir) {
 
 DEFINE_TYPE_POOL(item);
 
-void free_all_items_memory(item_pool its) {
+void free_all_item_pool_memory(item_pool its) {
     for (int i = 0; i < its.count; i++) {
         its[i].free_all();
     }
+    its.free_pool();
 }
 
 
@@ -278,8 +285,8 @@ item_pool CreateItemListFromMasterPath(newstring masterdir) {
     for (int i = 0; i < itempaths.count; i++) {
         item newitem = CreateItemFromPath(itempaths[i], masterdir);
         result.add(newitem);
-        itempaths[i].free_all();
     }
+    deep_free_string_pool(itempaths);
     return result;
 }
 
