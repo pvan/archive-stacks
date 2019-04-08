@@ -71,9 +71,9 @@ DEFINE_TYPE_POOL(bool);
 DEFINE_TYPE_POOL(rect);
 DEFINE_TYPE_POOL(float);
 
-DEFINE_TYPE_POOL(newstring);
+DEFINE_TYPE_POOL(string);
 
-void deep_free_string_pool(newstring_pool pool) {
+void deep_free_string_pool(string_pool pool) {
     for (int i = 0; i < pool.count; i++) {
         pool[i].free_all();
     }

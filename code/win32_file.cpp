@@ -25,22 +25,22 @@ void win32_CreateAllDirectoriesForPathIfNeeded(wchar_t *path)
 
 
 
-newstring_pool win32_GetAllFilesAndFoldersInDir(newstring path)
+string_pool win32_GetAllFilesAndFoldersInDir(string path)
 {
-    newstring_pool results = newstring_pool::new_empty();
+    string_pool results = string_pool::new_empty();
 
-    newstring dir_path = path.copy_into_new_memory(); // for use when appending subfolders to this path
+    string dir_path = path.copy_into_new_memory(); // for use when appending subfolders to this path
     if (!dir_path.ends_with(L"/") && !dir_path.ends_with(L"\\")) // todo: not fully tested, code at time of comment works if we just append '/' no matter what
         dir_path.append(L"/");
-    newstring search_path = dir_path.copy_and_append(L"*"); // wildcard for search
+    string search_path = dir_path.copy_and_append(L"*"); // wildcard for search
 
     WIN32_FIND_DATAW ffd;
     HANDLE hFind = FindFirstFileW(search_path.to_wc_reusable(), &ffd);
-    if (hFind == INVALID_HANDLE_VALUE) { return newstring_pool::new_empty(); }
+    if (hFind == INVALID_HANDLE_VALUE) { return string_pool::new_empty(); }
     do {
         if(wc_equals(ffd.cFileName, L".") || wc_equals(ffd.cFileName, L"..")) continue;
 
-        newstring full_path = dir_path.copy_and_append(ffd.cFileName);
+        string full_path = dir_path.copy_and_append(ffd.cFileName);
         results.add(full_path);
 
         // string this_path = string::Create(ffd.cFileName);
@@ -64,11 +64,11 @@ newstring_pool win32_GetAllFilesAndFoldersInDir(newstring path)
 
 bool win32_IsDirectory(wchar_t *path) { DWORD res = GetFileAttributesW(path); return res!=INVALID_FILE_ATTRIBUTES && res&FILE_ATTRIBUTE_DIRECTORY; }
 // bool win32_IsDirectory(string path) { return win32_IsDirectory(path.chars); }
-bool win32_IsDirectory(newstring path) { return win32_IsDirectory(path.to_wc_reusable()); }
+bool win32_IsDirectory(string path) { return win32_IsDirectory(path.to_wc_reusable()); }
 
 bool win32_PathExists(wchar_t *path) { return GetFileAttributesW(path) != INVALID_FILE_ATTRIBUTES; }
 // bool win32_PathExists(string path) { return win32_PathExists(path.chars); }
-bool win32_PathExists(newstring path) { return win32_PathExists(path.to_wc_reusable()); }
+bool win32_PathExists(string path) { return win32_PathExists(path.to_wc_reusable()); }
 
 
 
@@ -83,7 +83,7 @@ bool win32_PathExists(newstring path) { return win32_PathExists(path.to_wc_reusa
 // create popup dialog to select a folder
 // pass a pointer that will be changed to the selected folder
 // todo: value of pointer passed in will be the default starting directory
-void win32_OpenFolderSelectDialog(HWND hwnd, newstring *inAndOutString) {
+void win32_OpenFolderSelectDialog(HWND hwnd, string *inAndOutString) {
 
     // GetOpenFileNameW
     // older, but lighterweight
@@ -99,8 +99,8 @@ void win32_OpenFolderSelectDialog(HWND hwnd, newstring *inAndOutString) {
     // // ofn.lpstrInitialDir
 
     // if (GetOpenFileNameW(&ofn)) {
-    //     newstring result = {0};
-    //     result = newstring::create_with_new_memory(ofn.lpstrFile);
+    //     string result = {0};
+    //     result = string::create_with_new_memory(ofn.lpstrFile);
     //     return result;
     // } else {
 
@@ -176,7 +176,7 @@ u64 win32_GetModifiedTimeSinceEpoc(wchar_t *path)
     result.HighPart = modified.dwHighDateTime;
     return result.QuadPart;
 }
-u64 win32_GetModifiedTimeSinceEpoc(newstring path) { return win32_GetModifiedTimeSinceEpoc(path.to_wc_reusable()); }
+u64 win32_GetModifiedTimeSinceEpoc(string path) { return win32_GetModifiedTimeSinceEpoc(path.to_wc_reusable()); }
 
 
 

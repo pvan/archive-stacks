@@ -413,7 +413,7 @@ bitmap tf_create_bitmap(char *text, int fsize, float alpha, bool centerH, bool c
 
 
 
-void CreateDummyThumb(newstring inpath, newstring outpath, newstring dummytext) {
+void CreateDummyThumb(string inpath, string outpath, string dummytext) {
     win32_CreateAllDirectoriesForPathIfNeeded(outpath.to_wc_reusable());
     OutputDebugString("Saving bmp!!\n");
     bitmap img = tf_create_bitmap(dummytext.to_utf8_reusable(), 64, 255, true, true, 200);

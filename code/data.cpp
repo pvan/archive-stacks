@@ -9,19 +9,19 @@
 u64 viewing_file_index = 0; // what file do we have open if we're in VIEWING_FILE mode
 
 
-newstring master_path;
+string master_path;
 
 
 // todo: capitalize/const these?
-newstring archive_save_filename = newstring::create_with_new_memory(L"~meta.txt");
-newstring archive_tag_list_filename = newstring::create_with_new_memory(L"~taglist.txt");
-newstring thumb_dir_name = newstring::create_with_new_memory(L"~thumbs");
+string archive_save_filename = string::create_with_new_memory(L"~meta.txt");
+string archive_tag_list_filename = string::create_with_new_memory(L"~taglist.txt");
+string thumb_dir_name = string::create_with_new_memory(L"~thumbs");
 
 
 
-newstring_pool FindAllItemPaths(newstring master_path) {
-    newstring_pool top_folders = win32_GetAllFilesAndFoldersInDir(master_path);
-    newstring_pool result = newstring_pool::new_empty();
+string_pool FindAllItemPaths(string master_path) {
+    string_pool top_folders = win32_GetAllFilesAndFoldersInDir(master_path);
+    string_pool result = string_pool::new_empty();
 
     for (int folderI = 0; folderI < top_folders.count; folderI++) {
         if (win32_IsDirectory(top_folders[folderI])) {
@@ -30,7 +30,7 @@ newstring_pool FindAllItemPaths(newstring master_path) {
             ) {
                 // DEBUGPRINT("Ignoring: %s\n", top_folders[folderI].to_utf8_reusable());
             } else {
-                newstring_pool subfiles = win32_GetAllFilesAndFoldersInDir(top_folders[folderI]);
+                string_pool subfiles = win32_GetAllFilesAndFoldersInDir(top_folders[folderI]);
                 for (int fileI = 0; fileI < subfiles.count; fileI++) {
                     if (!win32_IsDirectory(subfiles[fileI])) {
                         result.add(subfiles[fileI]);
@@ -58,14 +58,14 @@ newstring_pool FindAllItemPaths(newstring master_path) {
     return result;
 }
 
-newstring_pool FindAllSubfolderPaths(newstring master_path, wc *subfolder) {
+string_pool FindAllSubfolderPaths(string master_path, wc *subfolder) {
 
-    newstring subfolder_path = master_path.copy_and_append(subfolder);
-    newstring_pool top_files = win32_GetAllFilesAndFoldersInDir(subfolder_path);
-    newstring_pool result = newstring_pool::new_empty();
+    string subfolder_path = master_path.copy_and_append(subfolder);
+    string_pool top_files = win32_GetAllFilesAndFoldersInDir(subfolder_path);
+    string_pool result = string_pool::new_empty();
     for (int folderI = 0; folderI < top_files.count; folderI++) {
         if (win32_IsDirectory(top_files[folderI])) {
-            newstring_pool subfiles = win32_GetAllFilesAndFoldersInDir(top_files[folderI]);
+            string_pool subfiles = win32_GetAllFilesAndFoldersInDir(top_files[folderI]);
             for (int fileI = 0; fileI < subfiles.count; fileI++) {
                 if (!win32_IsDirectory(subfiles[fileI])) {
                     // DEBUGPRINT(subfiles[fileI].ParentDirectoryNameReusable().ToUTF8Reusable());
@@ -89,8 +89,8 @@ newstring_pool FindAllSubfolderPaths(newstring master_path, wc *subfolder) {
     return result;
 }
 
-newstring_pool ItemsInFirstPoolButNotSecond(newstring_pool p1, newstring_pool p2) {
-    newstring_pool result = newstring_pool::new_empty();
+string_pool ItemsInFirstPoolButNotSecond(string_pool p1, string_pool p2) {
+    string_pool result = string_pool::new_empty();
     for (int i = 0; i < p1.count; i++) {
         if (!p2.has(p1[i]))
             result.add(p1[i]);
@@ -105,7 +105,7 @@ newstring_pool ItemsInFirstPoolButNotSecond(newstring_pool p1, newstring_pool p2
 // todo: should be list not pool
 // master tag list
 // each item has list of indices into this array
-newstring_pool tag_list;
+string_pool tag_list;
 
 void SaveTagList() {
     wc *path = CombinePathsIntoNewMemory(master_path, archive_tag_list_filename).to_wc_final();
@@ -128,17 +128,17 @@ void SaveTagList() {
     // }
     // DEBUGPRINT("saved %i\n", tag_list.count);
 }
-void AddNewTag(newstring tag) {
+void AddNewTag(string tag) {
     assert(!tag_list.has(tag));
     tag_list.add(tag);
 }
-void AddNewTagAndSave(newstring tag) {
+void AddNewTagAndSave(string tag) {
     AddNewTag(tag);
     SaveTagList();
 }
 
 
-newstring_pool ReadTagListFromFileOrSomethingUsableOtherwise(newstring master_path) {
+string_pool ReadTagListFromFileOrSomethingUsableOtherwise(string master_path) {
 
     // if (!win32_PathExists(path.chars)) return;
     // // wchar version
@@ -152,13 +152,13 @@ newstring_pool ReadTagListFromFileOrSomethingUsableOtherwise(newstring master_pa
     // fclose(file);
 
 
-    newstring_pool result = newstring_pool::new_empty();
+    string_pool result = string_pool::new_empty();
     // result.add(string::Create(L"untagged"));  // always have this entry as index 0?? todo: decide
 
     wc *path = CombinePathsIntoNewMemory(master_path, archive_tag_list_filename).to_wc_final();
 
     if (!win32_PathExists(path)) {
-        result.add(newstring::create_with_new_memory(L"untagged"));  // always have this entry as index 0?? todo: decide
+        result.add(string::create_with_new_memory(L"untagged"));  // always have this entry as index 0?? todo: decide
         return result;
     }
 
@@ -174,7 +174,7 @@ newstring_pool ReadTagListFromFileOrSomethingUsableOtherwise(newstring master_pa
     int chars_written = 0;
     while (chars_written < fileCharCount) {
         char *thisTag = fileChars + chars_written;
-        newstring thisTagString = newstring::create_with_new_memory(thisTag);
+        string thisTagString = string::create_with_new_memory(thisTag);
         if (!result.has(thisTagString)) {
             result.add(thisTagString);
             // DEBUGPRINT("added %s\n", thisTagString.ToUTF8Reusable());
@@ -210,13 +210,13 @@ int_pool_pool item_tags;
 
 
 struct item {
-    newstring fullpath;
-    newstring thumbpath;
-    // newstring thumbpath128; // like this?
-    // newstring thumbpath256;
-    // newstring thumbpath512;
-    newstring subpath;
-    newstring justname;
+    string fullpath;
+    string thumbpath;
+    // string thumbpath128; // like this?
+    // string thumbpath256;
+    // string thumbpath512;
+    string subpath;
+    string justname;
 
     bool operator==(item o) { return fullpath==o.fullpath; } // for now just check fullpath
 
@@ -242,13 +242,13 @@ struct item {
 
 // recommend create all items with this
 // should now set all paths stored in item (but not tags)
-item CreateItemFromPath(newstring fullpath, newstring masterdir) {
+item CreateItemFromPath(string fullpath, string masterdir) {
     item newitem = {0};
 
     newitem.fullpath = fullpath.copy_into_new_memory();
     newitem.subpath = fullpath.copy_into_new_memory().trim_common_prefix(masterdir);
 
-    newstring thumbpath = CombinePathsIntoNewMemory(masterdir, thumb_dir_name, newitem.subpath);
+    string thumbpath = CombinePathsIntoNewMemory(masterdir, thumb_dir_name, newitem.subpath);
     // for now, special case for txt...
     // we need txt thumbs to be something other than txt so we can open them
     // with our ffmpeg code that specifically "ignores all .txt files" atm
@@ -289,8 +289,8 @@ item_pool items;
 
 
 
-item_pool CreateItemListFromMasterPath(newstring masterdir) {
-    newstring_pool itempaths = FindAllItemPaths(masterdir);
+item_pool CreateItemListFromMasterPath(string masterdir) {
+    string_pool itempaths = FindAllItemPaths(masterdir);
     item_pool result = item_pool::new_empty();
     for (int i = 0; i < itempaths.count; i++) {
         item newitem = CreateItemFromPath(itempaths[i], masterdir);
@@ -302,13 +302,13 @@ item_pool CreateItemListFromMasterPath(newstring masterdir) {
 
 
 
-static newstring laststr = newstring::create_with_new_memory(L"empty");
+static string laststr = string::create_with_new_memory(L"empty");
 bool PopulateTagFromPathsForItem(item it, int itemindex) {
     wc *directory = CopyJustParentDirectoryName(it.fullpath.to_wc_reusable());
     assert(directory);
     assert(directory[0]);
 
-    newstring dir = newstring::create_and_keep_memory(directory);
+    string dir = string::create_and_keep_memory(directory);
 
     if (laststr != dir) {
         laststr = dir.copy_into_new_memory();
@@ -367,7 +367,7 @@ void InitResolutionsListToMatchItemList(int count) {
 }
 
 // pull resolution from separate metadata file (unique one for each item)
-bool GetCachedResolutionIfPossible(newstring path, v2 *result) {
+bool GetCachedResolutionIfPossible(string path, v2 *result) {
     FILE *file = _wfopen(path.to_wc_reusable(), L"r");
     if (!file) {  DEBUGPRINT("error reading %s\n", path.to_utf8_reusable()); return false; }
     int x, y;
@@ -378,7 +378,7 @@ bool GetCachedResolutionIfPossible(newstring path, v2 *result) {
     return true;
 }
 // create separate resolution metadata file (unique one for each item)
-void CreateCachedResolution(newstring path, v2 size) {
+void CreateCachedResolution(string path, v2 size) {
     win32_CreateAllDirectoriesForPathIfNeeded(path.to_wc_reusable());
     FILE *file = _wfopen(path.to_wc_reusable(), L"w");
     if (!file) { DEBUGPRINT("error creating %s\n", path.to_utf8_reusable()); return; }
@@ -482,7 +482,7 @@ void LoadMasterDataFileAndPopulateResolutionsAndTagsEtc(
         if (numread < 0) {DEBUGPRINT("e2 %i\n",linesread);goto fileclose;} // eof (or maybe badly formed file?)
 
         // read subpath
-        newstring subpath = newstring::allocate_new(256);
+        string subpath = string::allocate_new(256);
         wc nextchar = L'a'; // just some non-0 initialization (overwritten before used)
         while (nextchar != L'\0') { // note we exit below so we could probably just use while(1) here
             numread = fwscanf(file, L"%c", &nextchar);
@@ -563,8 +563,8 @@ void LoadMasterDataFileAndPopulateResolutionsAndTagsEtc(
 
 
 
-newstring browse_tag_filter = newstring::allocate_new(128);
-newstring view_tag_filter = newstring::allocate_new(128);
+string browse_tag_filter = string::allocate_new(128);
+string view_tag_filter = string::allocate_new(128);
 
 
 int_pool filtered_browse_tag_indices = int_pool::new_empty();
@@ -639,10 +639,10 @@ void CreateDisplayListFromBrowseSelection() {
 // all here?
 // todo: store here or with similar (like put proposed_path next to master_path?)
 
-newstring proposed_master_path;      // string in the settings textbox
-newstring last_proposed_master_path; // string in the settings textbox last frame (for tracking changes -- change will trigger msg to bg thread)
-newstring proposed_path_msg;  // string used to pass proposed path to background thread (owned by main thread and changed when textbox path changes, bg just makes copy)
-newstring bg_path_copy;   // actual string background uses (makes copy of proposed_path_msg)
+string proposed_master_path;      // string in the settings textbox
+string last_proposed_master_path; // string in the settings textbox last frame (for tracking changes -- change will trigger msg to bg thread)
+string proposed_path_msg;  // string used to pass proposed path to background thread (owned by main thread and changed when textbox path changes, bg just makes copy)
+string bg_path_copy;   // actual string background uses (makes copy of proposed_path_msg)
 
 bool proposed_path_reevaluate = false; // trigger for our background thread to start analysing new path
 bool proposed_path_msg_available = true; // can the main thread overwrite proposed_path_msg? or is bg thread making a copy of it right now?
@@ -657,7 +657,7 @@ int_pool proposed_thumbs_found = int_pool::new_empty();
 
 // call whenever proposed path changes in settings menu
 // will trigger messages for bg thread to update proposed_items, thumbs, etc
-void TriggerSettingsPathChange(newstring newpath) {
+void TriggerSettingsPathChange(string newpath) {
     while(!proposed_path_msg_available); // wait for bg to finish copying msg
     proposed_path_msg.overwrite_with_copy_of(newpath);
     proposed_path_reevaluate = true;
@@ -708,7 +708,7 @@ void app_change_mode(int new_mode) {
 
 void LaunchBackgroundStartupLoopIfNeeded();
 
-void SelectNewMasterDirectory(newstring newdir) {
+void SelectNewMasterDirectory(string newdir) {
     // basically need to undo everything we create when loading
     // see, at the very least, backgroundstartupthread and init_app()
 
@@ -735,7 +735,7 @@ void SelectNewMasterDirectory(newstring newdir) {
 //
 // tile functions
 
-tile CreateTileFromFile(newstring path) {
+tile CreateTileFromFile(string path) {
     tile newTile = {0};
     assert(win32_PathExists(path));
     assert(!win32_IsDirectory(path));

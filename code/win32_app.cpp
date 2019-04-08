@@ -25,7 +25,6 @@ void DEBUGPRINT(char *s, float f1, float f2) { sprintf(debugprintbuffer, s, f1, 
 #include "v2.cpp"
 #include "rect.cpp"
 #include "string.cpp"
-#include "newstring.cpp"
 #include "bitmap.cpp"
 #include "pools.cpp"
 
@@ -221,7 +220,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 
 
-    SelectNewMasterDirectory(newstring::create_with_new_memory(L"E:\\inspiration test folder2"));
+    SelectNewMasterDirectory(string::create_with_new_memory(L"E:\\inspiration test folder2"));
 
 
     while(running)

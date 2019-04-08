@@ -2,7 +2,7 @@
 
 
 
-void CreateCachedMetadataFile(newstring origpath, newstring thumbpath, newstring metapath) {
+void CreateCachedMetadataFile(string origpath, string thumbpath, string metapath) {
     v2 res = {0,0};
     if (ffmpeg_can_open(origpath)) {
         res = ffmpeg_GetResolution(origpath);
@@ -138,9 +138,9 @@ DWORD WINAPI RunBackgroundStartupThread( LPVOID lpParam ) {
         loading_reusable_max = item_indices_without_thumbs.count;
 
         // item it = items[item_indices_without_thumbs[i]];
-        newstring fullpath = items[item_indices_without_thumbs[i]].fullpath;
-        newstring thumbpath = items[item_indices_without_thumbs[i]].thumbpath;
-        newstring justname = items[item_indices_without_thumbs[i]].justname;
+        string fullpath = items[item_indices_without_thumbs[i]].fullpath;
+        string thumbpath = items[item_indices_without_thumbs[i]].thumbpath;
+        string justname = items[item_indices_without_thumbs[i]].justname;
         if (ffmpeg_can_open(fullpath)) {
             DEBUGPRINT("creating media thumb for %s\n", fullpath.to_utf8_reusable());
             DownresFileAtPathToPath(fullpath, thumbpath);

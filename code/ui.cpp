@@ -291,7 +291,7 @@ void ui_scrollbar(ui_id id,
 float ui_cursor_blink = 0;
 float ui_cursor_blink_ms = 700;
 int ui_cursor_pos = 0;
-void ui_textbox(ui_id id, newstring *text, rect r, float dt) {
+void ui_textbox(ui_id id, string *text, rect r, float dt) {
 
     ui_cursor_blink += dt;
     if (ui_cursor_blink > ui_cursor_blink_ms)

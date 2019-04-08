@@ -82,7 +82,7 @@ AVCodecContext *ffmpeg_open_codec(AVFormatContext *fc, int streamIndex)
 }
 
 
-v2 ffmpeg_GetResolution(newstring path)
+v2 ffmpeg_GetResolution(string path)
 {
     // // special case to skip text files for now,
     // // ffmpeg likes to eat these up and then our code doesn't know what to do with them
@@ -323,7 +323,7 @@ struct ffmpeg_media {
         }
     }
 
-    void LoadFromFile(newstring path) {
+    void LoadFromFile(string path) {
         if (loaded) {
             PRINT("ffmpeg: object already loaded...\n");
             return;
@@ -589,17 +589,17 @@ struct ffmpeg_media {
         if (!vfc->iformat || vfc->iformat==nullptr) { return true; } // assume not a video
 
         // TODO: add to this list all formats we don't want to send to gpu every frame
-        static newstring definitely_static_image_formats[] = {
-            newstring::create_and_keep_memory(L"image2"),
-            newstring::create_and_keep_memory(L"png_pipe"),
-            newstring::create_and_keep_memory(L"bmp_pipe"),
-            newstring::create_and_keep_memory(L"jpeg_pipe"),
+        static string definitely_static_image_formats[] = {
+            string::create_and_keep_memory(L"image2"),
+            string::create_and_keep_memory(L"png_pipe"),
+            string::create_and_keep_memory(L"bmp_pipe"),
+            string::create_and_keep_memory(L"jpeg_pipe"),
             // todo: add way to detect missing formats (e.g. check if getframe is never changing or something)
         };
         int length_of_formats = sizeof(definitely_static_image_formats)/sizeof(definitely_static_image_formats[0]);
 
         for (int i = 0; i < length_of_formats; i++) {
-            if (newstring::create_temporary((char*)vfc->iformat->name) == definitely_static_image_formats[i]) {
+            if (string::create_temporary((char*)vfc->iformat->name) == definitely_static_image_formats[i]) {
                 return true;
             }
         }
@@ -613,7 +613,7 @@ struct ffmpeg_media {
 
 
 
-void DownresFileAtPathToPath(newstring inpath, newstring outpath) {
+void DownresFileAtPathToPath(string inpath, string outpath) {
 
     // ffmpeg -i input.jpg -vf "scale='min(320,iw)':'min(240,ih)'" input_not_upscaled.png
 
@@ -636,7 +636,7 @@ void DownresFileAtPathToPath(newstring inpath, newstring outpath) {
 
 
 // tries to read resolution and if it can't, then we assume we can't read the file
-bool ffmpeg_can_open(newstring path) {
+bool ffmpeg_can_open(string path) {
     v2 res = ffmpeg_GetResolution(path);
     return res.x != -1 && res.y != -1;
 }

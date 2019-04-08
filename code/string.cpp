@@ -28,7 +28,7 @@ char *next_open_reusable_mem() {
 
 
 // note this basic structure started as a copy of pool, see that if needing similar functionality
-struct newstring {
+struct string {
 
     wc *list; // dont use this as a typical string (not null terminated!)
     int count;
@@ -78,9 +78,9 @@ struct newstring {
         return result;
     }
 
-    newstring append(wc newchar) { add(newchar); return *this; }
-    newstring append(wc *suffix) { for (wc *c=suffix;*c;c++) add(*c); return *this; }
-    newstring append(newstring suffix) { for (int i=0;i<suffix.count;i++) add(suffix[i]); return *this; }
+    string append(wc newchar) { add(newchar); return *this; }
+    string append(wc *suffix) { for (wc *c=suffix;*c;c++) add(*c); return *this; }
+    string append(string suffix) { for (int i=0;i<suffix.count;i++) add(suffix[i]); return *this; }
 
     void rtrim(int amt) { assert(count>=amt && amt>=0); count-=amt; }
     void ltrim(int amt) { assert(count>=amt && amt>=0);
@@ -91,7 +91,7 @@ struct newstring {
         count = newlength;
     }
 
-    bool ends_with(newstring suffix) {
+    bool ends_with(string suffix) {
         if (suffix.count > count) return false;
         int j = count-1;
         for (int i = suffix.count-1; i >= 0; i--) {
@@ -113,7 +113,7 @@ struct newstring {
         return true;
     }
 
-    newstring trim_common_prefix(newstring prefix) {
+    string trim_common_prefix(string prefix) {
         int common_char_count = 0;
         for (int i = 0; i < prefix.count; i++) {
             if (prefix[i] != list[i]) {
@@ -125,7 +125,7 @@ struct newstring {
         return *this;
     }
 
-    newstring overwrite_with_copy_of(newstring o) {
+    string overwrite_with_copy_of(string o) {
         empty_out();
         if (alloc < o.count) { realloc_mem(o.count); }
         memcpy(list, o.list, o.count*sizeof(list[0]));
@@ -133,26 +133,26 @@ struct newstring {
         return *this;
     }
 
-    newstring copy_into_new_memory() {
-        newstring copy = newstring::allocate_new(alloc);
+    string copy_into_new_memory() {
+        string copy = string::allocate_new(alloc);
         copy.count = count;
         memcpy(copy.list, list, count*sizeof(list[0]));
         return copy;
     }
 
-    newstring copy_and_append(wc *suffix) {
-        newstring c = copy_into_new_memory();
+    string copy_and_append(wc *suffix) {
+        string c = copy_into_new_memory();
         c.append(suffix);
         return c;
     }
-    newstring copy_and_append(newstring suffix) {
-        newstring c = copy_into_new_memory();
+    string copy_and_append(string suffix) {
+        string c = copy_into_new_memory();
         c.append(suffix);
         return c;
     }
 
-    // newstring append_reusable(newstring suffix) {
-    //     newstring c = copy_into_new_memory();
+    // string append_reusable(string suffix) {
+    //     string c = copy_into_new_memory();
     //     c.append(suffix);
     //     return c;
     // }
@@ -232,22 +232,22 @@ struct newstring {
     //
     // static
 
-    static newstring allocate_new(int amount) {
-        newstring str = {0};
+    static string allocate_new(int amount) {
+        string str = {0};
         str.alloc = amount;
         str.list = (wc*)malloc(str.alloc * sizeof(wc)); assert(str.list);
         return str;
     }
 
-    static newstring create_with_new_memory(wc *instring) {
+    static string create_with_new_memory(wc *instring) {
         int len = wcslen(instring);
-        newstring result = newstring::allocate_new(len);
+        string result = string::allocate_new(len);
         result.count = len;
         memcpy(result.list, instring, len*sizeof(instring[0]));
         return result;
     }
-    static newstring create_with_new_memory(char *source) {
-        newstring result = {0};
+    static string create_with_new_memory(char *source) {
+        string result = {0};
         result.alloc = MultiByteToWideChar(CP_UTF8,0,  source,-1,  0,0);
         result.list = (wc*)malloc(result.alloc * sizeof(wc));
         MultiByteToWideChar(CP_UTF8,0,  source,-1,  result.list,result.alloc*sizeof(char));
@@ -255,9 +255,9 @@ struct newstring {
         return result;
     }
 
-    static newstring create_and_keep_memory(wc *instring) {
+    static string create_and_keep_memory(wc *instring) {
         int len = wcslen(instring);
-        newstring result = newstring::allocate_new(len);
+        string result = string::allocate_new(len);
         result.count = len;
         memcpy(result.list, instring, len*sizeof(instring[0]));
         return result;
@@ -265,8 +265,8 @@ struct newstring {
 
     // format input char* string to wc* and put in temporary memory
     // pretty much for one-off comparisons to other strings
-    static newstring create_temporary(char *source) {
-        newstring result = {0};
+    static string create_temporary(char *source) {
+        string result = {0};
         result.alloc = MultiByteToWideChar(CP_UTF8,0,  source,-1,  0,0);
         result.list = (wc*)next_open_reusable_mem();//(wc*)malloc(result.alloc * sizeof(wc));
         MultiByteToWideChar(CP_UTF8,0,  source,-1,  result.list,result.alloc*sizeof(char));
@@ -281,15 +281,15 @@ struct newstring {
     void empty_out() { count = 0; } /*note we keep the allocated memory*/ /*should call it .drain()*/
     bool is_empty() { return count==0; }
     wc& operator[] (int i) { assert(i>=0); assert(i<count); return list[i]; }
-    bool operator==(newstring o) {
+    bool operator==(string o) {
         if (count != o.count) return false;
         for (int i = 0; i < count; i++) {
             if(list[i] != o.list[i]) return false;
         }
         return true;
     }
-    bool operator!=(newstring o) { return !(*this==o); }
-    static newstring new_empty() { newstring new_blank = {0}; return new_blank;  }
+    bool operator!=(string o) { return !(*this==o); }
+    static string new_empty() { string new_blank = {0}; return new_blank;  }
 };
 
 
@@ -300,8 +300,8 @@ struct newstring {
 //
 // should work whether or not paths have trailing or leading slashes (double slashes are not checked for atm)
 // eg "E:/test folder" or "E:/test folder\" or "/~thumbs/" or "thumbs" or "/paintings/1.jpg" or "paintings/1.jpg"
-newstring CombinePathsIntoNewMemory(newstring masterdir, newstring subdir_name, newstring subpath) {
-    newstring result = masterdir.copy_into_new_memory();
+string CombinePathsIntoNewMemory(string masterdir, string subdir_name, string subpath) {
+    string result = masterdir.copy_into_new_memory();
     if (!result.ends_with(L"\\") && !result.ends_with(L"/") && subdir_name[0] != L'\\' && subdir_name[0] != L'/') {
         result.append(L'/');
     }
@@ -314,8 +314,8 @@ newstring CombinePathsIntoNewMemory(newstring masterdir, newstring subdir_name, 
 }
 
 // todo: combine with above
-newstring CombinePathsIntoNewMemory(newstring base, newstring tail) {
-    newstring result = base.copy_into_new_memory();
+string CombinePathsIntoNewMemory(string base, string tail) {
+    string result = base.copy_into_new_memory();
     if (!result.ends_with(L"\\") && !result.ends_with(L"/") && tail[0] != L'\\' && tail[0] != L'/') {
         result.append(L'/');
     }
@@ -324,13 +324,13 @@ newstring CombinePathsIntoNewMemory(newstring base, newstring tail) {
 }
 
 
-bool PathsAreSame(newstring path1, newstring path2) {
+bool PathsAreSame(string path1, string path2) {
     // feels like there should be an easier way..
     // like an OS call, or a more general string parsing or find replace function to make?
     // i guess this isn't too bad
 
-    newstring copy1 = path1.copy_into_new_memory();
-    newstring copy2 = path2.copy_into_new_memory();
+    string copy1 = path1.copy_into_new_memory();
+    string copy2 = path2.copy_into_new_memory();
 
     if (copy1.ends_with(L"\\") || copy1.ends_with(L"/")) copy1.rtrim(1);
     if (copy2.ends_with(L"\\") || copy2.ends_with(L"/")) copy2.rtrim(1);
@@ -371,7 +371,7 @@ bool PathsAreSame(newstring path1, newstring path2) {
 
 
 // for finding filenames from paths
-void trim_everything_after_last_slash(newstring probably_a_path) {
+void trim_everything_after_last_slash(string probably_a_path) {
     int last_bslash_index = probably_a_path.find_last(L'\\');
     int last_fslash_index = probably_a_path.find_last(L'/');
     int last_slash_index = max(last_bslash_index, last_fslash_index);

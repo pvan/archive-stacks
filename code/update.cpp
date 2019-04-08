@@ -325,7 +325,7 @@ void DrawTagMenu(int cw, int ch,
                  bool menu_open,
                  int_pool *selected_tags_pool,
                  int_pool filtered_tag_indices,
-                 newstring *tagfilter)
+                 string *tagfilter)
 {
 
     if (!menu_open) {
@@ -899,7 +899,7 @@ void settings_tick(float actual_dt, int cw, int ch) {
             // sprintf(buf, "items found: %i", proposed_items.count);
             ui_texti("items found: %i", proposed_items.count, {x,y+UI_TEXT_SIZE*row++}, UI_LEFT,UI_TOP, true, 0);
 
-            newstring archivesavepath = CombinePathsIntoNewMemory(proposed_master_path, archive_save_filename);
+            string archivesavepath = CombinePathsIntoNewMemory(proposed_master_path, archive_save_filename);
             if (win32_PathExists(archivesavepath)) {
                 ui_text("archive data found", {x,y+UI_TEXT_SIZE*row++}, UI_LEFT,UI_TOP, true, 0, 0xff00ff00);
             } else {
@@ -913,7 +913,7 @@ void settings_tick(float actual_dt, int cw, int ch) {
                 ui_texti("thumbnail files found: %i", proposed_thumbs_found.count, {x,y+UI_TEXT_SIZE*row++}, UI_LEFT,UI_TOP, true, 0);
             }
 
-            newstring archivetagpath = CombinePathsIntoNewMemory(proposed_master_path, archive_tag_list_filename);
+            string archivetagpath = CombinePathsIntoNewMemory(proposed_master_path, archive_tag_list_filename);
             if (win32_PathExists(archivetagpath)) {
                 ui_text("archive tag list found", {x,y+UI_TEXT_SIZE*row++}, UI_LEFT,UI_TOP, true, 0, 0xff00ff00);
             } else {
