@@ -85,6 +85,11 @@ DWORD WINAPI RunBackgroundStartupThread( LPVOID lpParam ) {
     browse_tag_filter.free_all();
     view_tag_filter.free_all();
 
+    // can just reuse this memory, but need to empty out
+    filtered_browse_tag_indices.empty_out();
+    filtered_view_tag_indices.empty_out();
+
+
 
     // memdebug_print();
     // memdebug_reset();
