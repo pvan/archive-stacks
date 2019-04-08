@@ -7,7 +7,7 @@
 
 #include "types.h"
 
-// #include "memdebug.h" // will slow down our free()s especially
+#include "memdebug.h" // will slow down our free()s especially
 
 char debugprintbuffer[256];
 void DEBUGPRINT(int i) { sprintf(debugprintbuffer, "%i\n", i); OutputDebugString(debugprintbuffer); }
@@ -318,7 +318,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     {
         FreeAllAppMemory(true);
         DEBUGPRINT("\n\n--TOTAL LEAKS--\n");
-        // memdebug_print();
+        memdebug_print();
     }
 
     return 0;
