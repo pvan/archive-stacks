@@ -7,7 +7,7 @@
 
 #include "types.h"
 
-#include "memdebug.h"
+// #include "memdebug.h" // will slow down our free()s especially
 
 char debugprintbuffer[256];
 void DEBUGPRINT(int i) { sprintf(debugprintbuffer, "%i\n", i); OutputDebugString(debugprintbuffer); }

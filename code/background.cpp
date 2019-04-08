@@ -49,12 +49,31 @@ DWORD WINAPI RunBackgroundStartupThread( LPVOID lpParam ) {
         loading_reusable_count = i;
         if (tag_list.pool[i].chars) free(tag_list.pool[i].chars);
     }
+    // we separated the tag lists out from item so we could tightly pack all item paths into one memory allocation eventually
+    // because free()ing each was taking forever
+    // turns out it was our mem debug wrapper around free that was slow
+    // freeing ~5k-10k times here was super fast without memdebug enabled
+    loading_status_msg = "Unloading previous tag lists...";
+    loading_reusable_max = item_tags.count;
+    for (int i = 0; i < item_tags.count; i++) {
+        loading_reusable_count = i;
+        item_tags[i].free_pool();
+    }
+    // the idea is we could replace this loop with a single alloc/free
+    // if we use a memory pool for these lists (since they never change it should be easy)
+    loading_status_msg = "Unloading previous item's paths...";
+    loading_reusable_max = items.count;
+    for (int i = 0; i < items.count; i++) {
+        loading_reusable_count = i;
+        items[i].free_all();
+    }
 
     // 1b. list themselves
     loading_status_msg = "Unloading previous item lists...";
     items.free_pool();
     tiles.free_pool();
     tag_list.free_pool();
+    item_tags.free_pool();
 
     loading_status_msg = "Unloading previous item metadata lists...";
     modifiedTimes.free_pool();
@@ -66,6 +85,9 @@ DWORD WINAPI RunBackgroundStartupThread( LPVOID lpParam ) {
     browse_tag_filter.free_all();
     view_tag_filter.free_all();
 
+
+    // memdebug_print();
+    // memdebug_reset();
 
     // 2. load everything for new path...
 

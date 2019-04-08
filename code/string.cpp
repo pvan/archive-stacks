@@ -72,6 +72,9 @@ struct string
 
 
 
+    void free_mem() { if(chars) free(chars); chars=0; }
+
+
     static bool Equals(wchar_t *s1, wchar_t *s2) {
         int result = wcscmp(s1, s2);
         return result == 0;

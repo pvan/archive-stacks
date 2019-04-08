@@ -223,6 +223,13 @@ struct item {
 
     bool found_in_cache = false; // just metric for debugging
 
+    void free_all() {
+        fullpath.free_mem();
+        thumbpath.free_mem();
+        subpath.free_all();
+        justname.free_all();
+    }
+
 };
 
 // recommend create all items with this
