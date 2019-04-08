@@ -89,17 +89,11 @@ newstring_pool FindAllSubfolderPaths(newstring master_path, wc *subfolder) {
     return result;
 }
 
-string_pool ItemsInFirstPoolButNotSecond(string_pool p1, string_pool p2) {
-    string_pool result = string_pool::new_empty();
+newstring_pool ItemsInFirstPoolButNotSecond(newstring_pool p1, newstring_pool p2) {
+    newstring_pool result = newstring_pool::new_empty();
     for (int i = 0; i < p1.count; i++) {
         if (!p2.has(p1[i]))
             result.add(p1[i]);
-        // string thumbpath = string::Create(CopyItemPathAndConvertToThumbPath(files[i].chars));
-        // if (!thumb_files.has(thumbpath)) {
-        //     items_without_matching_thumbs.add(files[i].Copy());
-        //     // DEBUGPRINT("can't find %s\n", thumbpath.ToUTF8Reusable());
-        // }
-        // free(thumbpath.chars);
     }
     return result;
 }
@@ -111,7 +105,7 @@ string_pool ItemsInFirstPoolButNotSecond(string_pool p1, string_pool p2) {
 // todo: should be list not pool
 // master tag list
 // each item has list of indices into this array
-string_pool tag_list;
+newstring_pool tag_list;
 
 void SaveTagList() {
     wc *path = CombinePathsIntoNewMemory(master_path, archive_tag_list_filename).to_wc_final();
@@ -120,11 +114,11 @@ void SaveTagList() {
 
     // create new blank file first
     if (tag_list.count > 0)
-        Win32WriteBytesToFileW(path, tag_list[0].ToUTF8Reusable(), strlen(tag_list[0].ToUTF8Reusable()) + 1); // include the null-terminator
+        Win32WriteBytesToFileW(path, tag_list[0].to_utf8_reusable(), strlen(tag_list[0].to_utf8_reusable()) + 1); // include the null-terminator
 
     // then append each
     for (int i = 1; i < tag_list.count; i++) {
-        Win32AppendBytesToFileW(path, tag_list[i].ToUTF8Reusable(), strlen(tag_list[i].ToUTF8Reusable()) + 1); // include the null-terminator
+        Win32AppendBytesToFileW(path, tag_list[i].to_utf8_reusable(), strlen(tag_list[i].to_utf8_reusable()) + 1); // include the null-terminator
     }
 
     free(path);
@@ -134,17 +128,17 @@ void SaveTagList() {
     // }
     // DEBUGPRINT("saved %i\n", tag_list.count);
 }
-void AddNewTag(string tag) {
+void AddNewTag(newstring tag) {
     assert(!tag_list.has(tag));
     tag_list.add(tag);
 }
-void AddNewTagAndSave(string tag) {
+void AddNewTagAndSave(newstring tag) {
     AddNewTag(tag);
     SaveTagList();
 }
 
 
-string_pool ReadTagListFromFileOrSomethingUsableOtherwise(newstring master_path) {
+newstring_pool ReadTagListFromFileOrSomethingUsableOtherwise(newstring master_path) {
 
     // if (!win32_PathExists(path.chars)) return;
     // // wchar version
@@ -158,13 +152,13 @@ string_pool ReadTagListFromFileOrSomethingUsableOtherwise(newstring master_path)
     // fclose(file);
 
 
-    string_pool result = string_pool::new_empty();
+    newstring_pool result = newstring_pool::new_empty();
     // result.add(string::Create(L"untagged"));  // always have this entry as index 0?? todo: decide
 
     wc *path = CombinePathsIntoNewMemory(master_path, archive_tag_list_filename).to_wc_final();
 
     if (!win32_PathExists(path)) {
-        result.add(string::CreateWithNewMem(L"untagged"));  // always have this entry as index 0?? todo: decide
+        result.add(newstring::create_with_new_memory(L"untagged"));  // always have this entry as index 0?? todo: decide
         return result;
     }
 
@@ -180,12 +174,12 @@ string_pool ReadTagListFromFileOrSomethingUsableOtherwise(newstring master_path)
     int chars_written = 0;
     while (chars_written < fileCharCount) {
         char *thisTag = fileChars + chars_written;
-        string thisTagString = string::Create(thisTag);
+        newstring thisTagString = newstring::create_with_new_memory(thisTag);
         if (!result.has(thisTagString)) {
             result.add(thisTagString);
             // DEBUGPRINT("added %s\n", thisTagString.ToUTF8Reusable());
         } else {
-            DEBUGPRINT("WARNING: %s was in taglist more than once!\n", thisTagString.ToUTF8Reusable());
+            DEBUGPRINT("WARNING: %s was in taglist more than once!\n", thisTagString.to_utf8_reusable());
         }
         // todo: prickly use-after-free bug potential in string_pool, should check all string_pool and just refactor pools in general
         // free(thisTagString.chars); // don't free! string_pool will use this address
@@ -216,11 +210,11 @@ int_pool_pool item_tags;
 
 
 struct item {
-    string fullpath;
-    string thumbpath;
-    // string thumbpath128; // like this?
-    // string thumbpath256;
-    // string thumbpath512;
+    newstring fullpath;
+    newstring thumbpath;
+    // newstring thumbpath128; // like this?
+    // newstring thumbpath256;
+    // newstring thumbpath512;
     newstring subpath;
     newstring justname;
 
@@ -229,16 +223,16 @@ struct item {
     bool found_in_cache = false; // just metric for debugging
 
     void free_all() {
-        fullpath.free_mem();
-        thumbpath.free_mem();
+        fullpath.free_all();
+        thumbpath.free_all();
         subpath.free_all();
         justname.free_all();
     }
 
     item deep_copy() {
         item result = {0};
-        result.fullpath = fullpath.Copy();
-        result.thumbpath = thumbpath.Copy();
+        result.fullpath = fullpath.copy_into_new_memory();
+        result.thumbpath = thumbpath.copy_into_new_memory();
         result.subpath = subpath.copy_into_new_memory();
         result.justname = justname.copy_into_new_memory();
         return result;
@@ -251,7 +245,7 @@ struct item {
 item CreateItemFromPath(newstring fullpath, newstring masterdir) {
     item newitem = {0};
 
-    newitem.fullpath = fullpath.to_old_string_temp();
+    newitem.fullpath = fullpath.copy_into_new_memory();
     newitem.subpath = fullpath.copy_into_new_memory().trim_common_prefix(masterdir);
 
     newstring thumbpath = CombinePathsIntoNewMemory(masterdir, thumb_dir_name, newitem.subpath);
@@ -262,8 +256,8 @@ item CreateItemFromPath(newstring fullpath, newstring masterdir) {
     if (fullpath.ends_with(L".txt")) {
         thumbpath.append(L".bmp");
     }
-    newitem.thumbpath = thumbpath.to_old_string_temp();
-    thumbpath.free_all();
+    newitem.thumbpath = thumbpath;//.copy_into_new_memory();
+    // thumbpath.free_all();
 
     newitem.justname = newitem.subpath.copy_into_new_memory();
     trim_everything_after_last_slash(newitem.justname);
@@ -308,16 +302,16 @@ item_pool CreateItemListFromMasterPath(newstring masterdir) {
 
 
 
-static string laststr = string::CreateWithNewMem(L"empty");
+static newstring laststr = newstring::create_with_new_memory(L"empty");
 bool PopulateTagFromPathsForItem(item it, int itemindex) {
-    wc *directory = CopyJustParentDirectoryName(it.fullpath.chars);
+    wc *directory = CopyJustParentDirectoryName(it.fullpath.to_wc_reusable());
     assert(directory);
     assert(directory[0]);
 
-    string dir = string::KeepMemory(directory);
+    newstring dir = newstring::create_and_keep_memory(directory);
 
     if (laststr != dir) {
-        laststr = dir.Copy();
+        laststr = dir.copy_into_new_memory();
     }
 
     if (!tag_list.has(dir)) {
@@ -373,9 +367,9 @@ void InitResolutionsListToMatchItemList(int count) {
 }
 
 // pull resolution from separate metadata file (unique one for each item)
-bool GetCachedResolutionIfPossible(string path, v2 *result) {
-    FILE *file = _wfopen(path.chars, L"r");
-    if (!file) {  DEBUGPRINT("error reading %s\n", path.ToUTF8Reusable()); return false; }
+bool GetCachedResolutionIfPossible(newstring path, v2 *result) {
+    FILE *file = _wfopen(path.to_wc_reusable(), L"r");
+    if (!file) {  DEBUGPRINT("error reading %s\n", path.to_utf8_reusable()); return false; }
     int x, y;
     fwscanf(file, L"%i,%i", &x, &y);
     result->x = x;
@@ -384,10 +378,10 @@ bool GetCachedResolutionIfPossible(string path, v2 *result) {
     return true;
 }
 // create separate resolution metadata file (unique one for each item)
-void CreateCachedResolution(string path, v2 size) {
-    CreateAllDirectoriesForPathIfNeeded(path.chars);
-    FILE *file = _wfopen(path.chars, L"w");
-    if (!file) { DEBUGPRINT("error creating %s\n", path.ToUTF8Reusable()); return; }
+void CreateCachedResolution(newstring path, v2 size) {
+    win32_CreateAllDirectoriesForPathIfNeeded(path.to_wc_reusable());
+    FILE *file = _wfopen(path.to_wc_reusable(), L"w");
+    if (!file) { DEBUGPRINT("error creating %s\n", path.to_utf8_reusable()); return; }
     fwprintf(file, L"%i,%i", (int)size.x, (int)size.y); // todo: round up? (should all be square ints anyway, though)
     fclose(file);
 }
@@ -741,7 +735,7 @@ void SelectNewMasterDirectory(newstring newdir) {
 //
 // tile functions
 
-tile CreateTileFromFile(string path) {
+tile CreateTileFromFile(newstring path) {
     tile newTile = {0};
     assert(win32_PathExists(path));
     assert(!win32_IsDirectory(path));

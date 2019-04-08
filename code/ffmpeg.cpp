@@ -82,7 +82,7 @@ AVCodecContext *ffmpeg_open_codec(AVFormatContext *fc, int streamIndex)
 }
 
 
-v2 ffmpeg_GetResolution(string path)
+v2 ffmpeg_GetResolution(newstring path)
 {
     // // special case to skip text files for now,
     // // ffmpeg likes to eat these up and then our code doesn't know what to do with them
@@ -92,7 +92,7 @@ v2 ffmpeg_GetResolution(string path)
     //     return {-1,-1};
     // }
 
-    if (StringEndsWith(path.chars, L".txt")) {
+    if (path.ends_with(L".txt")) {
         // todo: special case to skip text files for now,
         // ffmpeg likes to eat these up and then our code doesn't know what to do with them
         return {-1,-1};
@@ -101,14 +101,14 @@ v2 ffmpeg_GetResolution(string path)
     // convert wchar to utf-8 which is what ffmpeg wants...
     // TODO: just call the string function that does this
 
-    int numChars = WideCharToMultiByte(CP_UTF8,0,  path.chars,-1,  0,0,  0,0);
-    char *utf8path = (char*)malloc(numChars*sizeof(char));
-    WideCharToMultiByte(CP_UTF8,0,  path.chars,-1,  utf8path,numChars*sizeof(char),  0,0);
+    // int numChars = WideCharToMultiByte(CP_UTF8,0,  path.chars,-1,  0,0,  0,0);
+    // char *utf8path = (char*)malloc(numChars*sizeof(char));
+    // WideCharToMultiByte(CP_UTF8,0,  path.chars,-1,  utf8path,numChars*sizeof(char),  0,0);
 
     AVFormatContext *vfc = avformat_alloc_context(); // needs avformat_free_context
-    int open_result1 = avformat_open_input(&vfc, utf8path, 0, 0); // needs avformat_close_input
+    int open_result1 = avformat_open_input(&vfc, path.to_utf8_reusable(), 0, 0); // needs avformat_close_input
 
-    free(utf8path);
+    // free(utf8path);
 
 
     if (open_result1 != 0)
@@ -159,7 +159,7 @@ v2 ffmpeg_GetResolution(string path)
     // if neither, this probably isn't a video file
     if (video_index == -1)
     {
-        DEBUGPRINT("ffmpeg: No video streams in file. %s\n", path.ToUTF8Reusable());
+        DEBUGPRINT("ffmpeg: No video streams in file. %s\n", path.to_utf8_reusable());
         return {-1,-1};
     }
 
@@ -323,7 +323,7 @@ struct ffmpeg_media {
         }
     }
 
-    void LoadFromFile(string path) {
+    void LoadFromFile(newstring path) {
         if (loaded) {
             PRINT("ffmpeg: object already loaded...\n");
             return;
@@ -342,7 +342,7 @@ struct ffmpeg_media {
 
 
         vfc = avformat_alloc_context(); // needs avformat_free_context
-        int open_result1 = avformat_open_input(&vfc, path.ToUTF8Reusable(), 0, 0); // needs avformat_close_input
+        int open_result1 = avformat_open_input(&vfc, path.to_utf8_reusable(), 0, 0); // needs avformat_close_input
 
 
         if (open_result1 != 0) {
@@ -589,17 +589,17 @@ struct ffmpeg_media {
         if (!vfc->iformat || vfc->iformat==nullptr) { return true; } // assume not a video
 
         // TODO: add to this list all formats we don't want to send to gpu every frame
-        static string definitely_static_image_formats[] = {
-            string::KeepMemory(L"image2"),
-            string::KeepMemory(L"png_pipe"),
-            string::KeepMemory(L"bmp_pipe"),
-            string::KeepMemory(L"jpeg_pipe"),
+        static newstring definitely_static_image_formats[] = {
+            newstring::create_and_keep_memory(L"image2"),
+            newstring::create_and_keep_memory(L"png_pipe"),
+            newstring::create_and_keep_memory(L"bmp_pipe"),
+            newstring::create_and_keep_memory(L"jpeg_pipe"),
             // todo: add way to detect missing formats (e.g. check if getframe is never changing or something)
         };
         int length_of_formats = sizeof(definitely_static_image_formats)/sizeof(definitely_static_image_formats[0]);
 
         for (int i = 0; i < length_of_formats; i++) {
-            if (string::CreateTemporary((char*)vfc->iformat->name) == definitely_static_image_formats[i]) {
+            if (newstring::create_temporary((char*)vfc->iformat->name) == definitely_static_image_formats[i]) {
                 return true;
             }
         }
@@ -613,19 +613,19 @@ struct ffmpeg_media {
 
 
 
-void DownresFileAtPathToPath(string inpath, string outpath) {
+void DownresFileAtPathToPath(newstring inpath, newstring outpath) {
 
     // ffmpeg -i input.jpg -vf "scale='min(320,iw)':'min(240,ih)'" input_not_upscaled.png
 
-    CreateAllDirectoriesForPathIfNeeded(outpath.chars);
+    win32_CreateAllDirectoriesForPathIfNeeded(outpath.to_wc_reusable());
 
     // ffmpeg output filenames need all % chars escaped with another % char. eg file%20exam%ple.jpg -> file%%20exam%%ple.jpg
     wchar_t replacethisbuffer[1024];
-    CopyStringWithCharsEscaped(replacethisbuffer, 1024, outpath.chars, L'%', L'%');
+    CopyStringWithCharsEscaped(replacethisbuffer, 1024, outpath.to_wc_reusable(), L'%', L'%');
 
     wchar_t buffer[1024*8]; // todo make sure enough for in and out paths
     // swprintf(buffer, L"ffmpeg -i \"%s\" -vf \"scale='min(200,iw)':-2\" \"%s\"", inpath.chars, outpath.chars);
-    swprintf(buffer, L"ffmpeg -i \"%s\" -vf \"scale='min(200,iw)':-2\" \"%s\"", inpath.chars, replacethisbuffer);
+    swprintf(buffer, L"ffmpeg -i \"%s\" -vf \"scale='min(200,iw)':-2\" \"%s\"", inpath.to_wc_reusable(), replacethisbuffer);
 
     OutputDebugStringW(buffer);
     OutputDebugStringW(L"\n");
@@ -636,7 +636,7 @@ void DownresFileAtPathToPath(string inpath, string outpath) {
 
 
 // tries to read resolution and if it can't, then we assume we can't read the file
-bool ffmpeg_can_open(string path) {
+bool ffmpeg_can_open(newstring path) {
     v2 res = ffmpeg_GetResolution(path);
     return res.x != -1 && res.y != -1;
 }

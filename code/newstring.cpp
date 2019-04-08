@@ -157,11 +157,11 @@ struct newstring {
     //     return c;
     // }
 
-    // delete this when done with old system
-    string to_old_string_temp() {
-        string result = string::CreateWithNewMem(to_wc_reusable());
-        return result;
-    }
+    // // delete this when done with old system
+    // string to_old_string_temp() {
+    //     string result = string::CreateWithNewMem(to_wc_reusable());
+    //     return result;
+    // }
 
     //
     // conversions / exports
@@ -244,6 +244,33 @@ struct newstring {
         newstring result = newstring::allocate_new(len);
         result.count = len;
         memcpy(result.list, instring, len*sizeof(instring[0]));
+        return result;
+    }
+    static newstring create_with_new_memory(char *source) {
+        newstring result = {0};
+        result.alloc = MultiByteToWideChar(CP_UTF8,0,  source,-1,  0,0);
+        result.list = (wc*)malloc(result.alloc * sizeof(wc));
+        MultiByteToWideChar(CP_UTF8,0,  source,-1,  result.list,result.alloc*sizeof(char));
+        result.count = result.alloc-1; // no null terminator in actual result list
+        return result;
+    }
+
+    static newstring create_and_keep_memory(wc *instring) {
+        int len = wcslen(instring);
+        newstring result = newstring::allocate_new(len);
+        result.count = len;
+        memcpy(result.list, instring, len*sizeof(instring[0]));
+        return result;
+    }
+
+    // format input char* string to wc* and put in temporary memory
+    // pretty much for one-off comparisons to other strings
+    static newstring create_temporary(char *source) {
+        newstring result = {0};
+        result.alloc = MultiByteToWideChar(CP_UTF8,0,  source,-1,  0,0);
+        result.list = (wc*)next_open_reusable_mem();//(wc*)malloc(result.alloc * sizeof(wc));
+        MultiByteToWideChar(CP_UTF8,0,  source,-1,  result.list,result.alloc*sizeof(char));
+        result.count = result.alloc-1; // no null terminator in actual result list
         return result;
     }
 

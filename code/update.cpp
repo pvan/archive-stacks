@@ -278,7 +278,7 @@ bool DrawTagsWithXColumns(int totalcols,
             float y = (row+1) * (UI_TEXT_SIZE+vgap);
 
             rect brect;
-            if (ui_button_text(&tag_list[t], tag_list[t].ToUTF8Reusable(), {x,y}, UI_LEFT,UI_TOP, &brect)) {
+            if (ui_button_text(&tag_list[t], tag_list[t].to_utf8_reusable(), {x,y}, UI_LEFT,UI_TOP, &brect)) {
                 if (tagSelect) tagSelect(t);
             }
 
@@ -364,7 +364,7 @@ void DrawTagMenu(int cw, int ch,
     float_pool widths = float_pool::new_empty();
     for (int i = 0; i < filtered_tag_indices.count; i++) {
         int t = filtered_tag_indices[i];
-        rect r = ui_text(tag_list[t].ToUTF8Reusable(), {0,0}, UI_LEFT,UI_TOP, false, 0);
+        rect r = ui_text(tag_list[t].to_utf8_reusable(), {0,0}, UI_LEFT,UI_TOP, false, 0);
         widths.add(r.w);
     }
 
@@ -586,7 +586,7 @@ void browse_tick(float actual_dt, int cw, int ch) {
         for (int i = 0; i < tag_list.count; i++) {
             // strstr returns pointer to substring in string
             // looks like strstr will work fine on utf8 strings
-            if (strstr(tag_list[i].ToUTF8Reusable(), browse_tag_filter.to_utf8_reusable()) != 0) {
+            if (strstr(tag_list[i].to_utf8_reusable(), browse_tag_filter.to_utf8_reusable()) != 0) {
                 filtered_browse_tag_indices.add(i);
             }
         }
@@ -805,7 +805,7 @@ void view_tick(float actual_dt, int cw, int ch) {
         for (int i = 0; i < tag_list.count; i++) {
             // strstr returns pointer to substring in string
             // todo: not sure if works on utf8 strings
-            if (strstr(tag_list[i].ToUTF8Reusable(), view_tag_filter.to_utf8_reusable()) != 0) {
+            if (strstr(tag_list[i].to_utf8_reusable(), view_tag_filter.to_utf8_reusable()) != 0) {
                 filtered_view_tag_indices.add(i);
             }
         }
@@ -837,7 +837,7 @@ void view_tick(float actual_dt, int cw, int ch) {
         // debug tag list on left
         float x = 0;
         for (int i = 0; i < item_tags[viewing_file_index].count; i++) {
-            rect lastrect = ui_text(tag_list[item_tags[viewing_file_index][i]].ToUTF8Reusable(), {x,(float)ch}, UI_LEFT,UI_BOTTOM, true, 0.66);
+            rect lastrect = ui_text(tag_list[item_tags[viewing_file_index][i]].to_utf8_reusable(), {x,(float)ch}, UI_LEFT,UI_BOTTOM, true, 0.66);
             x+=lastrect.w;
         }
 

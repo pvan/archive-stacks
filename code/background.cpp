@@ -2,7 +2,7 @@
 
 
 
-void CreateCachedMetadataFile(string origpath, string thumbpath, string metapath) {
+void CreateCachedMetadataFile(newstring origpath, newstring thumbpath, newstring metapath) {
     v2 res = {0,0};
     if (ffmpeg_can_open(origpath)) {
         res = ffmpeg_GetResolution(origpath);
@@ -47,7 +47,7 @@ DWORD WINAPI RunBackgroundStartupThread( LPVOID lpParam ) {
     loading_reusable_max = tag_list.count;
     for (int i = 0; i < tag_list.count; i++) {
         loading_reusable_count = i;
-        if (tag_list.pool[i].chars) free(tag_list.pool[i].chars);
+        if (tag_list.pool[i].list) free(tag_list.pool[i].list);
     }
     // we separated the tag lists out from item so we could tightly pack all item paths into one memory allocation eventually
     // because free()ing each was taking forever
@@ -86,8 +86,8 @@ DWORD WINAPI RunBackgroundStartupThread( LPVOID lpParam ) {
     view_tag_filter.free_all();
 
 
-    memdebug_print();
-    memdebug_reset();
+    // memdebug_print();
+    // memdebug_reset();
 
     // 2. load everything for new path...
 
@@ -115,7 +115,7 @@ DWORD WINAPI RunBackgroundStartupThread( LPVOID lpParam ) {
 
         if (!win32_PathExists(items[i].thumbpath)) {
             item_indices_without_thumbs.add(i);
-            DEBUGPRINT("this doesn't exist? %s\n", items[i].thumbpath.ToUTF8Reusable());
+            DEBUGPRINT("this doesn't exist? %s\n", items[i].thumbpath.to_utf8_reusable());
         }
         // if (!win32_PathExists(items[i].metadatapath)) {
         //     item_indices_without_metadata.add(i);
@@ -138,14 +138,14 @@ DWORD WINAPI RunBackgroundStartupThread( LPVOID lpParam ) {
         loading_reusable_max = item_indices_without_thumbs.count;
 
         // item it = items[item_indices_without_thumbs[i]];
-        string fullpath = items[item_indices_without_thumbs[i]].fullpath;
-        string thumbpath = items[item_indices_without_thumbs[i]].thumbpath;
+        newstring fullpath = items[item_indices_without_thumbs[i]].fullpath;
+        newstring thumbpath = items[item_indices_without_thumbs[i]].thumbpath;
         newstring justname = items[item_indices_without_thumbs[i]].justname;
         if (ffmpeg_can_open(fullpath)) {
-            DEBUGPRINT("creating media thumb for %s\n", fullpath.ToUTF8Reusable());
+            DEBUGPRINT("creating media thumb for %s\n", fullpath.to_utf8_reusable());
             DownresFileAtPathToPath(fullpath, thumbpath);
         } else  {
-            DEBUGPRINT("creating dummy thumb for %s\n", fullpath.ToUTF8Reusable());
+            DEBUGPRINT("creating dummy thumb for %s\n", fullpath.to_utf8_reusable());
             CreateDummyThumb(fullpath, thumbpath, justname);
         }
         item_indices_without_thumbs.count--; // should add .pop()

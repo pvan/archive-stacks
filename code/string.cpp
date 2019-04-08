@@ -11,134 +11,134 @@
 // todo: we should probably check every sprintf, wcscat, memcpy, etc for space/bounds here
 
 
-// todo: look at this again after trying it for a bit
-// basically just for comparisons or printing, as memory will expire after 1 more use
-// we toggle between which we use, so we can technically use 2 to compare to each other
-// todo: add longer history?
-char string_reusable_mem1[1024];
-char string_reusable_mem2[1024];
-bool string_reusable_toggle = false; // which reusable mem should we use next?
+// // todo: look at this again after trying it for a bit
+// // basically just for comparisons or printing, as memory will expire after 1 more use
+// // we toggle between which we use, so we can technically use 2 to compare to each other
+// // todo: add longer history?
+// char string_reusable_mem1[1024];
+// char string_reusable_mem2[1024];
+// bool string_reusable_toggle = false; // which reusable mem should we use next?
 
-struct string
-{
+// struct string
+// {
 
-    wchar_t *chars;
-    int length;
+//     wchar_t *chars;
+//     int length;
 
-    bool operator== (string o) { return string::Equals(chars, o.chars); }
-    bool operator!= (string o) { return !string::Equals(chars, o.chars); }
-
-
-    // might be a bug in here...
-    // string& Append(wchar *suffix) {
-    //     assert(chars);
-    //     length += wcslen(suffix);
-    //     chars = (wchar_t*)realloc(chars, (length+1)*sizeof(wchar_t));
-    //     wcscat(chars, suffix);
-    //     return *this;
-    // }
-    string CopyAndAppend(wchar *suffix) {
-        string c = Copy();
-        c.length += wcslen(suffix);
-        c.chars = (wchar_t*)realloc(c.chars, (c.length+1)*sizeof(wchar_t));
-        wcscat(c.chars, suffix);
-        return c;
-    }
-
-    string Copy() {
-        string newString = {0};
-        newString.length = length;
-        newString.chars = (wchar_t*)malloc((length+1)*sizeof(wchar_t));
-        memcpy(newString.chars, chars, (length+1)*sizeof(wchar_t));
-        return newString;
-    }
+//     bool operator== (string o) { return string::Equals(chars, o.chars); }
+//     bool operator!= (string o) { return !string::Equals(chars, o.chars); }
 
 
+//     // might be a bug in here...
+//     // string& Append(wchar *suffix) {
+//     //     assert(chars);
+//     //     length += wcslen(suffix);
+//     //     chars = (wchar_t*)realloc(chars, (length+1)*sizeof(wchar_t));
+//     //     wcscat(chars, suffix);
+//     //     return *this;
+//     // }
+//     string CopyAndAppend(wchar *suffix) {
+//         string c = Copy();
+//         c.length += wcslen(suffix);
+//         c.chars = (wchar_t*)realloc(c.chars, (c.length+1)*sizeof(wchar_t));
+//         wcscat(c.chars, suffix);
+//         return c;
+//     }
 
-    // win32
-    // char *ToUTF8() {
-    //     int numChars = WideCharToMultiByte(CP_UTF8,0,  chars,-1,  0,0,  0,0);
-    //     char *utf8 = (char*)malloc(numChars*sizeof(char));
-    //     WideCharToMultiByte(CP_UTF8,0,  chars,-1,  utf8,numChars*sizeof(char),  0,0);
-    //     return utf8;
-    // }
-
-    char *ToUTF8Reusable() {
-        int numChars = WideCharToMultiByte(CP_UTF8,0,  chars,-1,  0,0,  0,0);
-        char *utf8 = string_reusable_toggle ? (char*)&string_reusable_mem1 : (char*)&string_reusable_mem2; string_reusable_toggle=!string_reusable_toggle;
-        WideCharToMultiByte(CP_UTF8,0,  chars,-1,  utf8,numChars*sizeof(char),  0,0);
-        return utf8;
-    }
+//     string Copy() {
+//         string newString = {0};
+//         newString.length = length;
+//         newString.chars = (wchar_t*)malloc((length+1)*sizeof(wchar_t));
+//         memcpy(newString.chars, chars, (length+1)*sizeof(wchar_t));
+//         return newString;
+//     }
 
 
 
-    void free_mem() { if(chars) free(chars); chars=0; }
+//     // win32
+//     // char *ToUTF8() {
+//     //     int numChars = WideCharToMultiByte(CP_UTF8,0,  chars,-1,  0,0,  0,0);
+//     //     char *utf8 = (char*)malloc(numChars*sizeof(char));
+//     //     WideCharToMultiByte(CP_UTF8,0,  chars,-1,  utf8,numChars*sizeof(char),  0,0);
+//     //     return utf8;
+//     // }
+
+//     char *ToUTF8Reusable() {
+//         int numChars = WideCharToMultiByte(CP_UTF8,0,  chars,-1,  0,0,  0,0);
+//         char *utf8 = string_reusable_toggle ? (char*)&string_reusable_mem1 : (char*)&string_reusable_mem2; string_reusable_toggle=!string_reusable_toggle;
+//         WideCharToMultiByte(CP_UTF8,0,  chars,-1,  utf8,numChars*sizeof(char),  0,0);
+//         return utf8;
+//     }
 
 
-    static bool Equals(wchar_t *s1, wchar_t *s2) {
-        int result = wcscmp(s1, s2);
-        return result == 0;
-    }
 
-    static string CreateWithNewMem(wchar_t *source) {
-        string newString = {0};
-        newString.length = wcslen(source);
-        newString.chars = (wchar_t*)malloc((newString.length+1)*sizeof(wchar_t));
-        memcpy(newString.chars, source, (newString.length+1)*sizeof(wchar_t));
-        return newString;
-    }
+//     void free_mem() { if(chars) free(chars); chars=0; }
 
-    static string KeepMemory(wc *source) {
-        string newString = {source, (int)wcslen(source)};
-        return newString;
-    }
 
-    static string NewStringUsingMem(wchar_t *source) {
-        string newString = {0};
-        newString.length = wcslen(source);
-        newString.chars = source;
-        return newString;
-    }
+//     static bool Equals(wchar_t *s1, wchar_t *s2) {
+//         int result = wcscmp(s1, s2);
+//         return result == 0;
+//     }
 
-    static string Create(char *source) {
-        string newString = {0};
-        // newString.length = strlen(source);
+//     static string CreateWithNewMem(wchar_t *source) {
+//         string newString = {0};
+//         newString.length = wcslen(source);
+//         newString.chars = (wchar_t*)malloc((newString.length+1)*sizeof(wchar_t));
+//         memcpy(newString.chars, source, (newString.length+1)*sizeof(wchar_t));
+//         return newString;
+//     }
 
-        newString.length = MultiByteToWideChar(CP_UTF8,0,  source,-1,  0,0);
-        newString.chars = (wchar_t*)malloc((newString.length+1)*sizeof(wchar_t));
-        MultiByteToWideChar(CP_UTF8,0,  source,-1,  newString.chars,newString.length*sizeof(char));
+//     static string KeepMemory(wc *source) {
+//         string newString = {source, (int)wcslen(source)};
+//         return newString;
+//     }
 
-        // memcpy(newString.chars, source, (newString.length+1)*sizeof(wchar_t));
-        return newString;
-    }
+//     static string NewStringUsingMem(wchar_t *source) {
+//         string newString = {0};
+//         newString.length = wcslen(source);
+//         newString.chars = source;
+//         return newString;
+//     }
 
-    // format input char* string to wc* and put in temporary memory
-    // pretty much for one-off comparisons to other strings
-    static string CreateTemporary(char *source) {
-        wchar_t *dest = string_reusable_toggle ? (wchar_t*)&string_reusable_mem1 : (wchar_t*)&string_reusable_mem2;
-        string_reusable_toggle =! string_reusable_toggle;
+//     static string Create(char *source) {
+//         string newString = {0};
+//         // newString.length = strlen(source);
 
-        string newString = {0};
+//         newString.length = MultiByteToWideChar(CP_UTF8,0,  source,-1,  0,0);
+//         newString.chars = (wchar_t*)malloc((newString.length+1)*sizeof(wchar_t));
+//         MultiByteToWideChar(CP_UTF8,0,  source,-1,  newString.chars,newString.length*sizeof(char));
 
-        newString.length = MultiByteToWideChar(CP_UTF8,0,  source,-1,  0,0);
-        newString.chars = dest;//(wchar_t*)malloc((newString.length+1)*sizeof(wchar_t));
-        MultiByteToWideChar(CP_UTF8,0,  source,-1,  newString.chars,newString.length*sizeof(char));
+//         // memcpy(newString.chars, source, (newString.length+1)*sizeof(wchar_t));
+//         return newString;
+//     }
 
-        // memcpy(newString.chars, source, (newString.length+1)*sizeof(wchar_t));
-        return newString;
+//     // format input char* string to wc* and put in temporary memory
+//     // pretty much for one-off comparisons to other strings
+//     static string CreateTemporary(char *source) {
+//         wchar_t *dest = string_reusable_toggle ? (wchar_t*)&string_reusable_mem1 : (wchar_t*)&string_reusable_mem2;
+//         string_reusable_toggle =! string_reusable_toggle;
 
-    }
+//         string newString = {0};
 
-    static wchar_t *CopyIntoReusableMem(wchar_t *source) {
-        wchar_t *dest = string_reusable_toggle ? (wchar_t*)&string_reusable_mem1 : (wchar_t*)&string_reusable_mem2;
-        string_reusable_toggle =! string_reusable_toggle;
+//         newString.length = MultiByteToWideChar(CP_UTF8,0,  source,-1,  0,0);
+//         newString.chars = dest;//(wchar_t*)malloc((newString.length+1)*sizeof(wchar_t));
+//         MultiByteToWideChar(CP_UTF8,0,  source,-1,  newString.chars,newString.length*sizeof(char));
 
-        int length = wcslen(source);
-        memcpy(dest, source, (length+1)*sizeof(wchar_t));
-        return dest;
-    }
+//         // memcpy(newString.chars, source, (newString.length+1)*sizeof(wchar_t));
+//         return newString;
 
-};
+//     }
+
+//     static wchar_t *CopyIntoReusableMem(wchar_t *source) {
+//         wchar_t *dest = string_reusable_toggle ? (wchar_t*)&string_reusable_mem1 : (wchar_t*)&string_reusable_mem2;
+//         string_reusable_toggle =! string_reusable_toggle;
+
+//         int length = wcslen(source);
+//         memcpy(dest, source, (length+1)*sizeof(wchar_t));
+//         return dest;
+//     }
+
+// };
 
 
 wc *PointerToFirstUniqueCharInSecondString(wc *master_path, wc *fullpath) {

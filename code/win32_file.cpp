@@ -5,7 +5,7 @@
 // try to never return a null pointer though (treat 0 as +infinity for comparisons)
 wchar *min_but_not_null(wchar *p1, wchar *p2) { return p1<p2 && p1!=0 ? p1 : p2==0? 0 : p2; }
 
-void CreateAllDirectoriesForPathIfNeeded(wchar_t *path)
+void win32_CreateAllDirectoriesForPathIfNeeded(wchar_t *path)
 {
     // if (PathFileExistsA(path)) return;
 
@@ -63,11 +63,11 @@ newstring_pool win32_GetAllFilesAndFoldersInDir(newstring path)
 }
 
 bool win32_IsDirectory(wchar_t *path) { DWORD res = GetFileAttributesW(path); return res!=INVALID_FILE_ATTRIBUTES && res&FILE_ATTRIBUTE_DIRECTORY; }
-bool win32_IsDirectory(string path) { return win32_IsDirectory(path.chars); }
+// bool win32_IsDirectory(string path) { return win32_IsDirectory(path.chars); }
 bool win32_IsDirectory(newstring path) { return win32_IsDirectory(path.to_wc_reusable()); }
 
 bool win32_PathExists(wchar_t *path) { return GetFileAttributesW(path) != INVALID_FILE_ATTRIBUTES; }
-bool win32_PathExists(string path) { return win32_PathExists(path.chars); }
+// bool win32_PathExists(string path) { return win32_PathExists(path.chars); }
 bool win32_PathExists(newstring path) { return win32_PathExists(path.to_wc_reusable()); }
 
 
@@ -176,7 +176,7 @@ u64 win32_GetModifiedTimeSinceEpoc(wchar_t *path)
     result.HighPart = modified.dwHighDateTime;
     return result.QuadPart;
 }
-u64 win32_GetModifiedTimeSinceEpoc(string path) { return win32_GetModifiedTimeSinceEpoc(path.chars); }
+u64 win32_GetModifiedTimeSinceEpoc(newstring path) { return win32_GetModifiedTimeSinceEpoc(path.to_wc_reusable()); }
 
 
 

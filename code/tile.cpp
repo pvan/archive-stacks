@@ -58,9 +58,9 @@ struct tile
     bool display_quad_texture_sent_to_gpu = false;
 
 
-    void LoadMedia(string frompath) {
+    void LoadMedia(newstring frompath) {
         if (is_media_loaded) { OutputDebugString("tile media already loaded!\n"); return; }
-        if (frompath.length < 1) { OutputDebugString("tile media path not set yet!\n"); return; }
+        if (frompath.count < 1) { OutputDebugString("tile media path not set yet!\n"); return; }
         media.LoadFromFile(frompath);
         if (media.loaded) {
             is_media_loaded = true;
