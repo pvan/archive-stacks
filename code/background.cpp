@@ -72,6 +72,10 @@ DWORD WINAPI RunBackgroundStartupThread( LPVOID lpParam ) {
     // create item list with fullpath populated
     items = CreateItemListFromMasterPath(master_path);
 
+    // create an tag list for every item (all empty to start)
+    for (int i = 0; i < items.count; i++)
+        item_tags.add(int_pool::new_empty());
+
     // not needed, now we create thumbnail path for each item when creating that item
     // (could move that item creation here, though, if too slow on main thread,
     //  but should be fine, it's just string manipulation -- no hd reads)
@@ -190,7 +194,7 @@ DWORD WINAPI RunBackgroundStartupThread( LPVOID lpParam ) {
         for (int i = 0; i < items.count; i++) {
             if (items[i].found_in_cache) items_found_in_cache++;
             if (item_resolutions_valid[i]) resolutions_read++;
-            if (items[i].tags.count > 0) tags_read += items[i].tags.count;
+            if (item_tags[i].count > 0) tags_read += item_tags[i].count;
         }
         DEBUGPRINT("--------");
         DEBUGPRINT("actual items found %i\n", items.count);
@@ -270,8 +274,8 @@ DWORD WINAPI RunBackgroundStartupThread( LPVOID lpParam ) {
 
             for (int i = 0; i < items.count; i++) {
                 loading_reusable_count = i;
-                if (items[i].tags.count == 0) {
-                    if (PopulateTagFromPath(&items[i])) {
+                if (item_tags[i].count == 0) {
+                    if (PopulateTagFromPathsForItem(items[i], i)) {
                         // DEBUGPRINT("read tag from directory for %s\n", tiles[i].name.ToUTF8Reusable());
                     } else {
                         // DEBUGPRINT("unable to read tag from directory for %s\n", tiles[i].name.ToUTF8Reusable());

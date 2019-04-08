@@ -189,6 +189,23 @@ string_pool ReadTagListFromFileOrSomethingUsableOtherwise(newstring master_path)
 
 
 
+// indices into the tag_list (todo: make tag_list into an official list instead of "pool" or not too important as long as we never remove an item?)
+//
+// another way would be to store the item index in an int list for each tag
+// (harder to find an item's tags that way, but easier to free and to find all items with a tag)
+
+// a list (in same order as items -- they can share indices)
+// of a list of tag indices (indicies into the tag_list)
+// so it's kind of like this:
+// [0] 0,1,2 ...
+// [1] 2 ...
+// ...
+// where ... could be expanded at any time
+// and the a,b,c numbers are indices into tag_list
+// and [a] [b] [c] numbers are indices into the master item list (and the item_tags list)
+DEFINE_TYPE_POOL(int_pool);
+int_pool_pool item_tags;
+
 
 struct item {
     string fullpath;
@@ -206,9 +223,6 @@ struct item {
 
     bool found_in_cache = false; // just metric for debugging
 
-    // indices into the pool tag_list todo: should be list not pool
-    // todo: separate out of item struct? (would have to be array or pool of int_pools which might be weird)
-    int_pool tags;
 };
 
 // recommend create all items with this
@@ -255,8 +269,8 @@ item_pool CreateItemListFromMasterPath(newstring masterdir) {
 
 
 static string laststr = string::CreateWithNewMem(L"empty");
-bool PopulateTagFromPath(item *it) {
-    wc *directory = CopyJustParentDirectoryName(it->fullpath.chars);
+bool PopulateTagFromPathsForItem(item it, int itemindex) {
+    wc *directory = CopyJustParentDirectoryName(it.fullpath.chars);
     assert(directory);
     assert(directory[0]);
     // if (!directory) return false; //todo: assert these instead?
@@ -277,7 +291,7 @@ bool PopulateTagFromPath(item *it) {
     }
     int index = tag_list.index_of(dir);
     if (index == -1) return false;
-    it->tags.add(index);
+    item_tags[itemindex].add(index);
     // if (tag_list.count != lastcount) {
     //     DEBUGPRINT("change"); }
     // lastcount = tag_list.count;
@@ -403,8 +417,8 @@ void SaveMetadataFile()
         fwprintf(file, L"%llu,", modifiedTimes[i]);
         fwprintf(file, L"%s", items[i].subpath.to_wc_reusable());
         fwprintf(file, L"%c", L'\0'); // note we add our own \0 after string for easier parsing later
-        for (int j = 0; j < items[i].tags.count; j++) {
-            fwprintf(file, L" %i", items[i].tags[j]);
+        for (int j = 0; j < item_tags[i].count; j++) {
+            fwprintf(file, L" %i", item_tags[i][j]);
         }
         fwprintf(file, L"\n");
     }
@@ -509,7 +523,7 @@ void LoadMasterDataFileAndPopulateResolutionsAndTagsEtc(
             int nextint;
             numread = fwscanf(file, L"%i", &nextint);
             if (numread < 0) {DEBUGPRINT("e5 %i\n",linesread);goto fileclose;} // eof (or maybe badly formed file?)
-            items[this_item_i].tags.add(nextint);
+            item_tags[this_item_i].add(nextint);
 
         }
         linesread++;
@@ -583,8 +597,8 @@ void CreateDisplayListFromBrowseSelection() {
     // setup display list
     for (int i = 0; i < items.count; i++) {
         // could iterate through item's tags or browse tags here first
-        for (int t = 0; t < items[i].tags.count; t++) {
-            if (browse_tag_indices.has(items[i].tags[t])) {
+        for (int t = 0; t < item_tags[i].count; t++) {
+            if (browse_tag_indices.has(item_tags[i][t])) {
                 display_list.add(i);
                 break; // next item
             }

@@ -56,7 +56,12 @@
     void empty_out() { count = 0; } /*note we keep the allocated memory*/ /*should call it .drain()*/ \
     bool is_empty() { return count==0; } \
     thetype& operator[] (int i) { assert(i>=0); assert(i<count); return pool[i]; } \
-    static thetype##_pool new_empty() { thetype##_pool new_blank = {0}; return new_blank;  } /*todo: probably should always create empty pools like this. rename new_empty()? */ \
+    static thetype##_pool new_empty() { thetype##_pool new_blank = {0}; return new_blank; } /*todo: probably should always create empty pools like this. rename new_empty()? */ \
+    bool operator==(thetype##_pool o) { /*so we can create pools of pools eg int_pool_pool */ \
+        if (!(count==o.count)) return false; \
+        for (int i = 0; i < count; i++) { if (!(pool[i]==o.pool[i])) return false; } \
+        return true; \
+    } \
 };
 
 DEFINE_TYPE_POOL(int);

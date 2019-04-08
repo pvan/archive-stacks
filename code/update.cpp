@@ -36,38 +36,38 @@ void ToggleTagSelectMenu() { tag_select_open = !tag_select_open; }
 // we assume we're affecting the open / "viewing" file here
 void ToggleTagSelection(int tagindex) {
     // u64 tagindex = (u64)disguisedint;
-    if (items[viewing_file_index].tags.has(tagindex)) {
-        items[viewing_file_index].tags.remove(tagindex);
+    if (item_tags[viewing_file_index].has(tagindex)) {
+        item_tags[viewing_file_index].remove(tagindex);
     } else
     {
-        items[viewing_file_index].tags.add(tagindex);
+        item_tags[viewing_file_index].add(tagindex);
     }
     SaveMetadataFile(); // keep close eye on this, if it gets too slow to do inline we can move to background thread
 }
 void SelectItemTagsAll() {
     if (filtered_view_tag_indices.count == 0) {
-        items[viewing_file_index].tags.empty_out();
+        item_tags[viewing_file_index].empty_out();
         for (int i = 0; i < tag_list.count; i++) {
-            items[viewing_file_index].tags.add(i);
+            item_tags[viewing_file_index].add(i);
         }
     } else {
         // now just affect visible (filtered) tags
         for (int ft = 0; ft < filtered_view_tag_indices.count; ft++) {
             int tagi = filtered_view_tag_indices[ft];
-            if (!items[viewing_file_index].tags.has(tagi))
-                items[viewing_file_index].tags.add(tagi);
+            if (!item_tags[viewing_file_index].has(tagi))
+                item_tags[viewing_file_index].add(tagi);
         }
     }
 }
 void SelectItemTagsNone() {
     if (filtered_view_tag_indices.count == 0) {
-        items[viewing_file_index].tags.empty_out();
+        item_tags[viewing_file_index].empty_out();
     } else {
         // now just affect visible (filtered) tags
         for (int ft = 0; ft < filtered_view_tag_indices.count; ft++) {
             int tagi = filtered_view_tag_indices[ft];
-            if (items[viewing_file_index].tags.has(tagi))
-                items[viewing_file_index].tags.remove(tagi);
+            if (item_tags[viewing_file_index].has(tagi))
+                item_tags[viewing_file_index].remove(tagi);
         }
     }
 }
@@ -815,7 +815,7 @@ void view_tick(float actual_dt, int cw, int ch) {
                     &ToggleTagSelection,
                     &ToggleTagSelectMenu,
                     tag_select_open,
-                    &items[viewing_file_index].tags,
+                    &item_tags[viewing_file_index],
                     filtered_view_tag_indices,
                     &view_tag_filter);
     }
@@ -831,13 +831,13 @@ void view_tick(float actual_dt, int cw, int ch) {
 
         // debug tag count on right
         char buf[256];
-        sprintf(buf, "%i", items[viewing_file_index].tags.count);
+        sprintf(buf, "%i", item_tags[viewing_file_index].count);
         ui_text(buf, {(float)cw,(float)ch}, UI_RIGHT,UI_BOTTOM, true, 0.66);
 
         // debug tag list on left
         float x = 0;
-        for (int i = 0; i < items[viewing_file_index].tags.count; i++) {
-            rect lastrect = ui_text(tag_list[items[viewing_file_index].tags[i]].ToUTF8Reusable(), {x,(float)ch}, UI_LEFT,UI_BOTTOM, true, 0.66);
+        for (int i = 0; i < item_tags[viewing_file_index].count; i++) {
+            rect lastrect = ui_text(tag_list[item_tags[viewing_file_index][i]].ToUTF8Reusable(), {x,(float)ch}, UI_LEFT,UI_BOTTOM, true, 0.66);
             x+=lastrect.w;
         }
 
