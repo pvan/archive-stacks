@@ -394,22 +394,24 @@ DWORD WINAPI RunBackgroundLoadingThread( LPVOID lpParam ) {
                 }
             }
         } else if (app_mode == SETTINGS) {
-            if (proposed_path_reevaluate) {
-                loading_status_msg = "Looking for existing thumbnails...";
+            if (proposed_path_reevaluate && proposed_items_checkout==0) { // also wait until we have proposed items access
                 proposed_path_reevaluate = false;
-                proposed_thumbs_found = int_pool::new_empty();
-                if (proposed_items.count > 0) { // note if proposed_items haven't been created yet, we won't find any thumbs
-                    // item_indices_without_metadata = int_pool::new_empty();
-                    for (int i = 0; i < proposed_items.count; i++) {
-                        // loading_status_msg = "Looking for existing caches...";
-                        // loading_reusable_count = i;
-                        // loading_reusable_max = items.count;
 
-                        if (win32_PathExists(proposed_items[i].thumbpath)) {
-                            proposed_thumbs_found.add(i);
-                        }
+                proposed_items_checkout = 2; // flag to not change proposed_items in other thread
+                item_pool bg_item_copy = copy_item_pool(proposed_items); // could be big! todo: better way to do this?
+                proposed_items_checkout = 0;
+
+                loading_status_msg = "Looking for existing thumbnails...";
+                proposed_thumbs_found = int_pool::new_empty();
+                for (int i = 0; i < bg_item_copy.count; i++) {
+                    // loading_reusable_count = i;
+                    // loading_reusable_max = bg_item_copy.count;
+
+                    if (win32_PathExists(bg_item_copy[i].thumbpath)) {
+                        proposed_thumbs_found.add(i);
                     }
                 }
+                free_all_item_pool_memory(&bg_item_copy);
             } else {
                 loading_status_msg = "Waiting...";
             }

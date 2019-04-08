@@ -217,14 +217,11 @@ int_pool_pool item_tags;
 
 struct item {
     string fullpath;
-
     string thumbpath;
     // string thumbpath128; // like this?
     // string thumbpath256;
     // string thumbpath512;
-
     newstring subpath;
-
     newstring justname;
 
     bool operator==(item o) { return fullpath==o.fullpath; } // for now just check fullpath
@@ -236,6 +233,15 @@ struct item {
         thumbpath.free_mem();
         subpath.free_all();
         justname.free_all();
+    }
+
+    item deep_copy() {
+        item result = {0};
+        result.fullpath = fullpath.Copy();
+        result.thumbpath = thumbpath.Copy();
+        result.subpath = subpath.copy_into_new_memory();
+        result.justname = justname.copy_into_new_memory();
+        return result;
     }
 
 };
@@ -265,13 +271,23 @@ item CreateItemFromPath(newstring fullpath, newstring masterdir) {
     return newitem;
 }
 
+
+
 DEFINE_TYPE_POOL(item);
 
-void free_all_item_pool_memory(item_pool its) {
+item_pool copy_item_pool(item_pool its) {
+    item_pool result = item_pool::new_empty();
     for (int i = 0; i < its.count; i++) {
-        its[i].free_all();
+        result.add(its[i].deep_copy());
     }
-    its.free_pool();
+    return result;
+}
+
+void free_all_item_pool_memory(item_pool *its) {
+    for (int i = 0; i < its->count; i++) {
+        its->pool[i].free_all();
+    }
+    its->free_pool();
 }
 
 
@@ -633,6 +649,8 @@ newstring proposed_master_path;
 newstring last_proposed_master_path; // for tracking changes to path (change will trigger background work)
 
 bool proposed_path_reevaluate = false; // trigger for our background thread to start analysing new path
+// bool background_items_copying = false; // lock proposed items for bg thread to copy
+int proposed_items_checkout = 0; // kind of a mutex lock, which thread checked out proposed_items for modification?
 
 item_pool proposed_items;
 
@@ -671,6 +689,7 @@ void app_change_mode(int new_mode) {
     // entering SETTINGS
     if (new_mode == SETTINGS) {
         proposed_master_path.overwrite_with_copy_of(master_path);
+        proposed_items = CreateItemListFromMasterPath(proposed_master_path);
         proposed_path_reevaluate = true;
     }
 

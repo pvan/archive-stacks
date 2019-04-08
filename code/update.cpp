@@ -888,7 +888,12 @@ void settings_tick(float actual_dt, int cw, int ch) {
         if (win32_IsDirectory(proposed_master_path)) {
             ui_text("directory found", {x,y+UI_TEXT_SIZE*row++}, UI_LEFT,UI_TOP, true, 0, 0xff00ff00);
 
+            // alternatively, could skip getting new items this frame and try again next frame
+            while (proposed_items_checkout!=0) 0; // just wait until done, shouldn't take too long
+            proposed_items_checkout = 1;
+            free_all_item_pool_memory(&proposed_items); // free at end now, see below for notes
             proposed_items = CreateItemListFromMasterPath(proposed_master_path);
+            proposed_items_checkout = 0;
 
             // char buf[256];
             // sprintf(buf, "items found: %i", proposed_items.count);
@@ -921,7 +926,7 @@ void settings_tick(float actual_dt, int cw, int ch) {
                 // not using straight == here because of / and things
                 if (!PathsAreSame(proposed_master_path, master_path)) {
                     SelectNewMasterDirectory(proposed_master_path);
-                    free_all_item_pool_memory(proposed_items);
+                    free_all_item_pool_memory(&proposed_items);
                     return; // no need to do anything else here (draw, etc)
                             // we are switching to loading screen
                 } else {
@@ -946,11 +951,12 @@ void settings_tick(float actual_dt, int cw, int ch) {
         app_change_mode(BROWSING_THUMBS);
     }
 
-    // cleanup at end of frame for now to better view frame leaks
-    free_all_item_pool_memory(proposed_items);
+    // // for now, cleanup here at end of frame to get a better sense of frame leaks
+    // free_all_item_pool_memory(&proposed_items);
 
-    memdebug_print();
-    memdebug_reset();
+    // free at end of frame to get better data out of these
+    // memdebug_print();
+    // memdebug_reset();
 
 }
 

@@ -17,7 +17,7 @@ md_allocation *md_records;
 uint md_r_count;
 uint md_r_alloc;
 
-uint total_alloc = 0;
+int total_alloc = 0;
 
 void md_record_alloc(md_allocation r) {
     if (md_r_count >= md_r_alloc) {
@@ -84,7 +84,7 @@ void memdebug_reset()
 void memdebug_print()
 {
     char buf[256];
-    sprintf(buf, "leak since last reset: %u\n", total_alloc);
+    sprintf(buf, "leak since last reset: %i\n", total_alloc);
     OutputDebugString(buf);
 
     OutputDebugString("--unfree'd memory allocations--\n");
