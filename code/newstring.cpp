@@ -379,3 +379,66 @@ void trim_everything_after_last_slash(newstring probably_a_path) {
 }
 
 
+
+//
+// generic wc stuff
+
+
+bool wc_equals(wc *s1, wc *s2) {
+    int result = wcscmp(s1, s2);
+    return result == 0;
+}
+
+
+// i think basically just for escaping characters for ffmpeg command line calls
+void CopyStringWithCharsEscaped(wc *outbuffer, int outsize, wc *instring, wc char_to_escape, wc escape_char) {
+    int count = 0;
+    for (wc *c = instring; *c; c++) {
+        if (*c == char_to_escape)
+            count++;
+    }
+
+    int newsize = wcslen(instring) + count + 1; // wcslen doesn't include null terminator
+    assert(newsize <= outsize);
+    wc *dest = outbuffer;
+    wc *source = instring;
+
+    while (*source) {
+        if (*source == char_to_escape) {
+            *dest = escape_char;
+            dest++;
+        }
+        *dest = *source;
+        dest++;
+        source++;
+    }
+    *dest = 0;
+    assert(outbuffer+newsize-1 == dest);
+}
+
+
+
+wc *CopyJustParentDirectoryName(wc *source) {
+    wc *temp = (wc*)malloc((wcslen(source)+1) * sizeof(wc));
+    memcpy(temp, source, (wcslen(source)+1) * sizeof(wc));
+
+    wc *c = temp;
+    while (*c) c++; // foward to end
+    while (*c == '/' || *c == '\\') {*c = 0; c--;} // remove all trailing / or \
+
+    while (*c != '/' && *c != '\\' && c > temp) c--;  // rewind to last slash in string (or first char)
+    *c = 0; // zap the slash and everything after it
+
+    while (*c != '/' && *c != '\\' && c > temp) c--;  // rewind again to find the new last slash
+    c++; // don't include the slash itself
+    // result = c; // that's our new starting point // nope! we'll lose our original malloc'd pointer
+
+    wc *result = (wc*)malloc((wcslen(c)+1) * sizeof(wc));
+    memcpy(result, c, (wcslen(c)+1) * sizeof(wc));
+    free(temp);
+
+    return result;
+}
+
+
+
