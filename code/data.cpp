@@ -12,10 +12,10 @@ u64 viewing_file_index = 0; // what file do we have open if we're in VIEWING_FIL
 string master_path;
 
 
-// todo: capitalize/const these?
-string archive_save_filename = string::create_with_new_memory(L"~meta.txt");
-string archive_tag_list_filename = string::create_with_new_memory(L"~taglist.txt");
-string thumb_dir_name = string::create_with_new_memory(L"~thumbs");
+// todo: capitalize these naames
+const string archive_save_filename = string::create_using_passed_in_memory(L"~meta.txt");
+const string archive_tag_list_filename = string::create_using_passed_in_memory(L"~taglist.txt");
+const string thumb_dir_name = string::create_using_passed_in_memory(L"~thumbs");
 
 
 
@@ -302,13 +302,13 @@ item_pool CreateItemListFromMasterPath(string masterdir) {
 
 
 
-static string laststr = string::create_with_new_memory(L"empty");
+string laststr = string::new_empty();// = string::create_with_new_memory(L"empty");
 bool PopulateTagFromPathsForItem(item it, int itemindex) {
     wc *directory = CopyJustParentDirectoryName(it.fullpath.to_wc_reusable());
     assert(directory);
     assert(directory[0]);
 
-    string dir = string::create_and_keep_memory(directory);
+    string dir = string::create_using_passed_in_memory(directory);
 
     if (laststr != dir) {
         laststr = dir.copy_into_new_memory();
@@ -574,6 +574,7 @@ int_pool filtered_view_tag_indices = int_pool::new_empty();
 
 // master list of tag indices that are selected for browsing
 int_pool browse_tag_indices;
+
 
 void SelectAllBrowseTags() {
     if (filtered_browse_tag_indices.count == 0) {

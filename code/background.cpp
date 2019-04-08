@@ -417,7 +417,7 @@ DWORD WINAPI RunBackgroundLoadingThread( LPVOID lpParam ) {
                 // proposed_items_checkout = 0;
 
                 loading_status_msg = "Looking for existing thumbnails...";
-                proposed_thumbs_found = int_pool::new_empty();
+                proposed_thumbs_found.empty_out();// = int_pool::new_empty();
                 for (int i = 0; i < proposed_items.count; i++) {
                     // loading_reusable_count = i;
                     // loading_reusable_max = bg_item_copy.count;

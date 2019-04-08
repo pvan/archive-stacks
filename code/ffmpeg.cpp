@@ -319,6 +319,7 @@ struct ffmpeg_media {
             out_frame = 0;
             out_frame_mem = 0;
             loaded = false;
+            if (cached_frame.data) free(cached_frame.data);
             // PRINT("unloaded media successfully\n");
         }
     }
@@ -590,10 +591,10 @@ struct ffmpeg_media {
 
         // TODO: add to this list all formats we don't want to send to gpu every frame
         static string definitely_static_image_formats[] = {
-            string::create_and_keep_memory(L"image2"),
-            string::create_and_keep_memory(L"png_pipe"),
-            string::create_and_keep_memory(L"bmp_pipe"),
-            string::create_and_keep_memory(L"jpeg_pipe"),
+            string::create_using_passed_in_memory(L"image2"),
+            string::create_using_passed_in_memory(L"png_pipe"),
+            string::create_using_passed_in_memory(L"bmp_pipe"),
+            string::create_using_passed_in_memory(L"jpeg_pipe"),
             // todo: add way to detect missing formats (e.g. check if getframe is never changing or something)
         };
         int length_of_formats = sizeof(definitely_static_image_formats)/sizeof(definitely_static_image_formats[0]);

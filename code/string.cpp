@@ -255,11 +255,13 @@ struct string {
         return result;
     }
 
-    static string create_and_keep_memory(wc *instring) {
+    static string create_using_passed_in_memory(wc *instring) {
         int len = wcslen(instring);
-        string result = string::allocate_new(len);
+        string result;// = string::allocate_new(len);
+        result.alloc = len + 1; // wcslen doesn't include null terminator which technically have memory for if we want to use it
         result.count = len;
-        memcpy(result.list, instring, len*sizeof(instring[0]));
+        result.list = instring;
+        // memcpy(result.list, instring, len*sizeof(instring[0]));
         return result;
     }
 

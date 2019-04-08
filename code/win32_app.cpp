@@ -7,7 +7,7 @@
 
 #include "types.h"
 
-// #include "memdebug.h" // will slow down our free()s especially
+#include "memdebug.h" // will slow down our free()s especially
 
 char debugprintbuffer[256];
 void DEBUGPRINT(int i) { sprintf(debugprintbuffer, "%i\n", i); OutputDebugString(debugprintbuffer); }
@@ -218,9 +218,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     ui_init();
 
 
-
-
-    SelectNewMasterDirectory(string::create_with_new_memory(L"E:\\inspiration test folder2"));
+    master_path = string::create_with_new_memory(L"E:\\inspiration test folder2");
+    SelectNewMasterDirectory(master_path);
 
 
     while(running)
@@ -335,6 +334,104 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
         // Sleep(16); // we set frame rate above right? or should we here?
     }
-    // memdebug_print();
+
+
+
+    // little test to see if we are leaking memory anywhere
+
+    // same as background thread prep for new directory
+    {
+        loading_status_msg = "Unloading previous media...";
+        loading_reusable_max = tiles.count;
+        // 1a. list contents
+        for (int i = 0; i < tiles.count; i++) {
+            loading_reusable_count = i;
+            tiles[i].UnloadMedia();
+            // loading_reusable_count = 100000+i;
+            // if (tiles[i].name.chars) free(tiles[i].name.chars);
+        }
+        loading_status_msg = "Unloading previous tags...";
+        loading_reusable_max = tag_list.count;
+        for (int i = 0; i < tag_list.count; i++) {
+            loading_reusable_count = i;
+            if (tag_list.pool[i].list) free(tag_list.pool[i].list);
+        }
+        // we separated the tag lists out from item so we could tightly pack all item paths into one memory allocation eventually
+        // because free()ing each was taking forever
+        // turns out it was our mem debug wrapper around free that was slow
+        // freeing ~5k-10k times here was super fast without memdebug enabled
+        loading_status_msg = "Unloading previous tag lists...";
+        loading_reusable_max = item_tags.count;
+        for (int i = 0; i < item_tags.count; i++) {
+            loading_reusable_count = i;
+            item_tags[i].free_pool();
+        }
+        // the idea is we could replace this loop with a single alloc/free
+        // if we use a memory pool for these lists (since they never change it should be easy)
+        loading_status_msg = "Unloading previous item's paths...";
+        loading_reusable_max = items.count;
+        for (int i = 0; i < items.count; i++) {
+            loading_reusable_count = i;
+            items[i].free_all();
+        }
+
+        // 1b. list themselves
+        loading_status_msg = "Unloading previous item lists...";
+        items.free_pool();
+        tiles.free_pool();
+        tag_list.free_pool();
+        item_tags.free_pool();
+
+        loading_status_msg = "Unloading previous item metadata lists...";
+        modifiedTimes.free_pool();
+        item_resolutions.free_pool();
+        item_resolutions_valid.free_pool();
+
+        loading_status_msg = "Unloading previous item index lists...";
+        display_list.free_pool();
+        browse_tag_filter.free_all();
+        view_tag_filter.free_all();
+
+        // can just reuse this memory, but need to empty out
+        filtered_browse_tag_indices.empty_out();
+        filtered_view_tag_indices.empty_out();
+    }
+
+    // specific to settings window
+    {
+        bg_path_copy.free_all();
+        free_all_item_pool_memory(&proposed_items);
+        proposed_thumbs_found.free_pool();
+    }
+
+    // view mode
+    {
+        viewing_tile.UnloadMedia();
+    }
+
+    // everything else
+    {
+        filtered_browse_tag_indices.free_pool();
+        filtered_view_tag_indices.free_pool();
+        browse_tag_indices.free_pool();
+
+        master_path.free_all();
+        proposed_master_path.free_all();
+        last_proposed_master_path.free_all();
+        proposed_path_msg.free_all();
+        bg_path_copy.free_all();
+
+        laststr.free_all();
+
+        // tf
+        free(tf_file_buffer);
+        free(tf_fontatlas.data);
+
+    }
+
+    DEBUGPRINT("\n\n--TOTAL LEAKS--\n");
+    memdebug_print();
+
+
     return 0;
 }
