@@ -572,11 +572,14 @@ void browse_tick(float actual_dt, int cw, int ch) {
         float top_percent = amtDown / (float)tiles_height;
         float bot_percent = (amtDown+ch) / (float)tiles_height;
 
-        ui_scrollbar(&last_scroll_pos,
-                     {cw-SCROLL_WIDTH, 0, SCROLL_WIDTH, (float)ch},
-                     top_percent, bot_percent,
-                     &last_scroll_pos,
-                     tiles_height);
+        if (tiles_height > ch) { // don't draw scroll bar if we don't need it
+
+            ui_scrollbar(&last_scroll_pos,
+                         {cw-SCROLL_WIDTH, 0, SCROLL_WIDTH, (float)ch},
+                         top_percent, bot_percent,
+                         &last_scroll_pos,
+                         tiles_height);
+        }
 
     }
 
