@@ -81,6 +81,22 @@ struct input_keystate
     bool f11;
     bool f12;
 
+    bool num0;
+    bool num1;
+    bool num2;
+    bool num3;
+    bool num4;
+    bool num5;
+    bool num6;
+    bool num7;
+    bool num8;
+    bool num9;
+    bool numDiv;
+    bool numMul;
+    bool numSub;
+    bool numAdd;
+    bool numDecimal;
+
     bool mouseL;
     bool mouseM;
     bool mouseR;
@@ -186,6 +202,22 @@ input_keystate input_read_keystate(HWND window)
         if (GetAsyncKeyState(VK_F10))         result.f10 = true;
         if (GetAsyncKeyState(VK_F11))         result.f11 = true;
         if (GetAsyncKeyState(VK_F12))         result.f12 = true;
+
+        if (GetAsyncKeyState(VK_NUMPAD0))     result.num0 = true;
+        if (GetAsyncKeyState(VK_NUMPAD1))     result.num1 = true;
+        if (GetAsyncKeyState(VK_NUMPAD2))     result.num2 = true;
+        if (GetAsyncKeyState(VK_NUMPAD3))     result.num3 = true;
+        if (GetAsyncKeyState(VK_NUMPAD4))     result.num4 = true;
+        if (GetAsyncKeyState(VK_NUMPAD5))     result.num5 = true;
+        if (GetAsyncKeyState(VK_NUMPAD6))     result.num6 = true;
+        if (GetAsyncKeyState(VK_NUMPAD7))     result.num7 = true;
+        if (GetAsyncKeyState(VK_NUMPAD8))     result.num8 = true;
+        if (GetAsyncKeyState(VK_NUMPAD9))     result.num9 = true;
+        if (GetAsyncKeyState(VK_DIVIDE))      result.numDiv = true;
+        if (GetAsyncKeyState(VK_MULTIPLY))    result.numMul = true;
+        if (GetAsyncKeyState(VK_SUBTRACT))    result.numSub = true;
+        if (GetAsyncKeyState(VK_ADD))         result.numAdd = true;
+        if (GetAsyncKeyState(VK_DECIMAL))     result.numDecimal = true;
     }
 
     if (GetActiveWindow() == window) { // ignore mouse when window isn't active
@@ -281,6 +313,22 @@ input_keystate input_keys_changed(input_keystate current, input_keystate last)
     result.f10 = current.f10 && !last.f10;
     result.f11 = current.f11 && !last.f11;
     result.f12 = current.f12 && !last.f12;
+
+    result.num0 = current.num0 && !last.num0;
+    result.num1 = current.num1 && !last.num1;
+    result.num2 = current.num2 && !last.num2;
+    result.num3 = current.num3 && !last.num3;
+    result.num4 = current.num4 && !last.num4;
+    result.num5 = current.num5 && !last.num5;
+    result.num6 = current.num6 && !last.num6;
+    result.num7 = current.num7 && !last.num7;
+    result.num8 = current.num8 && !last.num8;
+    result.num9 = current.num9 && !last.num9;
+    result.numDiv = current.numDiv && !last.numDiv;
+    result.numMul = current.numMul && !last.numMul;
+    result.numSub = current.numSub && !last.numSub;
+    result.numAdd = current.numAdd && !last.numAdd;
+    result.numDecimal = current.numDecimal && !last.numDecimal;
 
     result.mouseL = current.mouseL && !last.mouseL;
     result.mouseM = current.mouseM && !last.mouseM;

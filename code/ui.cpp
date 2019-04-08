@@ -398,6 +398,22 @@ void ui_textbox(ui_id id, newstring *text, rect r, float dt) {
             if (input.down.row[11]) { text->insert(L'_', ui_cursor_pos); ui_cursor_pos++; }
             if (input.down.row[12]) { text->insert(L'+', ui_cursor_pos); ui_cursor_pos++; }
         }
+        // same regardless of shift key (thought could check for numlock state)
+        if (input.down.num0)       { text->insert(L'0', ui_cursor_pos); ui_cursor_pos++; }
+        if (input.down.num1)       { text->insert(L'1', ui_cursor_pos); ui_cursor_pos++; }
+        if (input.down.num2)       { text->insert(L'2', ui_cursor_pos); ui_cursor_pos++; }
+        if (input.down.num3)       { text->insert(L'3', ui_cursor_pos); ui_cursor_pos++; }
+        if (input.down.num4)       { text->insert(L'4', ui_cursor_pos); ui_cursor_pos++; }
+        if (input.down.num5)       { text->insert(L'5', ui_cursor_pos); ui_cursor_pos++; }
+        if (input.down.num6)       { text->insert(L'6', ui_cursor_pos); ui_cursor_pos++; }
+        if (input.down.num7)       { text->insert(L'7', ui_cursor_pos); ui_cursor_pos++; }
+        if (input.down.num8)       { text->insert(L'8', ui_cursor_pos); ui_cursor_pos++; }
+        if (input.down.num9)       { text->insert(L'9', ui_cursor_pos); ui_cursor_pos++; }
+        if (input.down.numDiv)     { text->insert(L'/', ui_cursor_pos); ui_cursor_pos++; }
+        if (input.down.numMul)     { text->insert(L'*', ui_cursor_pos); ui_cursor_pos++; }
+        if (input.down.numSub)     { text->insert(L'-', ui_cursor_pos); ui_cursor_pos++; }
+        if (input.down.numAdd)     { text->insert(L'+', ui_cursor_pos); ui_cursor_pos++; }
+        if (input.down.numDecimal) { text->insert(L'.', ui_cursor_pos); ui_cursor_pos++; }
 
         // deleting text
         if (input.down.backspace && ui_cursor_pos>0) { text->rtrim(1); ui_cursor_pos--; }
