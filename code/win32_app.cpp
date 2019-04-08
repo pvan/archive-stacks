@@ -7,7 +7,7 @@
 
 #include "types.h"
 
-#include "memdebug.h" // will slow down our free()s especially
+// #include "memdebug.h" // will slow down our free()s especially
 
 char debugprintbuffer[256];
 void DEBUGPRINT(int i) { sprintf(debugprintbuffer, "%i\n", i); OutputDebugString(debugprintbuffer); }
@@ -69,35 +69,17 @@ float time_now() { // ms
 
 
 bool running = true;
-HWND g_hwnd;
-
-#include "tile.cpp"
-#include "data.cpp"
-
-tile viewing_tile; // tile for our open file (created from fullpath rather than thumbpath like the "browsing" tiles are)
-
-#include "background.cpp"
-
-
-int master_scroll_delta = 0;
-int master_ctrl_scroll_delta = 0;
-
-float master_desired_tile_width = 200;
 
 // basically looking at these all over, let's just make global at app level for now
 // updated at start of every frame
+HWND g_hwnd;
 int g_cw;
 int g_ch;
-float g_dt;
+float g_dt; // still pass some of these around in tick()s etc though we could just use these instead
 
-
-
-// todo: find the right home for these vars
-float metric_max_dt;
-float metric_time_to_first_frame;
-
-bool show_debug_console = false;
-
+#include "tile.cpp"
+#include "data.cpp"
+#include "background.cpp"
 #include "update.cpp"
 
 
@@ -273,12 +255,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 
 
-        // // runs until background startup loading is done
-        // if (loading) {
-        //     load_tick(items, cw, ch);
-        //     continue;
-        // }
-
         // ran once when loading is done
         if (app_mode == INIT) {
             init_app(items, cw, ch);
@@ -338,100 +314,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 
     // little test to see if we are leaking memory anywhere
-
-    // same as background thread prep for new directory
+    // can remove this in release
     {
-        loading_status_msg = "Unloading previous media...";
-        loading_reusable_max = tiles.count;
-        // 1a. list contents
-        for (int i = 0; i < tiles.count; i++) {
-            loading_reusable_count = i;
-            tiles[i].UnloadMedia();
-            // loading_reusable_count = 100000+i;
-            // if (tiles[i].name.chars) free(tiles[i].name.chars);
-        }
-        loading_status_msg = "Unloading previous tags...";
-        loading_reusable_max = tag_list.count;
-        for (int i = 0; i < tag_list.count; i++) {
-            loading_reusable_count = i;
-            if (tag_list.pool[i].list) free(tag_list.pool[i].list);
-        }
-        // we separated the tag lists out from item so we could tightly pack all item paths into one memory allocation eventually
-        // because free()ing each was taking forever
-        // turns out it was our mem debug wrapper around free that was slow
-        // freeing ~5k-10k times here was super fast without memdebug enabled
-        loading_status_msg = "Unloading previous tag lists...";
-        loading_reusable_max = item_tags.count;
-        for (int i = 0; i < item_tags.count; i++) {
-            loading_reusable_count = i;
-            item_tags[i].free_pool();
-        }
-        // the idea is we could replace this loop with a single alloc/free
-        // if we use a memory pool for these lists (since they never change it should be easy)
-        loading_status_msg = "Unloading previous item's paths...";
-        loading_reusable_max = items.count;
-        for (int i = 0; i < items.count; i++) {
-            loading_reusable_count = i;
-            items[i].free_all();
-        }
-
-        // 1b. list themselves
-        loading_status_msg = "Unloading previous item lists...";
-        items.free_pool();
-        tiles.free_pool();
-        tag_list.free_pool();
-        item_tags.free_pool();
-
-        loading_status_msg = "Unloading previous item metadata lists...";
-        modifiedTimes.free_pool();
-        item_resolutions.free_pool();
-        item_resolutions_valid.free_pool();
-
-        loading_status_msg = "Unloading previous item index lists...";
-        display_list.free_pool();
-        browse_tag_filter.free_all();
-        view_tag_filter.free_all();
-
-        // can just reuse this memory, but need to empty out
-        filtered_browse_tag_indices.empty_out();
-        filtered_view_tag_indices.empty_out();
+        FreeAllAppMemory(true);
+        DEBUGPRINT("\n\n--TOTAL LEAKS--\n");
+        // memdebug_print();
     }
-
-    // specific to settings window
-    {
-        bg_path_copy.free_all();
-        free_all_item_pool_memory(&proposed_items);
-        proposed_thumbs_found.free_pool();
-    }
-
-    // view mode
-    {
-        viewing_tile.UnloadMedia();
-    }
-
-    // everything else
-    {
-        filtered_browse_tag_indices.free_pool();
-        filtered_view_tag_indices.free_pool();
-        browse_tag_indices.free_pool();
-
-        master_path.free_all();
-        proposed_master_path.free_all();
-        last_proposed_master_path.free_all();
-        proposed_path_msg.free_all();
-        bg_path_copy.free_all();
-
-        laststr.free_all();
-
-        // tf
-        free(tf_file_buffer);
-        free(tf_fontatlas.data);
-
-    }
-
-    DEBUGPRINT("\n\n--TOTAL LEAKS--\n");
-    memdebug_print();
-
 
     return 0;
 }

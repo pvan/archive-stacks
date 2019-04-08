@@ -6,18 +6,51 @@
 
 
 
-u64 viewing_file_index = 0; // what file do we have open if we're in VIEWING_FILE mode
-
-
-string master_path;
-
-
 // todo: capitalize these naames
 const string archive_save_filename = string::create_using_passed_in_memory(L"~meta.txt");
 const string archive_tag_list_filename = string::create_using_passed_in_memory(L"~taglist.txt");
 const string thumb_dir_name = string::create_using_passed_in_memory(L"~thumbs");
 
 
+
+string master_path;  // what project / collection directory we have currently open
+
+
+bool show_debug_console = false;
+
+
+
+//
+// debug vars
+
+
+float metric_max_dt;
+float metric_time_to_first_frame;
+
+
+
+//
+// for viewing individual files
+
+u64 viewing_file_index = 0; // what file do we have open if we're in VIEWING_FILE mode
+
+tile viewing_tile; // tile for our open file (created from fullpath rather than thumbpath like the "browsing" tiles are)
+
+
+
+//
+// for browsing thumbs mode
+
+
+int master_scroll_delta = 0;
+int master_ctrl_scroll_delta = 0;
+
+float master_desired_tile_width = 200;
+
+
+
+//
+// for finding items.. todo: better home for this?
 
 string_pool FindAllItemPaths(string master_path) {
     string_pool top_folders = win32_GetAllFilesAndFoldersInDir(master_path);
@@ -100,7 +133,8 @@ string_pool ItemsInFirstPoolButNotSecond(string_pool p1, string_pool p2) {
 
 
 
-
+//
+// tags
 
 // todo: should be list not pool
 // master tag list
@@ -190,12 +224,12 @@ string_pool ReadTagListFromFileOrSomethingUsableOtherwise(string master_path) {
 }
 
 
-
+//
 // indices into the tag_list (todo: make tag_list into an official list instead of "pool" or not too important as long as we never remove an item?)
 //
 // another way would be to store the item index in an int list for each tag
 // (harder to find an item's tags that way, but easier to free and to find all items with a tag)
-
+//
 // a list (in same order as items -- they can share indices)
 // of a list of tag indices (indicies into the tag_list)
 // so it's kind of like this:
@@ -208,6 +242,9 @@ string_pool ReadTagListFromFileOrSomethingUsableOtherwise(string master_path) {
 DEFINE_TYPE_POOL(int_pool);
 int_pool_pool item_tags;
 
+
+//
+// items (collection of paths basically)
 
 struct item {
     string fullpath;
@@ -326,12 +363,11 @@ bool PopulateTagFromPathsForItem(item it, int itemindex) {
     return true;
 }
 
-
-
-// for now, these are separate lists
-// consider: combine with item struct?
-// -wouldn't need to init list of same length as items
-// -but i kind of like as separate for now
+//
+// other item data
+// keeping as separate lists for now
+// index into master item list (items) should match each of these
+// eg modifiedTimes[i] and items[i] have data for the same item / file
 
 //
 // modified times
@@ -561,6 +597,8 @@ void LoadMasterDataFileAndPopulateResolutionsAndTagsEtc(
 
 
 
+//
+// what tags are visible (filtered) and selected (colored)
 
 
 string browse_tag_filter = string::allocate_new(128);
@@ -656,6 +694,10 @@ int_pool proposed_thumbs_found = int_pool::new_empty();
 
 
 
+//
+// app mode (what screen we're on) related stuff
+
+
 // call whenever proposed path changes in settings menu
 // will trigger messages for bg thread to update proposed_items, thumbs, etc
 void TriggerSettingsPathChange(string newpath) {
@@ -680,6 +722,7 @@ void app_change_mode(int new_mode) {
     // leaving VIEW
     if (app_mode == VIEWING_FILE && new_mode != VIEWING_FILE) {
         // todo: remove tile stuff from memory or gpu ?
+        viewing_tile.UnloadMedia();
     }
 
     // leaving SETTINGS
@@ -849,6 +892,7 @@ int ArrangeTilesForDisplayList(int_pool displaylist, tile_pool *tiles, float des
 
     return total_height;
 }
+
 
 
 

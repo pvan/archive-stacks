@@ -2,92 +2,194 @@
 
 
 
-void CreateCachedMetadataFile(string origpath, string thumbpath, string metapath) {
-    v2 res = {0,0};
-    if (ffmpeg_can_open(origpath)) {
-        res = ffmpeg_GetResolution(origpath);
-    }
-    // fallback to using thumbnail resolution
-    else if (ffmpeg_can_open(thumbpath)) {
-        res = ffmpeg_GetResolution(thumbpath);
-    }
-    // if can't get resoution from either, hmm...
-    else {
-        res = {10, 10};
-    }
-    CreateCachedResolution(metapath, res);
-}
+
 
 int_pool item_indices_without_thumbs; // todo: move to data tab? or keep bg related stuff in bg?
-// int_pool item_indices_without_metadata;
 
 
 char *loading_status_msg = "Starting...";
 int loading_reusable_count = 0;
 int loading_reusable_max = 0;
 
+
+
+
+
+// primarily for freeing memory when switching master/project directories
+// but should be able to use at end of program as sanity check for mem leaks
+void FreeAllAppMemory(bool complete_to_check_for_leaks = false) {
+
+    // same as background thread prep for new directory
+    {
+        loading_status_msg = "Unloading previous media...";
+        loading_reusable_max = tiles.count;
+        // 1a. list contents
+        for (int i = 0; i < tiles.count; i++) {
+            loading_reusable_count = i;
+            tiles[i].UnloadMedia();
+            // loading_reusable_count = 100000+i;
+            // if (tiles[i].name.chars) free(tiles[i].name.chars);
+        }
+        loading_status_msg = "Unloading previous tags...";
+        loading_reusable_max = tag_list.count;
+        for (int i = 0; i < tag_list.count; i++) {
+            loading_reusable_count = i;
+            if (tag_list.pool[i].list) free(tag_list.pool[i].list);
+        }
+        // we separated the tag lists out from item so we could tightly pack all item paths into one memory allocation eventually
+        // because free()ing each was taking forever
+        // turns out it was our mem debug wrapper around free that was slow
+        // freeing ~5k-10k times here was super fast without memdebug enabled
+        loading_status_msg = "Unloading previous tag lists...";
+        loading_reusable_max = item_tags.count;
+        for (int i = 0; i < item_tags.count; i++) {
+            loading_reusable_count = i;
+            item_tags[i].free_pool();
+        }
+        // the idea is we could replace this loop with a single alloc/free
+        // if we use a memory pool for these lists (since they never change it should be easy)
+        loading_status_msg = "Unloading previous item's paths...";
+        loading_reusable_max = items.count;
+        for (int i = 0; i < items.count; i++) {
+            loading_reusable_count = i;
+            items[i].free_all();
+        }
+
+        // 1b. list themselves
+        loading_status_msg = "Unloading previous item lists...";
+        items.free_pool();
+        tiles.free_pool();
+        tag_list.free_pool();
+        item_tags.free_pool();
+
+        loading_status_msg = "Unloading previous item metadata lists...";
+        modifiedTimes.free_pool();
+        item_resolutions.free_pool();
+        item_resolutions_valid.free_pool();
+
+        loading_status_msg = "Unloading previous item index lists...";
+        display_list.free_pool();
+        browse_tag_filter.free_all();
+        view_tag_filter.free_all();
+
+        // can just reuse this memory, but need to empty out
+        filtered_browse_tag_indices.empty_out();
+        filtered_view_tag_indices.empty_out();
+    }
+
+
+    // don't bother with the rest if we're just loading another directory
+    if (complete_to_check_for_leaks) {
+
+        // specific to settings window
+        {
+            bg_path_copy.free_all();
+            free_all_item_pool_memory(&proposed_items);
+            proposed_thumbs_found.free_pool();
+        }
+
+        // view mode
+        {
+            viewing_tile.UnloadMedia();
+        }
+
+        // everything else
+        {
+            filtered_browse_tag_indices.free_pool();
+            filtered_view_tag_indices.free_pool();
+            browse_tag_indices.free_pool();
+
+            master_path.free_all();
+            proposed_master_path.free_all();
+            last_proposed_master_path.free_all();
+            proposed_path_msg.free_all();
+            bg_path_copy.free_all();
+
+            laststr.free_all();
+
+            // tf
+            free(tf_file_buffer);
+            free(tf_fontatlas.data);
+
+        }
+    }
+
+
+}
+
+
+
+
+
+
 bool background_startup_thread_launched = false;
 DWORD WINAPI RunBackgroundStartupThread( LPVOID lpParam ) {
 
 
+
     // 1. free anything already created...
 
-    // todo: some of these we probably don't have to free and can just reuse the memory
+    FreeAllAppMemory();  // a little bit overkill, but going with it for now
 
-    loading_status_msg = "Unloading previous media...";
-    loading_reusable_max = tiles.count;
-    // 1a. list contents
-    for (int i = 0; i < tiles.count; i++) {
-        loading_reusable_count = i;
-        tiles[i].UnloadMedia();
-        // loading_reusable_count = 100000+i;
-        // if (tiles[i].name.chars) free(tiles[i].name.chars);
-    }
-    loading_status_msg = "Unloading previous tags...";
-    loading_reusable_max = tag_list.count;
-    for (int i = 0; i < tag_list.count; i++) {
-        loading_reusable_count = i;
-        if (tag_list.pool[i].list) free(tag_list.pool[i].list);
-    }
-    // we separated the tag lists out from item so we could tightly pack all item paths into one memory allocation eventually
-    // because free()ing each was taking forever
-    // turns out it was our mem debug wrapper around free that was slow
-    // freeing ~5k-10k times here was super fast without memdebug enabled
-    loading_status_msg = "Unloading previous tag lists...";
-    loading_reusable_max = item_tags.count;
-    for (int i = 0; i < item_tags.count; i++) {
-        loading_reusable_count = i;
-        item_tags[i].free_pool();
-    }
-    // the idea is we could replace this loop with a single alloc/free
-    // if we use a memory pool for these lists (since they never change it should be easy)
-    loading_status_msg = "Unloading previous item's paths...";
-    loading_reusable_max = items.count;
-    for (int i = 0; i < items.count; i++) {
-        loading_reusable_count = i;
-        items[i].free_all();
-    }
+    // {
 
-    // 1b. list themselves
-    loading_status_msg = "Unloading previous item lists...";
-    items.free_pool();
-    tiles.free_pool();
-    tag_list.free_pool();
-    item_tags.free_pool();
+    // // todo: some of these we probably don't have to free and can just reuse the memory
 
-    loading_status_msg = "Unloading previous item metadata lists...";
-    modifiedTimes.free_pool();
-    item_resolutions.free_pool();
-    item_resolutions_valid.free_pool();
+    // loading_status_msg = "Unloading previous media...";
+    // loading_reusable_max = tiles.count;
+    // // 1a. list contents
+    // for (int i = 0; i < tiles.count; i++) {
+    //     loading_reusable_count = i;
+    //     tiles[i].UnloadMedia();
+    //     // loading_reusable_count = 100000+i;
+    //     // if (tiles[i].name.chars) free(tiles[i].name.chars);
+    // }
+    // loading_status_msg = "Unloading previous tags...";
+    // loading_reusable_max = tag_list.count;
+    // for (int i = 0; i < tag_list.count; i++) {
+    //     loading_reusable_count = i;
+    //     if (tag_list.pool[i].list) free(tag_list.pool[i].list);
+    // }
+    // // we separated the tag lists out from item so we could tightly pack all item paths into one memory allocation eventually
+    // // because free()ing each was taking forever
+    // // turns out it was our mem debug wrapper around free that was slow
+    // // freeing ~5k-10k times here was super fast without memdebug enabled
+    // loading_status_msg = "Unloading previous tag lists...";
+    // loading_reusable_max = item_tags.count;
+    // for (int i = 0; i < item_tags.count; i++) {
+    //     loading_reusable_count = i;
+    //     item_tags[i].free_pool();
+    // }
+    // // the idea is we could replace this loop with a single alloc/free
+    // // if we use a memory pool for these lists (since they never change it should be easy)
+    // loading_status_msg = "Unloading previous item's paths...";
+    // loading_reusable_max = items.count;
+    // for (int i = 0; i < items.count; i++) {
+    //     loading_reusable_count = i;
+    //     items[i].free_all();
+    // }
 
-    loading_status_msg = "Unloading previous item index lists...";
-    display_list.free_pool();
-    browse_tag_filter.free_all();
-    view_tag_filter.free_all();
+    // // 1b. list themselves
+    // loading_status_msg = "Unloading previous item lists...";
+    // items.free_pool();
+    // tiles.free_pool();
+    // tag_list.free_pool();
+    // item_tags.free_pool();
 
-    // can just reuse this memory, but need to empty out
-    filtered_browse_tag_indices.empty_out();
-    filtered_view_tag_indices.empty_out();
+    // loading_status_msg = "Unloading previous item metadata lists...";
+    // modifiedTimes.free_pool();
+    // item_resolutions.free_pool();
+    // item_resolutions_valid.free_pool();
+
+    // loading_status_msg = "Unloading previous item index lists...";
+    // display_list.free_pool();
+    // browse_tag_filter.free_all();
+    // view_tag_filter.free_all();
+
+    // // can just reuse this memory, but need to empty out
+    // filtered_browse_tag_indices.empty_out();
+    // filtered_view_tag_indices.empty_out();
+    // }
 
 
 
@@ -157,21 +259,6 @@ DWORD WINAPI RunBackgroundStartupThread( LPVOID lpParam ) {
     }
     item_indices_without_thumbs.free_pool();
 
-    // // create cached metadata files
-    // // do metadata second because it uses thumbnails as a fallback
-    // for (int i = item_indices_without_metadata.count-1; i >= 0; i--) {
-    //     loading_status_msg = "Creating metadata caches...";
-    //     loading_reusable_count = i;
-    //     loading_reusable_max = item_indices_without_metadata.count;
-
-    //     string fullpath = items[item_indices_without_metadata[i]].fullpath;
-    //     string thumbpath = items[item_indices_without_metadata[i]].thumbpath;
-    //     string metadatapath = items[item_indices_without_metadata[i]].metadatapath;
-    //     DEBUGPRINT("creating metadata file for %s\n", fullpath.ToUTF8Reusable());
-    //     CreateCachedMetadataFile(fullpath, thumbpath, metadatapath);
-    //     item_indices_without_metadata.count--; // should add .pop()
-    // }
-
 
     // init tiles
     {
@@ -236,7 +323,6 @@ DWORD WINAPI RunBackgroundStartupThread( LPVOID lpParam ) {
         // fill in resolutions for any items not in the cache
         {
             loading_status_msg = "Reading missing resolutions...";
-
             // this is entirely to just get a count of how many we need to do
             int_pool unset_resolution_indices = int_pool::new_empty();
             for (int i = 0; i < item_resolutions_valid.count; i++) {
@@ -244,32 +330,19 @@ DWORD WINAPI RunBackgroundStartupThread( LPVOID lpParam ) {
                     unset_resolution_indices.add(i);
                 }
             }
-
             loading_reusable_max = unset_resolution_indices.count;
             for (int i = 0; i < unset_resolution_indices.count; i++) {
                 loading_reusable_count = i;
                 int item_index = unset_resolution_indices[i];
                 item_resolutions[item_index] = ReadResolutionFromFile(items[item_index]);
             }
-
             unset_resolution_indices.free_pool();
-
-            // method without needing to pre-figure which we need (wrong max progress)
-            // loading_reusable_max = items.count;
-            // for (int i = 0; i < items.count; i++) {
-            //     loading_reusable_count = i;
-            //     if (!item_resolutions_valid[i]) {
-            //         v2 res = ReadResolutionFromFile(items[i]);
-            //         item_resolutions[i] = res;
-            //     }
-            // }
         }
 
 
         // fill in modified times for any items not in the cache
         {
             loading_status_msg = "Reading missing modified times...";
-
             // this is entirely to just get a count of how many we need to do
             int_pool unset_times_indices = int_pool::new_empty();
             for (int i = 0; i < modifiedTimes.count; i++) {
@@ -277,25 +350,13 @@ DWORD WINAPI RunBackgroundStartupThread( LPVOID lpParam ) {
                     unset_times_indices.add(i);
                 }
             }
-
             loading_reusable_max = modifiedTimes.count;
             for (int i = 0; i < unset_times_indices.count; i++) {
                 loading_reusable_count = i;
                 int item_index = unset_times_indices[i];
                 modifiedTimes[item_index] = ReadModifedTimeFromFile(items[item_index]);
             }
-
             unset_times_indices.free_pool();
-
-            // method without needing to pre-figure which we need (wrong max progress)
-            // loading_reusable_max = items.count;
-            // for (int i = 0; i < items.count; i++) {
-            //     loading_reusable_count = i;
-            //     if (!item_resolutions_valid[i]) {
-            //         v2 res = ReadResolutionFromFile(items[i]);
-            //         item_resolutions[i] = res;
-            //     }
-            // }
         }
 
         // fill in tags for any items that didn't have tags cached
@@ -319,41 +380,6 @@ DWORD WINAPI RunBackgroundStartupThread( LPVOID lpParam ) {
 
             SaveTagList();
         }
-
-        // // read cached resolutions...
-        // {
-        //     loading_status_msg = "Reading resolutions from cached metadata...";
-        //     loading_reusable_max = items.count;
-        //     PopulateResolutionsFromSeparateFileCaches(&items, &loading_reusable_count);
-        // }
-
-        // // read cached tags (items and master list)
-        // {
-        //     loading_status_msg = "Reading item tags...";
-
-        //     // first read list of master tags
-        //     tag_list = ReadTagListFromFileOrSomethingUsableOtherwise(master_path);
-
-        //     for (int i = 0; i < items.count; i++) {
-        //         loading_reusable_count = i;
-        //         loading_reusable_max = items.count;
-
-        //         if (PopulateTagsFromCachedFileIfPossible(&items[i])) {
-        //             DEBUGPRINT("cached tags read for %s\n", tiles[i].name.ToUTF8Reusable());
-        //         } else {
-        //             // fallback to directory orig file is in
-        //             if (PopulateTagFromPath(&items[i])) {
-        //                 // DEBUGPRINT("read tag from directory for %s\n", tiles[i].name.ToUTF8Reusable());
-        //             } else {
-        //                 DEBUGPRINT("unable to read tag from directory for %s\n", tiles[i].name.ToUTF8Reusable());
-        //                 assert(false);
-        //             }
-        //         }
-        //     }
-
-        //     SaveTagList();
-        // }
-
 
     }
 
@@ -431,6 +457,7 @@ DWORD WINAPI RunBackgroundLoadingThread( LPVOID lpParam ) {
                 loading_status_msg = "Waiting...";
             }
         }
+
         // static bool first_loop = true;
         // if (first_loop) {
         //     OutputDebugString("done loading\n");

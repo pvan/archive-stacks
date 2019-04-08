@@ -91,14 +91,14 @@ void memdebug_print()
     for (int i = 0; i < md_r_count; i++) {
         if (!md_records[i].free) {
             char buf[256];
-            if (strstr(md_records[i].file, "string") != 0) {
-                // int counthack = (int)(((char*)md_records[i].ptr) + sizeof(wc*)); // pull count out of string struct
-                void *address_of_count = (char*)md_records[i].ptr + sizeof(wc*);
-                int count = *(int*)address_of_count; // super sketch because count could be changed by the time we're here
-                sprintf(buf, "%s (line %u), %u bytes : %.*ls \n", md_records[i].file, md_records[i].line, md_records[i].size, count, (wc*)md_records[i].ptr);
-            } else {
+            // if (strstr(md_records[i].file, "string") != 0) {
+            //     // int counthack = (int)(((char*)md_records[i].ptr) + sizeof(wc*)); // pull count out of string struct
+            //     void *address_of_count = (char*)md_records[i].ptr + sizeof(wc*);
+            //     int count = *(int*)address_of_count; // super sketch because count could be changed by the time we're here
+            //     sprintf(buf, "%s (line %u), %u bytes : %.*ls \n", md_records[i].file, md_records[i].line, md_records[i].size, count, (wc*)md_records[i].ptr);
+            // } else {
                 sprintf(buf, "%s (line %u), %u bytes \n", md_records[i].file, md_records[i].line, md_records[i].size);
-            }
+            // }
             OutputDebugString(buf);
         }
     }
