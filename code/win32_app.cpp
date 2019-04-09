@@ -7,7 +7,10 @@
 
 #include "types.h"
 
-// #include "memdebug.h" // will slow down our free()s especially
+#define DEBUG_MEM_ENABLED
+#ifdef DEBUG_MEM_ENABLED
+#include "memdebug.h" // will slow down our free()s especially
+#endif
 
 char debugprintbuffer[256];
 void DEBUGPRINT(int i) { sprintf(debugprintbuffer, "%i\n", i); OutputDebugString(debugprintbuffer); }
@@ -326,11 +329,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     // little test to see if we are leaking memory anywhere
     // can remove this in release
+#ifdef DEBUG_MEM_ENABLED
     {
         FreeAllAppMemory(true);
         DEBUGPRINT("\n\n--TOTAL LEAKS--\n");
-        // memdebug_print();
+        memdebug_print();
     }
+#endif
 
     return 0;
 }

@@ -954,8 +954,10 @@ void settings_tick(float actual_dt, int cw, int ch) {
     }
     last_proposed_master_path.overwrite_with_copy_of(proposed_master_path);
 
-    if (ui_button_text("close x", "close x", {(float)cw,0}, UI_RIGHT,UI_TOP, 0)) {
-        app_change_mode(BROWSING_THUMBS);
+    if (win32_IsDirectory(master_path)) {
+        if (ui_button_text("close x", "close x", {(float)cw,0}, UI_RIGHT,UI_TOP, 0)) {
+            app_change_mode(BROWSING_THUMBS);
+        }
     }
 
 
