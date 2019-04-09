@@ -98,17 +98,12 @@ v2 ffmpeg_GetResolution(string path)
         return {-1,-1};
     }
 
-    // convert wchar to utf-8 which is what ffmpeg wants...
-    // TODO: just call the string function that does this
-
-    // int numChars = WideCharToMultiByte(CP_UTF8,0,  path.chars,-1,  0,0,  0,0);
-    // char *utf8path = (char*)malloc(numChars*sizeof(char));
-    // WideCharToMultiByte(CP_UTF8,0,  path.chars,-1,  utf8path,numChars*sizeof(char),  0,0);
+    char *utf8path = path.to_utf8_new_memory();
 
     AVFormatContext *vfc = avformat_alloc_context(); // needs avformat_free_context
-    int open_result1 = avformat_open_input(&vfc, path.to_utf8_reusable(), 0, 0); // needs avformat_close_input
+    int open_result1 = avformat_open_input(&vfc, utf8path, 0, 0); // needs avformat_close_input
 
-    // free(utf8path);
+    free(utf8path);
 
 
     if (open_result1 != 0)
@@ -337,20 +332,13 @@ struct ffmpeg_media {
             return;
         }
 
-        // // todo: call the string function for this now
-        // // convert wchar to utf-8 which is what ffmpeg wants...
-        // int numChars = WideCharToMultiByte(CP_UTF8,0,  path.chars,-1,  0,0,  0,0);
-        // char *utf8path = (char*)malloc(numChars*sizeof(char));
-        // WideCharToMultiByte(CP_UTF8,0,  path.chars,-1,  utf8path,numChars*sizeof(char),  0,0);
 
-        // vfc = avformat_alloc_context(); // needs avformat_free_context
-        // int open_result1 = avformat_open_input(&vfc, utf8path, 0, 0); // needs avformat_close_input
-
-        // free(utf8path);
-
+        char *utf8path = path.to_utf8_new_memory();
 
         vfc = avformat_alloc_context(); // needs avformat_free_context
-        int open_result1 = avformat_open_input(&vfc, path.to_utf8_reusable(), 0, 0); // needs avformat_close_input
+        int open_result1 = avformat_open_input(&vfc, utf8path, 0, 0); // needs avformat_close_input
+
+        free(utf8path);
 
 
         if (open_result1 != 0) {
