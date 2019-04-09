@@ -82,3 +82,8 @@ void win32_save_memory_to_appdata(string subpath, char *mem, int bytes) {
     }
 
 }
+
+
+void win32_save_string_to_appdata(string subpath, string filecontents) {
+    win32_save_memory_to_appdata(subpath, (char*)filecontents.list, filecontents.count*sizeof(filecontents.list[0]));
+}

@@ -1,6 +1,10 @@
 
 
+
+
+//
 // for panning VIEW mode
+
 bool mouse_up_once_since_loading = false;
 float clickMouseX;
 float clickMouseY;

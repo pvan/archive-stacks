@@ -138,9 +138,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
-    string appdata_subpath = string::create_using_passed_in_memory(L"archive-stacks\\file.txt");
-    win32_save_memory_to_appdata(appdata_subpath, "hi there", 8);
-
     RECT win_rect = {0,0,800,600};
     int cw = win_rect.right;
     int ch = win_rect.bottom;
@@ -173,14 +170,14 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     wndc.hInstance = hInstance;
     wndc.hCursor = LoadCursor(0, IDC_ARROW);
     wndc.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(ID_ICON));
-    wndc.lpszClassName = "the-stacks";
+    wndc.lpszClassName = "archive-stacks";
     if (!RegisterClass(&wndc)) { MessageBox(0, "RegisterClass failed", 0, 0); return 1; }
 
     DWORD win_style = WS_OVERLAPPEDWINDOW | WS_VISIBLE;
     AdjustWindowRect(&win_rect, win_style, 0);
 
     HWND hwnd = CreateWindowEx(
-        0, wndc.lpszClassName, "The Stacks",
+        0, wndc.lpszClassName, "The Archive Stacks",
         win_style,
         CW_USEDEFAULT, CW_USEDEFAULT,
         win_rect.right-win_rect.left, win_rect.bottom-win_rect.top,

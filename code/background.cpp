@@ -191,10 +191,13 @@ DWORD WINAPI RunBackgroundStartupThread( LPVOID lpParam ) {
     // filtered_view_tag_indices.empty_out();
     // }
 
-
-
     // memdebug_print();
     // memdebug_reset();
+
+
+    // save new path for next time we open app
+    SaveMasterPathToAppData();
+
 
     // 2. load everything for new path...
 
