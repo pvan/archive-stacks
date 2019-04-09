@@ -932,7 +932,7 @@ void settings_tick(float actual_dt, int cw, int ch) {
             {
                 // not using straight == here because of / and things
                 if (!PathsAreSame(proposed_master_path, master_path)) {
-                    SelectNewMasterDirectory(proposed_master_path);
+                    OpenNewMasterDirectory(proposed_master_path);
                     // free_all_item_pool_memory(&proposed_items); // bg thread now owns this now, free'd there
                     return; // no need to do anything else here (draw, etc)
                             // we are switching to loading screen

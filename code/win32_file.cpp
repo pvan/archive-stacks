@@ -242,7 +242,7 @@ void DebugPrintTime(u64 time_since_epoch)
 
 
 // //
-// // copied in from prev and maybe not used
+// // copied in from prev and maybe not used (now definitely used)
 // // |
 // // v
 // //

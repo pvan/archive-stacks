@@ -728,7 +728,8 @@ const int VIEWING_FILE = 1;
 const int SETTINGS = 2;
 const int LOADING = 3;
 const int INIT = 4;
-int app_mode = LOADING;
+const int STARTUP = 5; // only used when first launching app
+int app_mode = STARTUP;
 
 void app_change_mode(int new_mode) {
 
@@ -765,7 +766,7 @@ void app_change_mode(int new_mode) {
 
 void LaunchBackgroundStartupLoopIfNeeded();
 
-void SelectNewMasterDirectory(string newdir) {
+void OpenNewMasterDirectory(string newdir) {
     // basically need to undo everything we create when loading
     // see, at the very least, backgroundstartupthread and init_app()
 

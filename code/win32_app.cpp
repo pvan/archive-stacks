@@ -202,8 +202,17 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     ui_init();
 
 
-    master_path = string::create_with_new_memory(L"E:\\inspiration test folder2");
-    SelectNewMasterDirectory(master_path);
+    // master_path = string::create_with_new_memory(L"E:\\inspiration test folder2");
+    master_path = win32_load_string_from_appdata_into_new_memory(appdata_subpath_for_master_directory);
+    if (master_path.count == 0) {
+        master_path = string::create_with_new_memory(L""); // default path
+    }
+
+    if (!win32_IsDirectory(master_path)) {
+        app_change_mode(SETTINGS); // launch in settings view if no valid path
+    } else {
+        OpenNewMasterDirectory(master_path);
+    }
 
 
     while(running)

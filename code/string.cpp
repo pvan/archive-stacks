@@ -340,10 +340,18 @@ string CombinePathsIntoNewMemory(string base, string tail) {
 }
 
 
+// should treat all / and \ as equivalent and ignoring case
 bool PathsAreSame(string path1, string path2) {
     // feels like there should be an easier way..
     // like an OS call, or a more general string parsing or find replace function to make?
     // i guess this isn't too bad
+
+    // technically we could consider the paths "\" and "" the same... but i don't think we'd ever be checking those
+    if ((path1.count == 0 && path2.count != 0) ||
+        (path2.count == 0 && path1.count != 0)
+    ) {
+        return false;
+    }
 
     string copy1 = path1.copy_into_new_memory();
     string copy2 = path2.copy_into_new_memory();
