@@ -632,7 +632,7 @@ void DownresFileAtPathToPath(string inpath, string outpath) {
 
     // ffmpeg -i input.jpg -vf "scale='min(320,iw)':'min(240,ih)'" input_not_upscaled.png
 
-    win32_CreateAllDirectoriesForPathIfNeeded(outpath.to_wc_reusable());
+    win32_create_all_directories_needed_for_path(outpath);
 
     // ffmpeg output filenames need all % chars escaped with another % char. eg file%20exam%ple.jpg -> file%%20exam%%ple.jpg
     wchar_t replacethisbuffer[1024];

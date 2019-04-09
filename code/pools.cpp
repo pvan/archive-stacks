@@ -80,6 +80,20 @@ void deep_free_string_pool(string_pool pool) {
     pool.free_pool();
 }
 
+string_pool split_by_delim(string str, wc delim) {
+    string_pool result = string_pool::new_empty();
+    string next_str = string::new_empty();
+    for (int i = 0; i < str.count; i++) {
+        if (str[i] == delim) {
+            result.add(next_str);
+            next_str = string::new_empty();
+        } else {
+            next_str.append(str[i]); // will allocate new mem if empty
+        }
+    }
+    return result;
+}
+
 
 // add generic sort to pool struct? (would require > operator on all pool types)
 void sort_float_pool(float_pool *floats) {

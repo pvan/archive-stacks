@@ -1,25 +1,23 @@
 
 
 
-// return the pointer with the smaller address (for "which is first in a string" check)
-// try to never return a null pointer though (treat 0 as +infinity for comparisons)
-wchar *min_but_not_null(wchar *p1, wchar *p2) { return p1<p2 && p1!=0 ? p1 : p2==0? 0 : p2; }
 
-void win32_CreateAllDirectoriesForPathIfNeeded(wchar_t *path)
+
+void win32_create_all_directories_needed_for_path(string path)
 {
-    // if (PathFileExistsA(path)) return;
+    // in terms of operations and memory, this could be done with a lot less
+    string copy = path.copy_into_new_memory();
+    copy.find_replace(L'/', L'\\');
+    string_pool split = split_by_delim(copy, L'\\');
 
-    wchar_t folder[MAX_PATH];
-    ZeroMemory(folder, MAX_PATH * sizeof(wchar_t));
-
-    wchar_t *end = min_but_not_null(wcschr(path, '\\'), wcschr(path, '/'));
-
-    while (end != 0)
-    {
-        wcsncpy(folder, path, end - path + 1);
-        CreateDirectoryW(folder, 0);
-        end++;
-        end = min_but_not_null(wcschr(end, '\\'), wcschr(end, '/'));
+    string growing_partial_path = split[0].copy_into_new_memory();
+    for (int i = 1; i < split.count; i++) {
+        growing_partial_path.append(L'\\');
+        growing_partial_path.append(split[i]);
+        growing_partial_path.append(L'\0');
+        // DEBUGPRINT(growing_partial_path);
+        CreateDirectoryW(growing_partial_path.list, 0); // only works if we apply null terminator before
+        growing_partial_path.rtrim(1); // remove null terminator
     }
 }
 

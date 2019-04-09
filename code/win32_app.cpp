@@ -21,10 +21,12 @@ void DEBUGPRINT(char *s, char *s1) { sprintf(debugprintbuffer, s, s1); OutputDeb
 void DEBUGPRINT(char *s, char *s1, char *s2) { sprintf(debugprintbuffer, s, s1, s2); OutputDebugString(debugprintbuffer); }
 void DEBUGPRINT(char *s, float f) { sprintf(debugprintbuffer, s, f); OutputDebugString(debugprintbuffer); }
 void DEBUGPRINT(char *s, float f1, float f2) { sprintf(debugprintbuffer, s, f1, f2); OutputDebugString(debugprintbuffer); }
+void DEBUGPRINT(wc *s) { sprintf(debugprintbuffer, "%ls\n", s); OutputDebugString(debugprintbuffer); }
 
 #include "v2.cpp"
 #include "rect.cpp"
 #include "string.cpp"
+void DEBUGPRINT(string s) { sprintf(debugprintbuffer, "%ls\n", s.to_wc_reusable()); OutputDebugString(debugprintbuffer); }
 #include "bitmap.cpp"
 #include "pools.cpp"
 
@@ -136,6 +138,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
+    string appdata_subpath = string::create_using_passed_in_memory(L"archive-stacks\\file.txt");
+    win32_save_memory_to_appdata(appdata_subpath, "hi there", 8);
+
     RECT win_rect = {0,0,800,600};
     int cw = win_rect.right;
     int ch = win_rect.bottom;

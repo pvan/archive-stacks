@@ -69,6 +69,14 @@ struct string {
         count--;
     }
 
+    // if not found, return end of string
+    int find_first(wc c) {
+        int result = 0;
+        for (int i = 0; i < count; i++) {
+            if (list[i] == c) { return i; }
+        }
+        return count-1;
+    }
     // if not found, return start of string
     int find_last(wc c) {
         int result = 0;
@@ -111,6 +119,12 @@ struct string {
             j--;
         }
         return true;
+    }
+
+    void find_replace(wc find, wc replace) {
+        for (int i = 0; i < count; i++) {
+            if (list[i] == find) list[i] = replace;
+        }
     }
 
     string trim_common_prefix(string prefix) {
@@ -372,38 +386,61 @@ bool PathsAreSame(string path1, string path2) {
 }
 
 
-// for finding filenames from paths
-void trim_everything_before_last_slash(string probably_a_path) {
-    int last_bslash_index = probably_a_path.find_last(L'\\');
-    int last_fslash_index = probably_a_path.find_last(L'/');
-    int last_slash_index = max(last_bslash_index, last_fslash_index);
-    probably_a_path.ltrim(last_slash_index+1); //+1 include L trimming the slash
+
+// todo: made a bunch of these and now not using them,
+// remove what we dont need
+
+// basically rtrim_by_index(index) [todo: move to class?]
+void trim_index_and_everything_after(string *path, int index) {
+    path->rtrim(path->count - index);
 }
 
+// return index in path of the first slash \ or / in the string
+// if no slash found, should return last index of string
+int find_first_slash(string path) {
+    int first_bslash = path.find_first(L'\\');
+    int first_fslash = path.find_first(L'/');
+    return min(first_bslash, first_fslash);
+}
+// return index in path of the last slash \ or / in the string
+// if no slash found, should return 0
+int find_last_slash(string path) {
+    int last_bslash = path.find_last(L'\\');
+    int last_fslash = path.find_last(L'/');
+    return max(last_bslash, last_fslash);
+}
 
-void trim_everything_after_last_slash(string probably_a_path) {
-    int last_bslash_index = probably_a_path.find_last(L'\\');
-    int last_fslash_index = probably_a_path.find_last(L'/');
-    int last_slash_index = max(last_bslash_index, last_fslash_index);
-    probably_a_path.rtrim(probably_a_path.count - last_slash_index);
+void trim_first_slash_and_everything_after(string *path) {
+    int first_slash_index = find_first_slash(*path);
+    trim_index_and_everything_after(path, first_slash_index);
+}
+
+// for finding filenames from paths
+void trim_last_slash_and_everything_before(string *path) {
+    int last_slash_index = find_last_slash(*path);
+    path->ltrim(last_slash_index+1); //+1 include L trimming the slash
+}
+void trim_last_slash_and_everything_after(string *path) {
+    int last_slash_index = find_last_slash(*path);
+    trim_index_and_everything_after(path, last_slash_index);
 }
 
 
 // edits memory of string passed in (no new memory)
-string strip_to_just_parent_directory(string path) {
+string strip_to_just_parent_directory(string *path) {
 
     // remove any trailing slash
-    if (path.ends_with(L"\\") || path.ends_with(L"/")) {
-        path.rtrim(1);
+    if (path->ends_with(L"\\") || path->ends_with(L"/")) {
+        path->rtrim(1);
     }
 
     // remove filename (including slash)
-    trim_everything_after_last_slash(path);
+    trim_last_slash_and_everything_after(path);
 
     // remove parent path, left with just the original parent directory name
-    trim_everything_before_last_slash(path);
+    trim_last_slash_and_everything_before(path);
 
-    return path;
+    return *path;
 }
 
 

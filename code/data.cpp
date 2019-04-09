@@ -297,7 +297,7 @@ item CreateItemFromPath(string fullpath, string masterdir) {
     // thumbpath.free_all();
 
     newitem.justname = newitem.subpath.copy_into_new_memory();
-    trim_everything_before_last_slash(newitem.justname);
+    trim_last_slash_and_everything_before(&newitem.justname);
 
     return newitem;
 }
@@ -342,7 +342,8 @@ item_pool CreateItemListFromMasterPath(string masterdir) {
 string laststr = string::new_empty();
 bool PopulateTagFromPathsForItem(item it, int itemindex) {
 
-    string dircopy = strip_to_just_parent_directory(it.fullpath.copy_into_new_memory());
+    string dircopy = it.fullpath.copy_into_new_memory();
+    strip_to_just_parent_directory(&dircopy);
     assert(dircopy.count>0);
 
     if (laststr != dircopy) {
@@ -417,7 +418,7 @@ bool GetCachedResolutionIfPossible(string path, v2 *result) {
 }
 // create separate resolution metadata file (unique one for each item)
 void CreateCachedResolution(string path, v2 size) {
-    win32_CreateAllDirectoriesForPathIfNeeded(path.to_wc_reusable());
+    win32_create_all_directories_needed_for_path(path);
     FILE *file = _wfopen(path.to_wc_reusable(), L"w");
     if (!file) { DEBUGPRINT("error creating %s\n", path.to_utf8_reusable()); return; }
     fwprintf(file, L"%i,%i", (int)size.x, (int)size.y); // todo: round up? (should all be square ints anyway, though)
