@@ -256,7 +256,8 @@ void Win32ReadFileBytesIntoNewMemoryW(wc *path, void **memory, int *bytes)
     if (GetFileSizeEx(file_handle, &file_size)) {
         int file_size_bytes = (int)file_size.QuadPart;
         if (file_size_bytes) {
-            *memory = VirtualAlloc(0, file_size_bytes, MEM_COMMIT|MEM_RESERVE, PAGE_READWRITE);
+            // *memory = VirtualAlloc(0, file_size_bytes, MEM_COMMIT|MEM_RESERVE, PAGE_READWRITE);
+            *memory = malloc(file_size_bytes); // so we can realloc later in case we use this for a string
             if (*memory) {
                 DWORD bytes_read;
                 if (ReadFile(file_handle, *memory, file_size_bytes, &bytes_read, 0) && file_size_bytes == bytes_read) {

@@ -7,7 +7,7 @@
 
 #include "types.h"
 
-#define DEBUG_MEM_ENABLED
+// #define DEBUG_MEM_ENABLED
 #ifdef DEBUG_MEM_ENABLED
 #include "memdebug.h" // will slow down our free()s especially
 #endif
@@ -208,7 +208,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     // master_path = string::create_with_new_memory(L"E:\\inspiration test folder2");
     master_path = win32_load_string_from_appdata_into_new_memory(appdata_subpath_for_master_directory);
     if (master_path.count == 0) {
-        master_path = string::create_with_new_memory(L""); // default path
+        master_path = string::create_with_new_memory(L"**no path selected**"); // default path
     }
 
     if (!win32_IsDirectory(master_path)) {
