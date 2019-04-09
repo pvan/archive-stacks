@@ -100,8 +100,8 @@ void FreeAllAppMemory(bool complete_to_check_for_leaks = false) {
             browse_tag_indices.free_pool();
 
             master_path.free_all();
-            proposed_master_path.free_all();
-            last_proposed_master_path.free_all();
+            proposed_path.free_all();
+            last_proposed_path.free_all();
             proposed_path_msg.free_all();
             bg_path_copy.free_all();
 

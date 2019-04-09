@@ -53,8 +53,8 @@ float master_desired_tile_width = 200;
 //
 // for finding items.. todo: better home for this?
 
-string_pool FindAllItemPaths(string master_path) {
-    string_pool top_folders = win32_GetAllFilesAndFoldersInDir(master_path);
+string_pool FindAllItemPaths(string masterdir) {
+    string_pool top_folders = win32_GetAllFilesAndFoldersInDir(masterdir);
     string_pool result = string_pool::new_empty();
 
     for (int folderI = 0; folderI < top_folders.count; folderI++) {
@@ -92,9 +92,9 @@ string_pool FindAllItemPaths(string master_path) {
     return result;
 }
 
-string_pool FindAllSubfolderPaths(string master_path, wc *subfolder) {
+string_pool FindAllSubfolderPaths(string masterdir, wc *subfolder) {
 
-    string subfolder_path = master_path.copy_and_append(subfolder);
+    string subfolder_path = masterdir.copy_and_append(subfolder);
     string_pool top_files = win32_GetAllFilesAndFoldersInDir(subfolder_path);
     string_pool result = string_pool::new_empty();
     for (int folderI = 0; folderI < top_files.count; folderI++) {
@@ -173,7 +173,7 @@ void AddNewTagAndSave(string tag) {
 }
 
 
-string_pool ReadTagListFromFileOrSomethingUsableOtherwise(string master_path) {
+string_pool ReadTagListFromFileOrSomethingUsableOtherwise(string masterdir) {
 
     // if (!win32_PathExists(path.chars)) return;
     // // wchar version
@@ -190,7 +190,7 @@ string_pool ReadTagListFromFileOrSomethingUsableOtherwise(string master_path) {
     string_pool result = string_pool::new_empty();
     // result.add(string::Create(L"untagged"));  // always have this entry as index 0?? todo: decide
 
-    wc *path = CombinePathsIntoNewMemory(master_path, archive_tag_list_filename).to_wc_final();
+    wc *path = CombinePathsIntoNewMemory(masterdir, archive_tag_list_filename).to_wc_final();
 
     if (!win32_PathExists(path)) {
         result.add(string::create_with_new_memory(L"untagged"));  // always have this entry as index 0?? todo: decide
@@ -683,8 +683,8 @@ void CreateDisplayListFromBrowseSelection() {
 // all here?
 // todo: store here or with similar (like put proposed_path next to master_path?)
 
-string proposed_master_path;      // string in the settings textbox
-string last_proposed_master_path; // string in the settings textbox last frame (for tracking changes -- change will trigger msg to bg thread)
+string proposed_path;      // string in the settings textbox
+string last_proposed_path; // string in the settings textbox last frame (for tracking changes -- change will trigger msg to bg thread)
 string proposed_path_msg;  // string used to pass proposed path to background thread (owned by main thread and changed when textbox path changes, bg just makes copy)
 string bg_path_copy;   // actual string background uses (makes copy of proposed_path_msg)
 
@@ -751,8 +751,8 @@ void app_change_mode(int new_mode) {
 
     // entering SETTINGS
     if (new_mode == SETTINGS) {
-        proposed_master_path.overwrite_with_copy_of(master_path);
-        TriggerSettingsPathChange(proposed_master_path);
+        proposed_path.overwrite_with_copy_of(master_path);
+        TriggerSettingsPathChange(proposed_path);
     }
 
     // entering LOADING (creating thumbnail files, etc)

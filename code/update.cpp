@@ -877,36 +877,36 @@ void settings_tick(float actual_dt, int cw, int ch) {
     x = (float)cw/2 - textboxwidth/2;
     y = (float)ch/2;
     ui_text("new directory: ", {x-50,y-UI_TEXT_SIZE}, UI_LEFT,UI_TOP, true, 0);
-    ui_textbox(&proposed_master_path, &proposed_master_path, {x,y,textboxwidth,UI_TEXT_SIZE}, actual_dt);
+    ui_textbox(&proposed_path, &proposed_path, {x,y,textboxwidth,UI_TEXT_SIZE}, actual_dt);
     if (ui_button_text((void*)'x', "x", {x+textboxwidth,y}, UI_LEFT,UI_TOP, 0)) {
-        proposed_master_path.count = 0;
+        proposed_path.count = 0;
     }
     if (ui_button_text("browse","browse", {x+textboxwidth+30,y}, UI_LEFT,UI_TOP, 0)) {
-        win32_OpenFolderSelectDialog(g_hwnd, &proposed_master_path);
+        win32_OpenFolderSelectDialog(g_hwnd, &proposed_path);
     }
 
     // // add trailing \ if not present (needed for other code atm)
-    // if (!proposed_master_path.ends_with(L"\\") && proposed_master_path.ends_with(L"/")) {
-    //     proposed_master_path.append(L'\\');
+    // if (!proposed_path.ends_with(L"\\") && proposed_path.ends_with(L"/")) {
+    //     proposed_path.append(L'\\');
     // }
 
     int row = 1;
-    if (win32_PathExists(proposed_master_path)) {
-        if (win32_IsDirectory(proposed_master_path)) {
+    if (win32_PathExists(proposed_path)) {
+        if (win32_IsDirectory(proposed_path)) {
             ui_text("directory found", {x,y+UI_TEXT_SIZE*row++}, UI_LEFT,UI_TOP, true, 0, 0xff00ff00);
 
             // // alternatively, could skip getting new items this frame and try again next frame
             // while (proposed_items_checkout!=0) 0; // just wait until done, shouldn't take too long
             // proposed_items_checkout = 1;
             // free_all_item_pool_memory(&proposed_items); // free at end now, see below for notes
-            // proposed_items = CreateItemListFromMasterPath(proposed_master_path);
+            // proposed_items = CreateItemListFromMasterPath(proposed_path);
             // proposed_items_checkout = 0;
 
             // char buf[256];
             // sprintf(buf, "items found: %i", proposed_items.count);
             ui_texti("items found: %i", proposed_items.count, {x,y+UI_TEXT_SIZE*row++}, UI_LEFT,UI_TOP, true, 0);
 
-            string archivesavepath = CombinePathsIntoNewMemory(proposed_master_path, archive_save_filename);
+            string archivesavepath = CombinePathsIntoNewMemory(proposed_path, archive_save_filename);
             if (win32_PathExists(archivesavepath)) {
                 ui_text("archive data found", {x,y+UI_TEXT_SIZE*row++}, UI_LEFT,UI_TOP, true, 0, 0xff00ff00);
             } else {
@@ -920,7 +920,7 @@ void settings_tick(float actual_dt, int cw, int ch) {
                 ui_texti("thumbnail files found: %i", proposed_thumbs_found.count, {x,y+UI_TEXT_SIZE*row++}, UI_LEFT,UI_TOP, true, 0);
             }
 
-            string archivetagpath = CombinePathsIntoNewMemory(proposed_master_path, archive_tag_list_filename);
+            string archivetagpath = CombinePathsIntoNewMemory(proposed_path, archive_tag_list_filename);
             if (win32_PathExists(archivetagpath)) {
                 ui_text("archive tag list found", {x,y+UI_TEXT_SIZE*row++}, UI_LEFT,UI_TOP, true, 0, 0xff00ff00);
             } else {
@@ -931,8 +931,8 @@ void settings_tick(float actual_dt, int cw, int ch) {
             if (ui_button_text("new dir", "switch to new directory", {x,y+UI_TEXT_SIZE*row++}, UI_LEFT,UI_TOP, 0))
             {
                 // not using straight == here because of / and things
-                if (!PathsAreSame(proposed_master_path, master_path)) {
-                    OpenNewMasterDirectory(proposed_master_path);
+                if (!PathsAreSame(proposed_path, master_path)) {
+                    OpenNewMasterDirectory(proposed_path);
                     // free_all_item_pool_memory(&proposed_items); // bg thread now owns this now, free'd there
                     return; // no need to do anything else here (draw, etc)
                             // we are switching to loading screen
@@ -949,10 +949,10 @@ void settings_tick(float actual_dt, int cw, int ch) {
     }
 
     // detect change in proposed path
-    if (proposed_master_path != last_proposed_master_path) {
-        TriggerSettingsPathChange(proposed_master_path);
+    if (proposed_path != last_proposed_path) {
+        TriggerSettingsPathChange(proposed_path);
     }
-    last_proposed_master_path.overwrite_with_copy_of(proposed_master_path);
+    last_proposed_path.overwrite_with_copy_of(proposed_path);
 
     if (win32_IsDirectory(master_path)) {
         if (ui_button_text("close x", "close x", {(float)cw,0}, UI_RIGHT,UI_TOP, 0)) {
