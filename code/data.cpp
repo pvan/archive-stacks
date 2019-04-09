@@ -752,6 +752,7 @@ void app_change_mode(int new_mode) {
     // entering SETTINGS
     if (new_mode == SETTINGS) {
         proposed_path.overwrite_with_copy_of(master_path);
+        last_proposed_path.overwrite_with_copy_of(master_path); // so we don't trigger a reevaluate on first frame of update
         TriggerSettingsPathChange(proposed_path);
     }
 

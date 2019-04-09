@@ -33,7 +33,9 @@ string_pool win32_GetAllFilesAndFoldersInDir(string path)
     string search_path = dir_path.copy_and_append(L"*"); // wildcard for search
 
     WIN32_FIND_DATAW ffd;
-    HANDLE hFind = FindFirstFileW(search_path.to_wc_reusable(), &ffd);
+    wc *temp = search_path.to_wc_new_memory();
+    HANDLE hFind = FindFirstFileW(temp, &ffd);
+    free(temp);
     if (hFind == INVALID_HANDLE_VALUE) { return string_pool::new_empty(); }
     do {
         if(wc_equals(ffd.cFileName, L".") || wc_equals(ffd.cFileName, L"..")) continue;
@@ -62,11 +64,19 @@ string_pool win32_GetAllFilesAndFoldersInDir(string path)
 
 bool win32_IsDirectory(wchar_t *path) { DWORD res = GetFileAttributesW(path); return res!=INVALID_FILE_ATTRIBUTES && res&FILE_ATTRIBUTE_DIRECTORY; }
 // bool win32_IsDirectory(string path) { return win32_IsDirectory(path.chars); }
-bool win32_IsDirectory(string path) { return win32_IsDirectory(path.to_wc_reusable()); }
+bool win32_IsDirectory(string path) {
+    wc *temp = path.to_wc_new_memory();
+    return win32_IsDirectory(temp);
+    free(temp);
+}
 
 bool win32_PathExists(wchar_t *path) { return GetFileAttributesW(path) != INVALID_FILE_ATTRIBUTES; }
 // bool win32_PathExists(string path) { return win32_PathExists(path.chars); }
-bool win32_PathExists(string path) { return win32_PathExists(path.to_wc_reusable()); }
+bool win32_PathExists(string path) {
+    wc *temp = path.to_wc_new_memory();
+    return win32_PathExists(temp);
+    free(temp);
+}
 
 
 
