@@ -319,7 +319,11 @@ struct ffmpeg_media {
             out_frame = 0;
             out_frame_mem = 0;
             loaded = false;
-            if (cached_frame.data) free(cached_frame.data);
+            fetched_at_least_one_frame = false;
+            if (cached_frame.data) {
+                free(cached_frame.data);
+                cached_frame = {0};
+            }
             // PRINT("unloaded media successfully\n");
         }
     }
