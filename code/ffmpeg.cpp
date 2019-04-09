@@ -319,6 +319,9 @@ struct ffmpeg_media {
             out_frame = 0;
             out_frame_mem = 0;
             loaded = false;
+
+            // vars below
+            msRuntimeSoFar = 0;
             fetched_at_least_one_frame = false;
             if (cached_frame.data) {
                 free(cached_frame.data);
@@ -418,7 +421,7 @@ struct ffmpeg_media {
 
 
 
-    bitmap GetNextFrame(double *msToPlayThisFrame) {
+    bitmap GetNextFrame(double *outMsToPlayThisFrame) {
         if (!vfc)  {
             assert(false); // we should only be trying to get a frame on a .loaded media file
             bitmap result = {0};
@@ -482,7 +485,7 @@ struct ffmpeg_media {
         //     //error decoding
         if (ret == 0)
         {
-            *msToPlayThisFrame = 1000.0 *
+            *outMsToPlayThisFrame = 1000.0 *
                 frame->pts *  // frame->best_effort_timestamp *
                 vfc->streams[video_stream_index]->time_base.num /
                 vfc->streams[video_stream_index]->time_base.den;
@@ -565,6 +568,13 @@ struct ffmpeg_media {
 
         msPerFrame = 1000.0 / fps;
 
+        // if our msRuntimeSoFar is way ahead of msOfLastFrame
+        // we will just speed through the movie as fast as possible, 1 frame at a time
+        // instead we should discard frames (maybe inside GetNextFrame, or a new function GetFrameAt(timestamp))
+        // until we get one with the timestamp we want
+        // likewise, if we're behind somehow we should adapt
+        // if just a frame or two behind, we can probably just repeat a frame
+        // but if we're far behind, we should seek backwards instead of just freezing on a single frame
         msRuntimeSoFar += dt;
         if (msRuntimeSoFar > msOfLastFrame + msPerFrame || !fetched_at_least_one_frame) {
             // time to get a new frame
