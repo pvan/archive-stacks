@@ -97,13 +97,6 @@ void init_app(item_pool all_items, int cw, int ch) {
 
     ArrangeTilesForDisplayList(display_list, &tiles, master_desired_tile_width, cw); // requires resolutions to be set
 
-    // SortTilePoolByDate(&tiles);
-    // ArrangeTilesInOrder(&tiles, master_desired_tile_width, cw); // requires resolutions to be set
-
-    // constant-churning loop to load items on screen, and unlod those off the screen
-    LaunchBackgroundLoadingLoopIfNeeded();
-    LaunchBackgroundUnloadingLoopIfNeeded();
-
     SaveMetadataFile();
 }
 
@@ -203,6 +196,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 
     ui_init();
+
+
+    // start these right away now
+    // the should properly adapt to whatever app_mode we are in
+    // constant-churning loop to load items on screen, and unlod those off the screen
+    LaunchBackgroundLoadingLoopIfNeeded();
+    LaunchBackgroundUnloadingLoopIfNeeded();
 
 
     // master_path = string::create_with_new_memory(L"E:\\inspiration test folder2");

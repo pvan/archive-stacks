@@ -300,6 +300,7 @@ DWORD WINAPI RunBackgroundStartupThread( LPVOID lpParam ) {
             InitModifiedTimes(items.count);
             InitResolutionsListToMatchItemList(items.count);
 
+            // todo: speed this function up
             LoadMasterDataFileAndPopulateResolutionsAndTagsEtc(
                                                             // &items,
                                                             // &item_resolutions,
@@ -430,7 +431,7 @@ DWORD WINAPI RunBackgroundLoadingThread( LPVOID lpParam ) {
                 }
             }
         } else if (app_mode == SETTINGS) {
-            if (proposed_path_reevaluate) { // also wait until we have proposed items access
+            if (proposed_path_reevaluate && win32_IsDirectory(proposed_path_msg)) { // also wait until we have a valid path
                 proposed_path_reevaluate = false;
 
                 loading_status_msg = "Looking for items in proposed path...";
