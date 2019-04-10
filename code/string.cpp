@@ -140,20 +140,20 @@ struct string {
         return *this;
     }
 
-    string copy_into_new_memory() {
-        string copy = string::allocate_new(alloc);
+    string copy_into_new_memory(char *f, int l) {
+        string copy = string::allocate_new(alloc, f, l);
         copy.count = count;
         memcpy(copy.list, list, count*sizeof(list[0]));
         return copy;
     }
 
-    string copy_and_append(wc *suffix) {
-        string c = copy_into_new_memory();
+    string copy_and_append(wc *suffix, char *f, int l) {
+        string c = copy_into_new_memory(f, l);
         c.append(suffix);
         return c;
     }
-    string copy_and_append(string suffix) {
-        string c = copy_into_new_memory();
+    string copy_and_append(string suffix, char *f, int l) {
+        string c = copy_into_new_memory(f, l);
         c.append(suffix);
         return c;
     }
@@ -171,9 +171,9 @@ struct string {
     //
     // export to new memory (caller has to free)
 
-    wc *to_wc_new_memory() {
+    wc *to_wc_new_memory(char *f, int l) {
         int bytes_needed_with_null = (count+1)*sizeof(wc);
-        wc *result = (wc*)malloc(bytes_needed_with_null);
+        wc *result = (wc*)debugmalloc(bytes_needed_with_null, f, l);
         assert(result);
         memcpy(result, list, bytes_needed_with_null-2); // list doesn't have \0 (-2 for that)
         result[count] = L'\0';
@@ -196,16 +196,17 @@ struct string {
     //
     // static
 
-    static string allocate_new(int amount) {
+    static string allocate_new(int amount, char *f, int l) {
         string str = {0};
         str.alloc = amount;
-        str.list = (wc*)malloc(str.alloc * sizeof(wc)); assert(str.list);
+        str.list = (wc*)debugmalloc(str.alloc * sizeof(wc), f, l);
+        assert(str.list);
         return str;
     }
 
-    static string create_with_new_memory(wc *instring) {
+    static string create_with_new_memory(wc *instring, char *f, int l) {
         int len = wcslen(instring);
-        string result = string::allocate_new(len);
+        string result = string::allocate_new(len, f, l);
         result.count = len;
         memcpy(result.list, instring, len*sizeof(instring[0]));
         return result;
@@ -221,11 +222,10 @@ struct string {
 
     static string create_using_passed_in_memory(wc *instring) {
         int len = wcslen(instring);
-        string result;// = string::allocate_new(len);
+        string result;
         result.alloc = len + 1; // wcslen doesn't include null terminator which technically have memory for if we want to use it
         result.count = len;
         result.list = instring;
-        // memcpy(result.list, instring, len*sizeof(instring[0]));
         return result;
     }
 
@@ -256,7 +256,7 @@ struct string {
 // should work whether or not paths have trailing or leading slashes (double slashes are not checked for atm)
 // eg "E:/test folder" or "E:/test folder\" or "/~thumbs/" or "thumbs" or "/paintings/1.jpg" or "paintings/1.jpg"
 string CombinePathsIntoNewMemory(string masterdir, string subdir_name, string subpath) {
-    string result = masterdir.copy_into_new_memory();
+    string result = masterdir.copy_into_new_memory(__FILE__, __LINE__);
     if (!result.ends_with(L"\\") && !result.ends_with(L"/") && subdir_name[0] != L'\\' && subdir_name[0] != L'/') {
         result.append(L'/');
     }
@@ -270,7 +270,7 @@ string CombinePathsIntoNewMemory(string masterdir, string subdir_name, string su
 
 // todo: combine with above
 string CombinePathsIntoNewMemory(string base, string tail) {
-    string result = base.copy_into_new_memory();
+    string result = base.copy_into_new_memory(__FILE__, __LINE__);
     if (!result.ends_with(L"\\") && !result.ends_with(L"/") && tail[0] != L'\\' && tail[0] != L'/') {
         result.append(L'/');
     }
@@ -292,8 +292,8 @@ bool PathsAreSame(string path1, string path2) {
         return false;
     }
 
-    string copy1 = path1.copy_into_new_memory();
-    string copy2 = path2.copy_into_new_memory();
+    string copy1 = path1.copy_into_new_memory(__FILE__, __LINE__);
+    string copy2 = path2.copy_into_new_memory(__FILE__, __LINE__);
 
     if (copy1.ends_with(L"\\") || copy1.ends_with(L"/")) copy1.rtrim(1);
     if (copy2.ends_with(L"\\") || copy2.ends_with(L"/")) copy2.rtrim(1);

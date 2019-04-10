@@ -624,13 +624,13 @@ void DownresFileAtPathToPath(string inpath, string outpath) {
 
     // ffmpeg output filenames need all % chars escaped with another % char. eg file%20exam%ple.jpg -> file%%20exam%%ple.jpg
     wchar_t replacethisbuffer[1024]; //todo
-    wc *outpathtemp = outpath.to_wc_new_memory();
+    wc *outpathtemp = outpath.to_wc_new_memory(__FILE__, __LINE__);
     CopyStringWithCharsEscaped(replacethisbuffer, 1024, outpathtemp, L'%', L'%');
     free(outpathtemp);
 
     wchar_t buffer[1024*8]; // todo make sure enough for in and out paths
     // swprintf(buffer, L"ffmpeg -i \"%s\" -vf \"scale='min(200,iw)':-2\" \"%s\"", inpath.chars, outpath.chars);
-    wc *inpathtemp = inpath.to_wc_new_memory();
+    wc *inpathtemp = inpath.to_wc_new_memory(__FILE__, __LINE__);
     swprintf(buffer, L"ffmpeg -i \"%s\" -vf \"scale='min(200,iw)':-2\" \"%s\"", inpathtemp, replacethisbuffer);
     free(inpathtemp);
 

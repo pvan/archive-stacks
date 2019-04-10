@@ -91,6 +91,7 @@ string_pool split_by_delim(string str, wc delim) {
             next_str.append(str[i]); // will allocate new mem if empty
         }
     }
+    next_str.free_all(); // anything left here wasn't added to result so can be freed
     return result;
 }
 

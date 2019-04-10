@@ -228,6 +228,7 @@ bool DrawTagsWithXColumns(int totalcols,
             // }
 
             // prep for next column
+            widthsincol.free_pool();
             widthsincol = intfloatpair_pool::new_empty(); // empty widths for use in next column
             colwidths.add(0); // first column (more added each new column)
 
@@ -411,6 +412,8 @@ void DrawTagMenu(int cw, int ch,
             filtered_tag_indices);
 
     assert(!finalmenutoobig);
+
+    widths.free_pool();
 
 }
 

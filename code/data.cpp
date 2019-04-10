@@ -6,11 +6,11 @@
 
 
 
-// todo: capitalize these naames
-const string archive_save_filename = string::create_using_passed_in_memory(L"~meta.txt");
-const string archive_tag_list_filename = string::create_using_passed_in_memory(L"~taglist.txt");
-const string thumb_dir_name = string::create_using_passed_in_memory(L"~thumbs");
-const string appdata_subpath_for_master_directory = string::create_using_passed_in_memory(L"archive-stacks\\last_directory");
+// todo: capitalize & const names (not const for now so we can free at end of program to look for leaks)
+string archive_save_filename = string::create_with_new_memory(L"~meta.txt", __FILE__, __LINE__);
+string archive_tag_list_filename = string::create_with_new_memory(L"~taglist.txt", __FILE__, __LINE__);
+string thumb_dir_name = string::create_with_new_memory(L"~thumbs", __FILE__, __LINE__);
+string appdata_subpath_for_master_directory = string::create_with_new_memory(L"archive-stacks\\last_directory", __FILE__, __LINE__);
 
 
 
@@ -94,7 +94,7 @@ string_pool FindAllItemPaths(string masterdir) {
 
 string_pool FindAllSubfolderPaths(string masterdir, wc *subfolder) {
 
-    string subfolder_path = masterdir.copy_and_append(subfolder);
+    string subfolder_path = masterdir.copy_and_append(subfolder, __FILE__, __LINE__);
     string_pool top_files = win32_GetAllFilesAndFoldersInDir(subfolder_path);
     string_pool result = string_pool::new_empty();
     for (int folderI = 0; folderI < top_files.count; folderI++) {
@@ -198,7 +198,8 @@ string_pool ReadTagListFromFileOrSomethingUsableOtherwise(string masterdir) {
     wc *path = CombinePathsIntoNewMemory(masterdir, archive_tag_list_filename).to_wc_final();
 
     if (!win32_PathExists(path)) {
-        result.add(string::create_with_new_memory(L"untagged"));  // always have this entry as index 0?? todo: decide
+        result.add(string::create_with_new_memory(L"untagged", __FILE__, __LINE__));  // always have this entry as index 0?? todo: decide
+        free(path);
         return result;
     }
 
@@ -225,6 +226,7 @@ string_pool ReadTagListFromFileOrSomethingUsableOtherwise(string masterdir) {
         // free(thisTagString.chars); // don't free! string_pool will use this address
         chars_written += (strlen(thisTag) + 1); // skip ahead to the next, remember to skip past the \0 as well
     }
+    free(fileChars);
 
     return result;
 }
@@ -274,10 +276,10 @@ struct item {
 
     item deep_copy() {
         item result = {0};
-        result.fullpath = fullpath.copy_into_new_memory();
-        result.thumbpath = thumbpath.copy_into_new_memory();
-        result.subpath = subpath.copy_into_new_memory();
-        result.justname = justname.copy_into_new_memory();
+        result.fullpath = fullpath.copy_into_new_memory(__FILE__, __LINE__);
+        result.thumbpath = thumbpath.copy_into_new_memory(__FILE__, __LINE__);
+        result.subpath = subpath.copy_into_new_memory(__FILE__, __LINE__);
+        result.justname = justname.copy_into_new_memory(__FILE__, __LINE__);
         return result;
     }
 
@@ -288,8 +290,8 @@ struct item {
 item CreateItemFromPath(string fullpath, string masterdir) {
     item newitem = {0};
 
-    newitem.fullpath = fullpath.copy_into_new_memory();
-    newitem.subpath = fullpath.copy_into_new_memory().trim_common_prefix(masterdir);
+    newitem.fullpath = fullpath.copy_into_new_memory(__FILE__, __LINE__);
+    newitem.subpath = fullpath.copy_into_new_memory(__FILE__, __LINE__).trim_common_prefix(masterdir);
 
     string thumbpath = CombinePathsIntoNewMemory(masterdir, thumb_dir_name, newitem.subpath);
     // for now, special case for txt...
@@ -301,7 +303,7 @@ item CreateItemFromPath(string fullpath, string masterdir) {
     }
     newitem.thumbpath = thumbpath;
 
-    newitem.justname = newitem.subpath.copy_into_new_memory();
+    newitem.justname = newitem.subpath.copy_into_new_memory(__FILE__, __LINE__);
     trim_last_slash_and_everything_before(&newitem.justname);
 
     return newitem;
@@ -347,12 +349,12 @@ item_pool CreateItemListFromMasterPath(string masterdir) {
 string laststr = string::new_empty();
 bool PopulateTagFromPathsForItem(item it, int itemindex) {
 
-    string dircopy = it.fullpath.copy_into_new_memory();
+    string dircopy = it.fullpath.copy_into_new_memory(__FILE__, __LINE__);
     strip_to_just_parent_directory(&dircopy);
     assert(dircopy.count>0);
 
     if (laststr != dircopy) {
-        laststr = dircopy.copy_into_new_memory();
+        laststr.overwrite_with_copy_of(dircopy);
     }
 
     bool free_string_when_done = false;
@@ -412,7 +414,7 @@ void InitResolutionsListToMatchItemList(int count) {
 
 // pull resolution from separate metadata file (unique one for each item)
 bool GetCachedResolutionIfPossible(string path, v2 *result) {
-    wc *temp = path.to_wc_new_memory();
+    wc *temp = path.to_wc_new_memory(__FILE__, __LINE__);
     FILE *file = _wfopen(temp, L"r");
     free(temp);
     if (!file) { DEBUGPRINT("error reading %ls\n", path); return false; }
@@ -426,7 +428,7 @@ bool GetCachedResolutionIfPossible(string path, v2 *result) {
 // create separate resolution metadata file (unique one for each item)
 void CreateCachedResolution(string path, v2 size) {
     win32_create_all_directories_needed_for_path(path);
-    wc *temp = path.to_wc_new_memory();
+    wc *temp = path.to_wc_new_memory(__FILE__, __LINE__);
     FILE *file = _wfopen(temp, L"w");
     free(temp);
     if (!file) { DEBUGPRINT("error creating %ls\n", path); return; }
@@ -477,6 +479,7 @@ void SaveMetadataFile()
     FILE *file = _wfopen(path, L"w, ccs=UTF-16LE");
     if (!file) {
         DEBUGPRINT("couldn't open master metadata file for writing");
+        free(path);
         return;
     }
     for (int i = 0; i < items.count; i++) {
@@ -485,7 +488,7 @@ void SaveMetadataFile()
 
         fwprintf(file, L"%i,%i,", (int)item_resolutions[i].x, (int)item_resolutions[i].y);
         fwprintf(file, L"%llu,", modifiedTimes[i]);
-        wc *temp = items[i].subpath.to_wc_new_memory();
+        wc *temp = items[i].subpath.to_wc_new_memory(__FILE__, __LINE__);
         fwprintf(file, L"%s", temp); // todo: shouldn't this bw %ls? seems to work as is
         free(temp);
         fwprintf(file, L"%c", L'\0'); // note we add our own \0 after string for easier parsing later
@@ -510,6 +513,7 @@ void LoadMasterDataFileAndPopulateResolutionsAndTagsEtc(
     wc *path = CombinePathsIntoNewMemory(master_path, archive_save_filename).to_wc_final();
     if (!win32_PathExists(path)) {
         DEBUGPRINT("master metadata cache file doesn't exist");
+        free(path);
         return;
     }
 
@@ -533,7 +537,7 @@ void LoadMasterDataFileAndPopulateResolutionsAndTagsEtc(
         if (numread < 0) {DEBUGPRINT("e2 %i\n",linesread);goto fileclose;} // eof (or maybe badly formed file?)
 
         // read subpath
-        string subpath = string::allocate_new(256);
+        string subpath = string::allocate_new(256, __FILE__, __LINE__);
         wc nextchar = L'a'; // just some non-0 initialization (overwritten before used)
         while (nextchar != L'\0') { // note we exit below so we could probably just use while(1) here
             numread = fwscanf(file, L"%c", &nextchar);
@@ -616,8 +620,8 @@ void LoadMasterDataFileAndPopulateResolutionsAndTagsEtc(
 // what tags are visible (filtered) and selected (colored)
 
 
-string browse_tag_filter = string::allocate_new(128);
-string view_tag_filter = string::allocate_new(128);
+string browse_tag_filter = string::allocate_new(128, __FILE__, __LINE__);
+string view_tag_filter = string::allocate_new(128, __FILE__, __LINE__);
 
 
 int_pool filtered_browse_tag_indices = int_pool::new_empty();

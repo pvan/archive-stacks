@@ -62,7 +62,7 @@ void win32_save_memory_to_appdata(string subpath, char *mem, int bytes) {
             return;
         }
 
-        string finalpath = string::create_with_new_memory(appdata_path);
+        string finalpath = string::create_with_new_memory(appdata_path, __FILE__, __LINE__);
         if (subpath[0] != L'\\' && subpath[0] != L'/') finalpath.append(L'\\');
         finalpath.append(subpath);
 
@@ -105,7 +105,7 @@ bool win32_load_memory_from_appdata_into_new_memory(string subpath, void **mem, 
             return false;
         }
 
-        string finalpath = string::create_with_new_memory(appdata_path);
+        string finalpath = string::create_with_new_memory(appdata_path, __FILE__, __LINE__);
         if (subpath[0] != L'\\' && subpath[0] != L'/') finalpath.append(L'\\');
         finalpath.append(subpath);
 

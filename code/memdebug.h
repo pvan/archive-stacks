@@ -59,6 +59,11 @@ void *memdebug_malloc(uint size, char *file, uint line)
     return result;
 }
 
+// call this instead of malloc if you want more contol over the file+line parameters
+void *debugmalloc(uint size, char *file, uint line) {
+    return memdebug_malloc(size, file, line);
+}
+
 void memdebug_free(void *ptr, char *file, uint line)
 {
     if (ptr) { // ignore free(null) calls for now
@@ -91,6 +96,8 @@ void memdebug_print()
     for (int i = 0; i < md_r_count; i++) {
         if (!md_records[i].free) {
             char buf[256];
+            // // temporarily uncomment this string printing to get more info on leaking strings
+            // // leave commented out when done because it's very unstable (string memory might have changed since recording the malloc)
             // if (strstr(md_records[i].file, "string") != 0) {
             //     // int counthack = (int)(((char*)md_records[i].ptr) + sizeof(wc*)); // pull count out of string struct
             //     void *address_of_count = (char*)md_records[i].ptr + sizeof(wc*);

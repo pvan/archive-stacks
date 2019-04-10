@@ -6,11 +6,11 @@
 void win32_create_all_directories_needed_for_path(string path)
 {
     // in terms of operations and memory, this could be done with a lot less
-    string copy = path.copy_into_new_memory();
+    string copy = path.copy_into_new_memory(__FILE__, __LINE__);
     copy.find_replace(L'/', L'\\');
     string_pool split = split_by_delim(copy, L'\\');
 
-    string growing_partial_path = split[0].copy_into_new_memory();
+    string growing_partial_path = split[0].copy_into_new_memory(__FILE__, __LINE__);
     for (int i = 1; i < split.count; i++) {
         growing_partial_path.append(L'\\');
         growing_partial_path.append(split[i]);
@@ -19,6 +19,10 @@ void win32_create_all_directories_needed_for_path(string path)
         CreateDirectoryW(growing_partial_path.list, 0); // only works if we apply null terminator before
         growing_partial_path.rtrim(1); // remove null terminator
     }
+
+    growing_partial_path.free_all();
+    copy.free_all();
+    deep_free_string_pool(split);
 }
 
 
@@ -27,20 +31,20 @@ string_pool win32_GetAllFilesAndFoldersInDir(string path)
 {
     string_pool results = string_pool::new_empty();
 
-    string dir_path = path.copy_into_new_memory(); // for use when appending subfolders to this path
+    string dir_path = path.copy_into_new_memory(__FILE__, __LINE__); // for use when appending subfolders to this path
     if (!dir_path.ends_with(L"/") && !dir_path.ends_with(L"\\")) // todo: not fully tested, code at time of comment works if we just append '/' no matter what
         dir_path.append(L"/");
-    string search_path = dir_path.copy_and_append(L"*"); // wildcard for search
+    string search_path = dir_path.copy_and_append(L"*", __FILE__, __LINE__); // wildcard for search
 
     WIN32_FIND_DATAW ffd;
-    wc *temp = search_path.to_wc_new_memory();
+    wc *temp = search_path.to_wc_new_memory(__FILE__, __LINE__);
     HANDLE hFind = FindFirstFileW(temp, &ffd);
     free(temp);
     if (hFind == INVALID_HANDLE_VALUE) { return string_pool::new_empty(); }
     do {
         if(wc_equals(ffd.cFileName, L".") || wc_equals(ffd.cFileName, L"..")) continue;
 
-        string full_path = dir_path.copy_and_append(ffd.cFileName);
+        string full_path = dir_path.copy_and_append(ffd.cFileName, __FILE__, __LINE__);
         results.add(full_path);
 
         // string this_path = string::Create(ffd.cFileName);
@@ -65,17 +69,19 @@ string_pool win32_GetAllFilesAndFoldersInDir(string path)
 bool win32_IsDirectory(wchar_t *path) { DWORD res = GetFileAttributesW(path); return res!=INVALID_FILE_ATTRIBUTES && res&FILE_ATTRIBUTE_DIRECTORY; }
 // bool win32_IsDirectory(string path) { return win32_IsDirectory(path.chars); }
 bool win32_IsDirectory(string path) {
-    wc *temp = path.to_wc_new_memory();
-    return win32_IsDirectory(temp);
+    wc *temp = path.to_wc_new_memory(__FILE__, __LINE__);
+    bool res = win32_IsDirectory(temp);
     free(temp);
+    return res;
 }
 
 bool win32_PathExists(wchar_t *path) { return GetFileAttributesW(path) != INVALID_FILE_ATTRIBUTES; }
 // bool win32_PathExists(string path) { return win32_PathExists(path.chars); }
 bool win32_PathExists(string path) {
-    wc *temp = path.to_wc_new_memory();
-    return win32_PathExists(temp);
+    wc *temp = path.to_wc_new_memory(__FILE__, __LINE__);
+    bool res = win32_PathExists(temp);
     free(temp);
+    return res;
 }
 
 
@@ -136,7 +142,7 @@ void win32_OpenFolderSelectDialog(HWND hwnd, string *inAndOutString) {
             IShellItem *psi = 0;
 
             if (win32_IsDirectory(*inAndOutString)) {
-                wc *temp = inAndOutString->to_wc_new_memory();
+                wc *temp = inAndOutString->to_wc_new_memory(__FILE__, __LINE__);
                 SHCreateItemFromParsingName(temp, 0, IID_PPV_ARGS(&psi));
                 free(temp);
                 pfo->SetFolder(psi);
@@ -187,9 +193,10 @@ u64 win32_GetModifiedTimeSinceEpoc(wchar_t *path)
     return result.QuadPart;
 }
 u64 win32_GetModifiedTimeSinceEpoc(string path) {
-    wc *temp = path.to_wc_new_memory();
-    return win32_GetModifiedTimeSinceEpoc(temp);
+    wc *temp = path.to_wc_new_memory(__FILE__, __LINE__);
+    u64 res = win32_GetModifiedTimeSinceEpoc(temp);
     free(temp);
+    return res;
 }
 
 
@@ -280,7 +287,8 @@ void Win32ReadFileBytesIntoNewMemoryW(wc *path, void **memory, int *bytes)
                     *bytes = file_size_bytes;
                 } else {
                     // couldn't read file
-                    VirtualFree(*memory, 0, MEM_RELEASE);
+                    free(*memory);
+                    // VirtualFree(*memory, 0, MEM_RELEASE);
                     *bytes = 0;
                     assert(false);
                 }

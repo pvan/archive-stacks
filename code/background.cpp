@@ -95,6 +95,7 @@ void FreeAllAppMemory(bool complete_to_check_for_leaks = false) {
             proposed_thumbs_found.free_pool();
         }
 
+
         // view mode
         {
             viewing_tile.UnloadMedia();
@@ -102,6 +103,11 @@ void FreeAllAppMemory(bool complete_to_check_for_leaks = false) {
 
         // everything else
         {
+            archive_save_filename.free_all();
+            archive_tag_list_filename.free_all();
+            thumb_dir_name.free_all();
+            appdata_subpath_for_master_directory.free_all();
+
             filtered_browse_tag_indices.free_pool();
             filtered_view_tag_indices.free_pool();
             browse_tag_indices.free_pool();
@@ -412,6 +418,7 @@ void LaunchBackgroundStartupLoopIfNeeded() {
 }
 
 
+bool background_loading_thread_launched = false;
 DWORD WINAPI RunBackgroundLoadingThread( LPVOID lpParam ) {
     while (running) {
         if (app_mode == BROWSING_THUMBS) {
@@ -474,9 +481,9 @@ DWORD WINAPI RunBackgroundLoadingThread( LPVOID lpParam ) {
         // first_loop = false;
         Sleep(16); // todo: hmm
     }
+    background_loading_thread_launched = false;
     return 0;
 }
-bool background_loading_thread_launched = false;
 void LaunchBackgroundLoadingLoopIfNeeded() {
     if (!background_loading_thread_launched) {
         CreateThread(0, 0, RunBackgroundLoadingThread, 0, 0, 0);
@@ -486,6 +493,7 @@ void LaunchBackgroundLoadingLoopIfNeeded() {
 
 
 
+bool background_unloading_thread_launched = false;
 DWORD WINAPI RunBackgroundUnloadingThread( LPVOID lpParam ) {
     while (running) {
         for (int i = 0; i < tiles.count; i++) {
@@ -497,9 +505,9 @@ DWORD WINAPI RunBackgroundUnloadingThread( LPVOID lpParam ) {
         }
         Sleep(16); // hmm
     }
+    background_unloading_thread_launched = false;
     return 0;
 }
-bool background_unloading_thread_launched = false;
 void LaunchBackgroundUnloadingLoopIfNeeded() {
     if (!background_unloading_thread_launched) {
         CreateThread(0, 0, RunBackgroundUnloadingThread, 0, 0, 0);
