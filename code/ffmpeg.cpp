@@ -623,12 +623,16 @@ void DownresFileAtPathToPath(string inpath, string outpath) {
     win32_create_all_directories_needed_for_path(outpath);
 
     // ffmpeg output filenames need all % chars escaped with another % char. eg file%20exam%ple.jpg -> file%%20exam%%ple.jpg
-    wchar_t replacethisbuffer[1024];
-    CopyStringWithCharsEscaped(replacethisbuffer, 1024, outpath.to_wc_reusable(), L'%', L'%');
+    wchar_t replacethisbuffer[1024]; //todo
+    wc *outpathtemp = outpath.to_wc_reusable();
+    CopyStringWithCharsEscaped(replacethisbuffer, 1024, outpathtemp, L'%', L'%');
+    free(outpathtemp);
 
     wchar_t buffer[1024*8]; // todo make sure enough for in and out paths
     // swprintf(buffer, L"ffmpeg -i \"%s\" -vf \"scale='min(200,iw)':-2\" \"%s\"", inpath.chars, outpath.chars);
-    swprintf(buffer, L"ffmpeg -i \"%s\" -vf \"scale='min(200,iw)':-2\" \"%s\"", inpath.to_wc_reusable(), replacethisbuffer);
+    wc *inpathtemp = inpath.to_wc_reusable();
+    swprintf(buffer, L"ffmpeg -i \"%s\" -vf \"scale='min(200,iw)':-2\" \"%s\"", inpathtemp, replacethisbuffer);
+    free(inpathtemp);
 
     OutputDebugStringW(buffer);
     OutputDebugStringW(L"\n");

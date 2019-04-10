@@ -184,7 +184,11 @@ u64 win32_GetModifiedTimeSinceEpoc(wchar_t *path)
     result.HighPart = modified.dwHighDateTime;
     return result.QuadPart;
 }
-u64 win32_GetModifiedTimeSinceEpoc(string path) { return win32_GetModifiedTimeSinceEpoc(path.to_wc_reusable()); }
+u64 win32_GetModifiedTimeSinceEpoc(string path) {
+    wc *temp = path.to_wc_new_memory();
+    return win32_GetModifiedTimeSinceEpoc(temp);
+    free(temp);
+}
 
 
 
