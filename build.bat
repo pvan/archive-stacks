@@ -20,10 +20,19 @@ set build_folder=build
 IF NOT EXIST %build_folder% mkdir %build_folder%
 
 set lib_folder=lib
+copy %lib_folder%\ffmpeg.exe %build_folder%
 xcopy /s /y /q %lib_folder%\ffmpeg-4.1-win64-shared\bin\*.dll %build_folder%
-xcopy /s /y /q %lib_folder%\ffmpeg.exe %build_folder%
 
 pushd build
 cl %CompilerFlags% ..\code\win32_app.cpp %LinkerFlags%
 popd
+
+
+
+set release_folder=release
+IF NOT EXIST %release_folder% mkdir %release_folder%
+
+copy %build_folder%\win32_app.exe %release_folder%\archive-stacks.exe
+copy %lib_folder%\ffmpeg.exe %release_folder%
+xcopy /s /y /q %lib_folder%\ffmpeg-4.1-win64-shared\bin\*.dll %release_folder%
 
