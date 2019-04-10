@@ -7,7 +7,7 @@
 
 #include "types.h"
 
-#define DEBUG_MEM_ENABLED
+// #define DEBUG_MEM_ENABLED
 #ifdef DEBUG_MEM_ENABLED
 #include "memdebug.h" // will slow down our free()s especially
 #endif

@@ -173,7 +173,8 @@ struct string {
 
     wc *to_wc_new_memory(char *f, int l) {
         int bytes_needed_with_null = (count+1)*sizeof(wc);
-        wc *result = (wc*)debugmalloc(bytes_needed_with_null, f, l);
+        // wc *result = (wc*)debugmalloc(bytes_needed_with_null, f, l);
+        wc *result = (wc*)malloc(bytes_needed_with_null);
         assert(result);
         memcpy(result, list, bytes_needed_with_null-2); // list doesn't have \0 (-2 for that)
         result[count] = L'\0';
@@ -199,7 +200,8 @@ struct string {
     static string allocate_new(int amount, char *f, int l) {
         string str = {0};
         str.alloc = amount;
-        str.list = (wc*)debugmalloc(str.alloc * sizeof(wc), f, l);
+        // str.list = (wc*)debugmalloc(str.alloc * sizeof(wc), f, l);
+        str.list = (wc*)malloc(str.alloc * sizeof(wc));
         assert(str.list);
         return str;
     }
