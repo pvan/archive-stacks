@@ -10,7 +10,7 @@
 const string archive_save_filename = string::create_using_passed_in_memory(L"~meta.txt");
 const string archive_tag_list_filename = string::create_using_passed_in_memory(L"~taglist.txt");
 const string thumb_dir_name = string::create_using_passed_in_memory(L"~thumbs");
-const string appdata_subpath_for_master_directory = string::create_using_passed_in_memory(L"archive-stacks\\last_directory.txt");
+const string appdata_subpath_for_master_directory = string::create_using_passed_in_memory(L"archive-stacks\\last_directory");
 
 
 
