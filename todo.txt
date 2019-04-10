@@ -1,0 +1,56 @@
+
+
+--core--
+x git remote backup
+x text box ui element
+x filter tags by text box
+x select master folder
+x save master folder between runs
+  higher res thumbnails
+
+
+--debt--
+  combine gpu+opengl modules
+  audit string module (partially done)
+x remove reusable string mem
+x replace old string module with new
+  os/app layer breakdown
+  check todos
+x ui internal api
+  tile concept -- replace?
+
+
+--experiments--
+x tag button layout (stacks)
+
+
+--bugs--
+x video framerate when offscreen
+  editing last_filename.. read as text instead?
+
+
+--polish--
+x consistent name
+  loading splash screen for opening larger files? (load thumb first if slow?)
+  pretty buttons / ui
+  controls displayed somewhere
+  border around hot ui item?
+  drag scrollbar position from where clicked (instead of always jumping below mouse pos)
+  center-aligned text with changing width -- dancing kerning
+  more textbox controls 
+  -selecting text
+  -highlight other buttons and allow clicks when editing text?
+ 
+
+--would be nice--
+  keyboard controls for all ui (eg selecting tags, etc)
+  pause/step through video in view mode
+  subtractive tag selection (eg these but not these)
+  text file support
+  music file support
+  subfolder-as-a-collection support?
+  undo support
+  hierarchy/nested tags (ie sub tags, eg "author"->"person1","person2")
+
+
+
