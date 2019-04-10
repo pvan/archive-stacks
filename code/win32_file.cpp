@@ -136,7 +136,9 @@ void win32_OpenFolderSelectDialog(HWND hwnd, string *inAndOutString) {
             IShellItem *psi = 0;
 
             if (win32_IsDirectory(*inAndOutString)) {
-                SHCreateItemFromParsingName(inAndOutString->to_wc_reusable(), 0, IID_PPV_ARGS(&psi));
+                wc *temp = inAndOutString->to_wc_new_memory();
+                SHCreateItemFromParsingName(temp, 0, IID_PPV_ARGS(&psi));
+                free(temp);
                 pfo->SetFolder(psi);
             }
 

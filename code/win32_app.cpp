@@ -29,7 +29,18 @@ void DEBUGPRINT(wc *s) { sprintf(debugprintbuffer, "%ls\n", s); OutputDebugStrin
 #include "v2.cpp"
 #include "rect.cpp"
 #include "string.cpp"
-void DEBUGPRINT(string s) { sprintf(debugprintbuffer, "%ls\n", s.to_wc_reusable()); OutputDebugString(debugprintbuffer); }
+void DEBUGPRINT(char *msg, string s) {
+    wc *temp = s.to_wc_new_memory();
+    sprintf(debugprintbuffer, msg, temp);
+    free(temp);
+    OutputDebugString(debugprintbuffer);
+}
+void DEBUGPRINT(string s) {
+    wc *temp = s.to_wc_new_memory();
+    sprintf(debugprintbuffer, "%ls\n", temp);
+    free(temp);
+    OutputDebugString(debugprintbuffer);
+}
 #include "bitmap.cpp"
 #include "pools.cpp"
 

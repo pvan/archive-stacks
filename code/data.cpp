@@ -148,12 +148,17 @@ void SaveTagList() {
     // todo: what is proper saving protocol: save as copy then replace old when done?
 
     // create new blank file first
-    if (tag_list.count > 0)
-        Win32WriteBytesToFileW(path, tag_list[0].to_utf8_reusable(), strlen(tag_list[0].to_utf8_reusable()) + 1); // include the null-terminator
+    if (tag_list.count > 0) {
+        char *utf8 = tag_list[0].to_utf8_new_memory();
+        Win32WriteBytesToFileW(path, utf8, strlen(utf8));
+        free(utf8);
+    }
 
     // then append each
     for (int i = 1; i < tag_list.count; i++) {
-        Win32AppendBytesToFileW(path, tag_list[i].to_utf8_reusable(), strlen(tag_list[i].to_utf8_reusable()) + 1); // include the null-terminator
+        char *utf8 = tag_list[i].to_utf8_new_memory();
+        Win32AppendBytesToFileW(path, utf8, strlen(utf8));
+        free(utf8);
     }
 
     free(path);
@@ -214,7 +219,7 @@ string_pool ReadTagListFromFileOrSomethingUsableOtherwise(string masterdir) {
             result.add(thisTagString);
             // DEBUGPRINT("added %s\n", thisTagString.ToUTF8Reusable());
         } else {
-            DEBUGPRINT("WARNING: %s was in taglist more than once!\n", thisTagString.to_utf8_reusable());
+            DEBUGPRINT("WARNING: %ls was in taglist more than once!\n", thisTagString);
         }
         // todo: prickly use-after-free bug potential in string_pool, should check all string_pool and just refactor pools in general
         // free(thisTagString.chars); // don't free! string_pool will use this address
@@ -408,8 +413,10 @@ void InitResolutionsListToMatchItemList(int count) {
 
 // pull resolution from separate metadata file (unique one for each item)
 bool GetCachedResolutionIfPossible(string path, v2 *result) {
-    FILE *file = _wfopen(path.to_wc_reusable(), L"r");
-    if (!file) {  DEBUGPRINT("error reading %s\n", path.to_utf8_reusable()); return false; }
+    wc *temp = path.to_wc_new_memory();
+    FILE *file = _wfopen(temp, L"r");
+    free(temp);
+    if (!file) { DEBUGPRINT("error reading %ls\n", path); return false; }
     int x, y;
     fwscanf(file, L"%i,%i", &x, &y);
     result->x = x;
@@ -420,8 +427,10 @@ bool GetCachedResolutionIfPossible(string path, v2 *result) {
 // create separate resolution metadata file (unique one for each item)
 void CreateCachedResolution(string path, v2 size) {
     win32_create_all_directories_needed_for_path(path);
-    FILE *file = _wfopen(path.to_wc_reusable(), L"w");
-    if (!file) { DEBUGPRINT("error creating %s\n", path.to_utf8_reusable()); return; }
+    wc *temp = path.to_wc_new_memory();
+    FILE *file = _wfopen(temp, L"w");
+    free(temp);
+    if (!file) { DEBUGPRINT("error creating %ls\n", path); return; }
     fwprintf(file, L"%i,%i", (int)size.x, (int)size.y); // todo: round up? (should all be square ints anyway, though)
     fclose(file);
 }
@@ -477,7 +486,9 @@ void SaveMetadataFile()
 
         fwprintf(file, L"%i,%i,", (int)item_resolutions[i].x, (int)item_resolutions[i].y);
         fwprintf(file, L"%llu,", modifiedTimes[i]);
-        fwprintf(file, L"%s", items[i].subpath.to_wc_reusable());
+        wc *temp = items[i].subpath.to_wc_new_memory();
+        fwprintf(file, L"%s", temp); // todo: shouldn't this bw %ls?
+        free(temp);
         fwprintf(file, L"%c", L'\0'); // note we add our own \0 after string for easier parsing later
         for (int j = 0; j < item_tags[i].count; j++) {
             fwprintf(file, L" %i", item_tags[i][j]);
@@ -547,7 +558,7 @@ void LoadMasterDataFileAndPopulateResolutionsAndTagsEtc(
             }
         }
         if (this_item_i == -1) {
-            DEBUGPRINT("ERROR: subpath in metadata list not found in item list: %s\n", subpath.to_utf8_reusable());
+            DEBUGPRINT("ERROR: subpath in metadata list not found in item list: %ls\n", subpath);
             assert(false);
         }
         subpath.free_all();

@@ -282,9 +282,11 @@ bool DrawTagsWithXColumns(int totalcols,
             float y = (row+1) * (UI_TEXT_SIZE+vgap);
 
             rect brect;
-            if (ui_button_text(&tag_list[t], tag_list[t].to_utf8_reusable(), {x,y}, UI_LEFT,UI_TOP, &brect)) {
+            char *utf8 = tag_list[t].to_utf8_new_memory();
+            if (ui_button_text(&tag_list[t], utf8, {x,y}, UI_LEFT,UI_TOP, &brect)) {
                 if (tagSelect) tagSelect(t);
             }
+            free(utf8);
 
             if (selected_tags_pool->has(t)) {
                 ui_rect(brect, 0xffff00ff, 0.3);
@@ -368,7 +370,9 @@ void DrawTagMenu(int cw, int ch,
     float_pool widths = float_pool::new_empty();
     for (int i = 0; i < filtered_tag_indices.count; i++) {
         int t = filtered_tag_indices[i];
-        rect r = ui_text(tag_list[t].to_utf8_reusable(), {0,0}, UI_LEFT,UI_TOP, false, 0);
+        char *temp = tag_list[t].to_utf8_new_memory();
+        rect r = ui_text(temp, {0,0}, UI_LEFT,UI_TOP, false, 0);
+        free(temp);
         widths.add(r.w);
     }
 
@@ -593,9 +597,13 @@ void browse_tick(float actual_dt, int cw, int ch) {
         for (int i = 0; i < tag_list.count; i++) {
             // strstr returns pointer to substring in string
             // looks like strstr will work fine on utf8 strings
-            if (strstr(tag_list[i].to_utf8_reusable(), browse_tag_filter.to_utf8_reusable()) != 0) {
+            char *tag = tag_list[i].to_utf8_new_memory();
+            char *filter = browse_tag_filter.to_utf8_new_memory();
+            if (strstr(tag, filter) != 0) {
                 filtered_browse_tag_indices.add(i);
             }
+            free(tag);
+            free(filter);
         }
         DrawTagMenu(cw, ch,
                     &SelectBrowseTagsNone,
@@ -655,7 +663,7 @@ void browse_tick(float actual_dt, int cw, int ch) {
                 int i = debug_info_tile_index_mouse_was_on;
                 UI_PRINT("tile_index_mouse_was_on: %i", debug_info_tile_index_mouse_was_on);
 
-                UI_PRINT("name: %s", items[i].justname.to_utf8_reusable());
+                UI_PRINT("name: %ls", items[i].justname);
 
                 if (tiles[i].media.vfc && tiles[i].media.vfc->iformat)
                     UI_PRINT("format name: %s", (char*)tiles[i].media.vfc->iformat->name);
@@ -811,10 +819,14 @@ void view_tick(float actual_dt, int cw, int ch) {
         filtered_view_tag_indices.empty_out();
         for (int i = 0; i < tag_list.count; i++) {
             // strstr returns pointer to substring in string
-            // todo: not sure if works on utf8 strings
-            if (strstr(tag_list[i].to_utf8_reusable(), view_tag_filter.to_utf8_reusable()) != 0) {
+            // looks like strstr will work fine on utf8 strings
+            char *tag = tag_list[i].to_utf8_new_memory();
+            char *filter = view_tag_filter.to_utf8_new_memory();
+            if (strstr(tag, filter) != 0) {
                 filtered_view_tag_indices.add(i);
             }
+            free(tag);
+            free(filter);
         }
         DrawTagMenu(cw, ch,
                     &SelectItemTagsNone,
@@ -844,7 +856,9 @@ void view_tick(float actual_dt, int cw, int ch) {
         // debug tag list on left
         float x = 0;
         for (int i = 0; i < item_tags[viewing_file_index].count; i++) {
-            rect lastrect = ui_text(tag_list[item_tags[viewing_file_index][i]].to_utf8_reusable(), {x,(float)ch}, UI_LEFT,UI_BOTTOM, true, 0.66);
+            char *utf8 = tag_list[item_tags[viewing_file_index][i]].to_utf8_new_memory();
+            rect lastrect = ui_text(utf8, {x,(float)ch}, UI_LEFT,UI_BOTTOM, true, 0.66);
+            free(utf8);
             x+=lastrect.w;
         }
 
@@ -870,7 +884,9 @@ void settings_tick(float actual_dt, int cw, int ch) {
     float x = (float)cw/2 - textboxwidth/2;
     float y = (float)ch/4;
     ui_text("current directory: ", {x-50,y-UI_TEXT_SIZE}, UI_LEFT,UI_TOP, true, 0);
-    ui_text(master_path.to_utf8_reusable(), {x,y}, UI_LEFT,UI_TOP, true, .5);
+    char *utf8 = master_path.to_utf8_new_memory();
+    ui_text(utf8, {x,y}, UI_LEFT,UI_TOP, true, .5);
+    free(utf8);
     ui_texti("items: %i", items.count, {x,y+UI_TEXT_SIZE*1}, UI_LEFT,UI_TOP, true, 0);
     ui_texti("tags: %i", tag_list.count, {x,y+UI_TEXT_SIZE*2}, UI_LEFT,UI_TOP, true, 0);
 

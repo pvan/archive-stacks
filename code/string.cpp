@@ -15,16 +15,16 @@
 
 
 
-// todo: consider using pointers and malloc instead of fixed size?
-const int REUSABLE_MEM_BYTES = 1024;
-char string2_reusable_mem1[REUSABLE_MEM_BYTES];
-char string2_reusable_mem2[REUSABLE_MEM_BYTES];
-bool string2_reusable_toggle = false; // which reusable mem should we use next?
+// // todo: consider using pointers and malloc instead of fixed size?
+// const int REUSABLE_MEM_BYTES = 1024;
+// char string2_reusable_mem1[REUSABLE_MEM_BYTES];
+// char string2_reusable_mem2[REUSABLE_MEM_BYTES];
+// bool string2_reusable_toggle = false; // which reusable mem should we use next?
 
-char *next_open_reusable_mem() {
-    return string2_reusable_toggle ? (char*)&string2_reusable_mem1 : (char*)&string2_reusable_mem2;
-    string2_reusable_toggle = !string2_reusable_toggle;
-}
+// char *next_open_reusable_mem() {
+//     return string2_reusable_toggle ? (char*)&string2_reusable_mem1 : (char*)&string2_reusable_mem2;
+//     string2_reusable_toggle = !string2_reusable_toggle;
+// }
 
 
 // note this basic structure started as a copy of pool, see that if needing similar functionality
@@ -195,28 +195,28 @@ struct string {
     //
     // export to temporary, reusable memory (caller doesn't need to free, but memory can be overwritten immediately)
 
-    wc *to_wc_reusable() {
-        // method without needing to temporarily add \0 to our orig string
-        int bytes_needed_without_null = count*sizeof(wc);
-        wc *result = (wc*)next_open_reusable_mem();
-        assert(bytes_needed_without_null+2 <= REUSABLE_MEM_BYTES); // +2 bytes for size of L'\0'
-        memcpy(result, list, bytes_needed_without_null); // no \0 yet
-        result[count] = L'\0';
-        return result;
-    }
-    char *to_utf8_reusable() {
-        // method without null terminator
-        int bytes_needed_with_null = WideCharToMultiByte(CP_UTF8,0,  list,count,  0,0,  0,0) +1; // need +1 for null terminator if passing count instead of -1
-        char *utf8 = next_open_reusable_mem();
-        assert(bytes_needed_with_null <= REUSABLE_MEM_BYTES);
-        WideCharToMultiByte(CP_UTF8,0,  list,count,  utf8,bytes_needed_with_null,  0,0);
-        utf8[bytes_needed_with_null-1] = 0; // add null terminator, it's not there by default if we pass in count instead of -1
-        return utf8;
-    }
-    char *to_ascii_reusuable() {
-        // todo: just use utf8 for now and worry about non-ascii chars later
-        return to_utf8_reusable();
-    }
+    // wc *to_wc_reusable() {
+    //     // method without needing to temporarily add \0 to our orig string
+    //     int bytes_needed_without_null = count*sizeof(wc);
+    //     wc *result = (wc*)next_open_reusable_mem();
+    //     assert(bytes_needed_without_null+2 <= REUSABLE_MEM_BYTES); // +2 bytes for size of L'\0'
+    //     memcpy(result, list, bytes_needed_without_null); // no \0 yet
+    //     result[count] = L'\0';
+    //     return result;
+    // }
+    // char *to_utf8_reusable() {
+    //     // method without null terminator
+    //     int bytes_needed_with_null = WideCharToMultiByte(CP_UTF8,0,  list,count,  0,0,  0,0) +1; // need +1 for null terminator if passing count instead of -1
+    //     char *utf8 = next_open_reusable_mem();
+    //     assert(bytes_needed_with_null <= REUSABLE_MEM_BYTES);
+    //     WideCharToMultiByte(CP_UTF8,0,  list,count,  utf8,bytes_needed_with_null,  0,0);
+    //     utf8[bytes_needed_with_null-1] = 0; // add null terminator, it's not there by default if we pass in count instead of -1
+    //     return utf8;
+    // }
+    // char *to_ascii_reusuable() {
+    //     // todo: just use utf8 for now and worry about non-ascii chars later
+    //     return to_utf8_reusable();
+    // }
 
     //
     // export to new memory (caller has to free)
@@ -279,16 +279,16 @@ struct string {
         return result;
     }
 
-    // format input char* string to wc* and put in temporary memory
-    // pretty much for one-off comparisons to other strings
-    static string create_temporary(char *source) {
-        string result = {0};
-        result.alloc = MultiByteToWideChar(CP_UTF8,0,  source,-1,  0,0);
-        result.list = (wc*)next_open_reusable_mem();//(wc*)malloc(result.alloc * sizeof(wc));
-        MultiByteToWideChar(CP_UTF8,0,  source,-1,  result.list,result.alloc*sizeof(char));
-        result.count = result.alloc-1; // no null terminator in actual result list
-        return result;
-    }
+    // // format input char* string to wc* and put in temporary memory
+    // // pretty much for one-off comparisons to other strings
+    // static string create_temporary(char *source) {
+    //     string result = {0};
+    //     result.alloc = MultiByteToWideChar(CP_UTF8,0,  source,-1,  0,0);
+    //     result.list = (wc*)next_open_reusable_mem();//(wc*)malloc(result.alloc * sizeof(wc));
+    //     MultiByteToWideChar(CP_UTF8,0,  source,-1,  result.list,result.alloc*sizeof(char));
+    //     result.count = result.alloc-1; // no null terminator in actual result list
+    //     return result;
+    // }
 
     //
     // misc / operators
@@ -488,5 +488,13 @@ void CopyStringWithCharsEscaped(wc *outbuffer, int outsize, wc *instring, wc cha
     }
     *dest = 0;
     assert(outbuffer+newsize-1 == dest);
+}
+
+
+//
+// generic char stuff
+
+bool str_equals(char *s1, char *s2) {
+    return strcmp(s1, s2) == 0;
 }
 

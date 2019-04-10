@@ -253,10 +253,10 @@ DWORD WINAPI RunBackgroundStartupThread( LPVOID lpParam ) {
         string thumbpath = items[item_indices_without_thumbs[i]].thumbpath;
         string justname = items[item_indices_without_thumbs[i]].justname;
         if (ffmpeg_can_open(fullpath)) {
-            DEBUGPRINT("creating media thumb for %s\n", fullpath.to_utf8_reusable());
+            DEBUGPRINT("creating media thumb for %ls\n", fullpath);
             DownresFileAtPathToPath(fullpath, thumbpath);
         } else  {
-            DEBUGPRINT("creating dummy thumb for %s\n", fullpath.to_utf8_reusable());
+            DEBUGPRINT("creating dummy thumb for %ls\n", fullpath);
             CreateDummyThumb(fullpath, thumbpath, justname);
         }
         item_indices_without_thumbs.count--; // should add .pop()

@@ -154,7 +154,7 @@ v2 ffmpeg_GetResolution(string path)
     // if neither, this probably isn't a video file
     if (video_index == -1)
     {
-        DEBUGPRINT("ffmpeg: No video streams in file. %s\n", path.to_utf8_reusable());
+        DEBUGPRINT("ffmpeg: No video streams in file. %ls\n", path);
         return {-1,-1};
     }
 
@@ -592,17 +592,17 @@ struct ffmpeg_media {
         if (!vfc->iformat || vfc->iformat==nullptr) { return true; } // assume not a video
 
         // TODO: add to this list all formats we don't want to send to gpu every frame
-        static string definitely_static_image_formats[] = {
-            string::create_using_passed_in_memory(L"image2"),
-            string::create_using_passed_in_memory(L"png_pipe"),
-            string::create_using_passed_in_memory(L"bmp_pipe"),
-            string::create_using_passed_in_memory(L"jpeg_pipe"),
+        static char *definitely_static_image_formats[] = {
+            "image2",
+            "png_pipe",
+            "bmp_pipe",
+            "jpeg_pipe",
             // todo: add way to detect missing formats (e.g. check if getframe is never changing or something)
         };
         int length_of_formats = sizeof(definitely_static_image_formats)/sizeof(definitely_static_image_formats[0]);
 
         for (int i = 0; i < length_of_formats; i++) {
-            if (string::create_temporary((char*)vfc->iformat->name) == definitely_static_image_formats[i]) {
+            if (str_equals((char*)vfc->iformat->name, definitely_static_image_formats[i])) {
                 return true;
             }
         }
@@ -624,13 +624,13 @@ void DownresFileAtPathToPath(string inpath, string outpath) {
 
     // ffmpeg output filenames need all % chars escaped with another % char. eg file%20exam%ple.jpg -> file%%20exam%%ple.jpg
     wchar_t replacethisbuffer[1024]; //todo
-    wc *outpathtemp = outpath.to_wc_reusable();
+    wc *outpathtemp = outpath.to_wc_new_memory();
     CopyStringWithCharsEscaped(replacethisbuffer, 1024, outpathtemp, L'%', L'%');
     free(outpathtemp);
 
     wchar_t buffer[1024*8]; // todo make sure enough for in and out paths
     // swprintf(buffer, L"ffmpeg -i \"%s\" -vf \"scale='min(200,iw)':-2\" \"%s\"", inpath.chars, outpath.chars);
-    wc *inpathtemp = inpath.to_wc_reusable();
+    wc *inpathtemp = inpath.to_wc_new_memory();
     swprintf(buffer, L"ffmpeg -i \"%s\" -vf \"scale='min(200,iw)':-2\" \"%s\"", inpathtemp, replacethisbuffer);
     free(inpathtemp);
 
