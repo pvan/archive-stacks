@@ -150,14 +150,14 @@ void SaveTagList() {
     // create new blank file first
     if (tag_list.count > 0) {
         char *utf8 = tag_list[0].to_utf8_new_memory();
-        Win32WriteBytesToFileW(path, utf8, strlen(utf8));
+        Win32WriteBytesToFileW(path, utf8, strlen(utf8)+1); // also write null terminator
         free(utf8);
     }
 
     // then append each
     for (int i = 1; i < tag_list.count; i++) {
         char *utf8 = tag_list[i].to_utf8_new_memory();
-        Win32AppendBytesToFileW(path, utf8, strlen(utf8));
+        Win32AppendBytesToFileW(path, utf8, strlen(utf8)+1); // also write null terminator
         free(utf8);
     }
 
