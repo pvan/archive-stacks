@@ -3,6 +3,13 @@
 
 
 
+// todo: tighten up shared data between threads
+// 1. what can they both access
+// 2. what threads can modify what data
+// 3. what data cannot be read while being modified or read by another thread
+// 4. add locks in those cases
+// 5. group up similar data into one spot so we know when adding similar things
+
 
 int_pool item_indices_without_thumbs; // todo: move to data tab? or keep bg related stuff in bg?
 
@@ -443,10 +450,6 @@ DWORD WINAPI RunBackgroundLoadingThread( LPVOID lpParam ) {
 
                 free_all_item_pool_memory(&proposed_items);
                 proposed_items = CreateItemListFromMasterPath(bg_path_copy);
-
-                // proposed_items_checkout = 2; // flag to not change proposed_items in other thread
-                // item_pool bg_item_copy = copy_item_pool(proposed_items); // could be big! todo: better way to do this?
-                // proposed_items_checkout = 0;
 
                 loading_status_msg = "Looking for existing thumbnails...";
                 proposed_thumbs_found.empty_out();// = int_pool::new_empty();

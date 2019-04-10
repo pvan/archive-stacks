@@ -236,8 +236,8 @@ string_pool ReadTagListFromFileOrSomethingUsableOtherwise(string masterdir) {
 // another way would be to store the item index in an int list for each tag
 // (harder to find an item's tags that way, but easier to free and to find all items with a tag)
 //
-// a list (in same order as items -- they can share indices)
-// of a list of tag indices (indicies into the tag_list)
+// the list is in the same order as items -- they can share indices
+// each element is a list of tag indices (indicies into the tag_list)
 // so it's kind of like this:
 // [0] 0,1,2 ...
 // [1] 2 ...
@@ -299,8 +299,7 @@ item CreateItemFromPath(string fullpath, string masterdir) {
     if (fullpath.ends_with(L".txt")) {
         thumbpath.append(L".bmp");
     }
-    newitem.thumbpath = thumbpath;//.copy_into_new_memory();
-    // thumbpath.free_all();
+    newitem.thumbpath = thumbpath;
 
     newitem.justname = newitem.subpath.copy_into_new_memory();
     trim_last_slash_and_everything_before(&newitem.justname);
@@ -487,7 +486,7 @@ void SaveMetadataFile()
         fwprintf(file, L"%i,%i,", (int)item_resolutions[i].x, (int)item_resolutions[i].y);
         fwprintf(file, L"%llu,", modifiedTimes[i]);
         wc *temp = items[i].subpath.to_wc_new_memory();
-        fwprintf(file, L"%s", temp); // todo: shouldn't this bw %ls?
+        fwprintf(file, L"%s", temp); // todo: shouldn't this bw %ls? seems to work as is
         free(temp);
         fwprintf(file, L"%c", L'\0'); // note we add our own \0 after string for easier parsing later
         for (int j = 0; j < item_tags[i].count; j++) {
