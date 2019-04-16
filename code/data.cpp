@@ -20,6 +20,8 @@ string master_path;  // what project / collection directory we have currently op
 bool show_debug_console = false;
 
 
+string new_tag = string::allocate_new(128, __FILE__, __LINE__);
+
 
 //
 // debug vars
@@ -47,6 +49,8 @@ int master_scroll_delta = 0;
 int master_ctrl_scroll_delta = 0;
 
 float master_desired_tile_width = 200;
+
+
 
 
 

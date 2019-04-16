@@ -65,6 +65,7 @@ struct ui_context {
     ui_id hot;    //hover
     ui_id active; //selected (holding focus)
     ui_id next_hot; // track what will be hot for next frame, so we always get the topmost
+    // todo: should probably add textbox state to this if we want it to be complete
 };
 
 ui_context ui_context;
@@ -438,8 +439,10 @@ void ui_textbox(ui_id id, string *text, rect r, float dt) {
     }
 
     // sanity check
-    if (ui_cursor_pos < 0) ui_cursor_pos = 0;
-    if (ui_cursor_pos > text->count) ui_cursor_pos = text->count;
+    if (ui_active(id)) {
+        if (ui_cursor_pos < 0) ui_cursor_pos = 0;
+        if (ui_cursor_pos > text->count) ui_cursor_pos = text->count;
+    }
 
     u32 bgcolor = 0xffffffff;
     float bgalpha = 0.8;
