@@ -784,6 +784,11 @@ void app_change_mode(int new_mode) {
         viewing_tile.UnloadMedia();
     }
 
+    // leaving VIEW & entering BROWSE
+    if (app_mode == VIEWING_FILE && new_mode == BROWSING_THUMBS) {
+        CreateDisplayListFromBrowseSelection(); // recreate display list because tags on our view item may have changed
+    }
+
     // leaving SETTINGS
     if (app_mode == SETTINGS && new_mode != SETTINGS) {
 

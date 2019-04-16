@@ -8,6 +8,7 @@ x select master folder
 x save master folder between runs
   higher res thumbnails
 x add/remove tags
+  display tags in alphabetical order?
   items not in a subfolder
 
 
@@ -28,8 +29,7 @@ x tag button layout (stacks)
 
 --bugs--
 x video framerate when offscreen
-  editing last_filename.. read as text instead?
-  untagged images still shown in browse until tag selection changes
+x untagged images still shown in browse until tag selection changes
 
 
 --polish--
@@ -43,6 +43,8 @@ x consistent name
   more textbox controls 
   -selecting text
   -highlight other buttons and allow clicks when editing text?
+  add feedback when input action fails (eg adding tag that already exists)
+  editing last_filename.. read as text instead?
  
 
 --would be nice--
