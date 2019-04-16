@@ -23,7 +23,7 @@ set lib_folder=lib
 copy %lib_folder%\ffmpeg.exe %build_folder%
 xcopy /s /y /q %lib_folder%\ffmpeg-4.1-win64-shared\bin\*.dll %build_folder%
 
-pushd build
+pushd %build_folder%
 cl %CompilerFlags% ..\code\win32_app.cpp %LinkerFlags%
 popd
 

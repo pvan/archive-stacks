@@ -7,6 +7,8 @@ x filter tags by text box
 x select master folder
 x save master folder between runs
   higher res thumbnails
+  add/remove tags
+  items not in a subfolder
 
 
 --debt--
@@ -27,6 +29,7 @@ x tag button layout (stacks)
 --bugs--
 x video framerate when offscreen
   editing last_filename.. read as text instead?
+  untagged images still shown in browse until tag selection changes
 
 
 --polish--
@@ -51,6 +54,7 @@ x consistent name
   subfolder-as-a-collection support?
   undo support
   hierarchy/nested tags (ie sub tags, eg "author"->"person1","person2")
-
+  move files and still keep tags (even auto-move based on first tag?)
+  
 
 
