@@ -7,7 +7,7 @@ x filter tags by text box
 x select master folder
 x save master folder between runs
   higher res thumbnails
-  add/remove tags
+x add/remove tags
   items not in a subfolder
 
 

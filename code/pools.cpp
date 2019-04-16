@@ -16,6 +16,7 @@
 
 // can have duplicates
 // we call it a "pool" since things will get re-ordered when removing
+// kind of trying to have it both ways now since del_at will preserve item order
 #define DEFINE_TYPE_POOL(thetype) struct thetype##_pool \
 { \
     thetype *pool; \
@@ -42,7 +43,7 @@
             pool[count++] = newItem; \
         /* } */ \
     } \
-    void remove(thetype existingItem) { \
+    void remove(thetype existingItem) { /* warning! doesn't preserve order (true to name "pool") */ \
         for (int i = 0; i < count; i++) { \
             if (pool[i] == existingItem) { \
                 pool[i] = pool[count-1]; \
@@ -51,6 +52,14 @@
             } \
         } \
         OutputDebugString("WARNING: trying to remove an item from a(n) thetype##_list that doesn't have it\n"); \
+    } \
+    void del_at(int atIndex) { /* unlike remove(), this preserves item order */ \
+        assert(atIndex >= 0 && atIndex < count); \
+        /* move all chars forward starting at spot */ \
+        for (int i = atIndex; i < count-1; i++) { \
+            pool[i] = pool[i+1]; \
+        } \
+        count--; \
     } \
     void free_pool() { count=0; alloc=0; if (pool){free(pool);} pool=0; } /* note zero out count first for potential race conditions */ \
     void empty_out() { count = 0; } /*note we keep the allocated memory*/ /*should call it .drain()*/ \

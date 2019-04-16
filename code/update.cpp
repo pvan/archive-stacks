@@ -354,17 +354,50 @@ void DrawTagMenu(int cw, int ch,
         tagfilter->count = 0;
     }
 
-    // i guess global this one so it's same in browse and view mode
-    if (ui_button_text((void*)"addtag", "add ", {(float)cw*3/4-50,0}, UI_RIGHT,UI_TOP, 0)) {
-        if (new_tag.count > 0) {
-            if (!tag_list.has(new_tag)) {
-                AddNewTagAndSave(new_tag);
+    // add / remove tag buttons
+    bool draw_delete_button_instead = true;
+    if (selected_tags_pool->count == 1) {
+        for (int i = 0; i < item_tags.count; i++) {
+            if (item_tags[i].has(selected_tags_pool->pool[0])) {
+                draw_delete_button_instead = false; // tag is in use, don't offer delete option
+                break;
             }
         }
+    } else {
+        draw_delete_button_instead = false;
     }
-    ui_textbox(&new_tag, &new_tag, {(float)cw*3/4-50,0,100,UI_TEXT_SIZE}, g_dt);
-    if (ui_button_text((void*)"addx", "x", {(float)cw*3/4+50,0}, UI_LEFT,UI_TOP, 0)) {
-        new_tag.count = 0;
+    if (draw_delete_button_instead) {
+        if (ui_button_text((void*)"deltag", "delete unused tag", {(float)cw*3/4-85,0}, UI_LEFT,UI_TOP, 0)) {
+            RemoveTagAndSave(selected_tags_pool->pool[0]);
+
+            // consider: just pass filtered tag list into removetag as optional param?
+
+            // remove from our filtered list too
+            filtered_tag_indices.remove(selected_tags_pool->pool[0]);
+
+            // and we have to decrement all the tag indices to match the new list
+            for (int t = 0; t < filtered_tag_indices.count; t++) {
+                assert(filtered_tag_indices[t] != selected_tags_pool->pool[0]); // this should be removed above
+                if (filtered_tag_indices[t] > selected_tags_pool->pool[0]) {
+                    filtered_tag_indices[t]--;
+                }
+            }
+
+            // return; // just skip drawing rest of menu also works, but menu flashes for a frame
+        }
+    } else {
+        // i guess global this one so it's same in browse and view mode
+        if (ui_button_text((void*)"addtag", "add ", {(float)cw*3/4-50,0}, UI_RIGHT,UI_TOP, 0)) {
+            if (new_tag.count > 0) {
+                if (!tag_list.has(new_tag)) {
+                    AddNewTagAndSave(new_tag.copy_into_new_memory(__FILE__, __LINE__));
+                }
+            }
+        }
+        ui_textbox(&new_tag, &new_tag, {(float)cw*3/4-50,0,100,UI_TEXT_SIZE}, g_dt);
+        if (ui_button_text((void*)"addx", "x", {(float)cw*3/4+50,0}, UI_LEFT,UI_TOP, 0)) {
+            new_tag.count = 0;
+        }
     }
 
     float hgap = 12;

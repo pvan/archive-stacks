@@ -172,11 +172,11 @@ void SaveTagList() {
     // }
     // DEBUGPRINT("saved %i\n", tag_list.count);
 }
-void AddNewTag(string tag) {
+void AddNewTag(string tag) {   // todo: note we don't copy string here, should we?
     assert(!tag_list.has(tag));
     tag_list.add(tag);
 }
-void AddNewTagAndSave(string tag) {
+void AddNewTagAndSave(string tag) {  // caller should copy string before calling if needed
     AddNewTag(tag);
     SaveTagList();
 }
@@ -236,6 +236,60 @@ string_pool ReadTagListFromFileOrSomethingUsableOtherwise(string masterdir) {
 }
 
 
+
+
+//
+// what tags are visible (filtered) and selected (colored)
+
+
+string browse_tag_filter = string::allocate_new(128, __FILE__, __LINE__);
+string view_tag_filter = string::allocate_new(128, __FILE__, __LINE__);
+
+
+int_pool filtered_browse_tag_indices = int_pool::new_empty();
+
+int_pool filtered_view_tag_indices = int_pool::new_empty();
+
+
+// master list of tag indices that are selected for browsing
+int_pool browse_tag_indices;
+
+
+void SelectAllBrowseTags() {
+    if (filtered_browse_tag_indices.count == 0) {
+        // set all tags as selected
+        browse_tag_indices.empty_out();
+        for (int i = 0; i < tag_list.count; i++) {
+            browse_tag_indices.add(i);
+        }
+    }
+    else {
+        // now just affect visible (filtered) tags
+        for (int ft = 0; ft < filtered_browse_tag_indices.count; ft++) {
+            int tagi = filtered_browse_tag_indices[ft];
+            if (!browse_tag_indices.has(tagi))
+                browse_tag_indices.add(tagi);
+        }
+    }
+}
+
+void DeselectAllBrowseTags() {
+    if (filtered_browse_tag_indices.count == 0) {
+        browse_tag_indices.empty_out();
+    }
+    else {
+        // now just affect visible (filtered) tags
+        for (int ft = 0; ft < filtered_browse_tag_indices.count; ft++) {
+            int tagi = filtered_browse_tag_indices[ft];
+            if (browse_tag_indices.has(tagi))
+                browse_tag_indices.remove(tagi);
+        }
+    }
+}
+
+
+
+
 //
 // indices into the tag_list (todo: make tag_list into an official list instead of "pool" or not too important as long as we never remove an item?)
 //
@@ -253,6 +307,30 @@ string_pool ReadTagListFromFileOrSomethingUsableOtherwise(string masterdir) {
 // and [a] [b] [c] numbers are indices into the master item list (and the item_tags list)
 DEFINE_TYPE_POOL(int_pool);
 int_pool_pool item_tags;
+
+
+void RemoveTagAndSave(int tag_index) {
+
+    // need to decrement all tag indices > this tag_index
+    // update item_tags, tag_list, selected tags, and filtered tags?
+
+    tag_list.del_at(tag_index); // preserves list order
+
+    for (int i = 0; i < item_tags.count; i++) {
+        for (int t = 0; t < item_tags[i].count; t++) {
+            assert(item_tags[i][t] != tag_index); // something went wrong, we should only be removing tags that aren't used
+            if (item_tags[i][t] > tag_index) {
+                item_tags[i][t]--;
+            }
+        }
+    }
+
+    // we are probably removing the only tag in this list
+    // since we only allow deleting the only selected tag atm
+    browse_tag_indices.remove(tag_index);
+
+    SaveTagList();
+}
 
 
 //
@@ -617,57 +695,6 @@ void LoadMasterDataFileAndPopulateResolutionsAndTagsEtc(
 }
 
 
-
-
-
-//
-// what tags are visible (filtered) and selected (colored)
-
-
-string browse_tag_filter = string::allocate_new(128, __FILE__, __LINE__);
-string view_tag_filter = string::allocate_new(128, __FILE__, __LINE__);
-
-
-int_pool filtered_browse_tag_indices = int_pool::new_empty();
-
-int_pool filtered_view_tag_indices = int_pool::new_empty();
-
-
-// master list of tag indices that are selected for browsing
-int_pool browse_tag_indices;
-
-
-void SelectAllBrowseTags() {
-    if (filtered_browse_tag_indices.count == 0) {
-        // set all tags as selected
-        browse_tag_indices.empty_out();
-        for (int i = 0; i < tag_list.count; i++) {
-            browse_tag_indices.add(i);
-        }
-    }
-    else {
-        // now just affect visible (filtered) tags
-        for (int ft = 0; ft < filtered_browse_tag_indices.count; ft++) {
-            int tagi = filtered_browse_tag_indices[ft];
-            if (!browse_tag_indices.has(tagi))
-                browse_tag_indices.add(tagi);
-        }
-    }
-}
-
-void DeselectAllBrowseTags() {
-    if (filtered_browse_tag_indices.count == 0) {
-        browse_tag_indices.empty_out();
-    }
-    else {
-        // now just affect visible (filtered) tags
-        for (int ft = 0; ft < filtered_browse_tag_indices.count; ft++) {
-            int tagi = filtered_browse_tag_indices[ft];
-            if (browse_tag_indices.has(tagi))
-                browse_tag_indices.remove(tagi);
-        }
-    }
-}
 
 
 
