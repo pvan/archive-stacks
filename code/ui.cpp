@@ -192,17 +192,17 @@ void ui_bitmap(bitmap img, float x, float y) {
 //
 // controls with effects, ids needed to track over multiple frames
 
-bool ui_button(ui_id id, rect r) {
+bool ui_button(ui_id id, rect r, char *text) {
 
     bool result = false;
     if (ui_active(id)) {
-        if (input.up.mouseL) {
+        if (input.up.mouseL || input.up.enter) {
             if (ui_hot(id)) result = true;
             ui_set_active(0);
         }
     } else {
         if (ui_hot(id)) {
-            if (input.down.mouseL)
+            if (input.down.mouseL || input.down.enter)
                 ui_set_active(id);
         }
     }
@@ -215,9 +215,19 @@ bool ui_button(ui_id id, rect r) {
         ui_rect(r, 0xff777700, 0.3);
     }
 
-    bool mouseOver = r.ContainsPoint(input.current.mouseX,input.current.mouseY);
-    if (mouseOver && (ui_active(id) || ui_active(0))) ui_set_hot(id);
-    if (!mouseOver && ui_hot(id)) ui_set_hot(0);
+
+    if (running_keyboard_input.count > 0) { // has keyboard input to use for focus
+        int numcommon = num_common_starting_chars(running_keyboard_input, text);
+        if (numcommon > 0 && numcommon > running_keyboard_last_common_chars) {
+            running_keyboard_last_common_chars = numcommon;
+            ui_set_hot(id);
+        }
+    }
+    if (running_keyboard_last_common_chars <= 0) { // no item (incl this) has taken focus via keyboard this frame
+        bool mouseOver = r.ContainsPoint(input.current.mouseX,input.current.mouseY);
+        if (mouseOver && (ui_active(id) || ui_active(0))) ui_set_hot(id);
+        if (!mouseOver && ui_hot(id)) ui_set_hot(0);
+    }
 
     return result;
 }
@@ -226,12 +236,12 @@ bool ui_button_text(ui_id id, char *text, rect r, int hpos, int vpos, rect *outr
 {
     r = ui_text(text, r, hpos, vpos, true, 0.66);
     if (outrect) *outrect = r;
-    return ui_button(id, r);
+    return ui_button(id, r, text);
 }
 
 bool ui_button_rect(ui_id id, rect r, u32 color, float alpha) {
     ui_rect(r, color, alpha);
-    return ui_button(id, r);
+    return ui_button(id, r, 0);
 }
 
 
@@ -495,6 +505,7 @@ void UI_PRINT(int i)               { sprintf(ui_log_reuseable_mem, "%i", i); UI_
 void UI_PRINT(float f)             { sprintf(ui_log_reuseable_mem, "%f", f); UI_PRINT(ui_log_reuseable_mem); }
 void UI_PRINT(char *text, int i)   { sprintf(ui_log_reuseable_mem, text, i); UI_PRINT(ui_log_reuseable_mem); }
 void UI_PRINT(char *text, i64 i)   { sprintf(ui_log_reuseable_mem, text, i); UI_PRINT(ui_log_reuseable_mem); }
+void UI_PRINT(char *text, wc c)    { sprintf(ui_log_reuseable_mem, text, c); UI_PRINT(ui_log_reuseable_mem); }
 void UI_PRINT(char *text, char *s) { sprintf(ui_log_reuseable_mem, text, s); UI_PRINT(ui_log_reuseable_mem); }
 void UI_PRINT(char *text, string s) { char *temp = s.to_utf8_new_memory(); UI_PRINT(text, temp); free(temp); }
 void UI_PRINT(char *text, float f) { sprintf(ui_log_reuseable_mem, text, f); UI_PRINT(ui_log_reuseable_mem); }

@@ -4,7 +4,6 @@
 #include <assert.h>
 #include <math.h>
 
-
 #include "types.h"
 
 // #define DEBUG_MEM_ENABLED
@@ -59,6 +58,11 @@ void DEBUGPRINT(string s) {
 
 #include "ffmpeg.cpp"
 #include "text.cpp"
+
+string running_keyboard_input = string::new_empty();
+// string running_keyboard_input_last_match = string::new_empty();
+int running_keyboard_last_common_chars = 0;
+float ms_since_last_key = 0;
 #include "ui.cpp"
 
 
@@ -303,6 +307,145 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         if (input.down.tilde) show_debug_console = !show_debug_console;
 
         opengl_clear();
+
+
+
+        // track keyboard input globally so we can select the closest button in ui
+        {
+            if (ms_since_last_key < 1000) {
+                ms_since_last_key += actual_dt;
+            }
+            if (input.mouse_moved()) {
+                running_keyboard_input.empty_out();
+            }
+            running_keyboard_last_common_chars = 0; // reset each frame
+
+            int precount = running_keyboard_input.count;
+            if (!input.current.shift) {
+                if (input.down.q) { running_keyboard_input.append(L'q'); }
+                if (input.down.w) { running_keyboard_input.append(L'w'); }
+                if (input.down.e) { running_keyboard_input.append(L'e'); }
+                if (input.down.r) { running_keyboard_input.append(L'r'); }
+                if (input.down.t) { running_keyboard_input.append(L't'); }
+                if (input.down.y) { running_keyboard_input.append(L'y'); }
+                if (input.down.u) { running_keyboard_input.append(L'u'); }
+                if (input.down.i) { running_keyboard_input.append(L'i'); }
+                if (input.down.o) { running_keyboard_input.append(L'o'); }
+                if (input.down.p) { running_keyboard_input.append(L'p'); }
+                if (input.down.a) { running_keyboard_input.append(L'a'); }
+                if (input.down.s) { running_keyboard_input.append(L's'); }
+                if (input.down.d) { running_keyboard_input.append(L'd'); }
+                if (input.down.f) { running_keyboard_input.append(L'f'); }
+                if (input.down.g) { running_keyboard_input.append(L'g'); }
+                if (input.down.h) { running_keyboard_input.append(L'h'); }
+                if (input.down.j) { running_keyboard_input.append(L'j'); }
+                if (input.down.k) { running_keyboard_input.append(L'k'); }
+                if (input.down.l) { running_keyboard_input.append(L'l'); }
+                if (input.down.z) { running_keyboard_input.append(L'z'); }
+                if (input.down.x) { running_keyboard_input.append(L'x'); }
+                if (input.down.c) { running_keyboard_input.append(L'c'); }
+                if (input.down.v) { running_keyboard_input.append(L'v'); }
+                if (input.down.b) { running_keyboard_input.append(L'b'); }
+                if (input.down.n) { running_keyboard_input.append(L'n'); }
+                if (input.down.m) { running_keyboard_input.append(L'm'); }
+                if (input.down.squareL   ) { running_keyboard_input.append(L'['); }
+                if (input.down.squareR   ) { running_keyboard_input.append(L']'); }
+                if (input.down.bslash    ) { running_keyboard_input.append(L'\\'); }
+                if (input.down.semicolon ) { running_keyboard_input.append(L';'); }
+                if (input.down.apostrophe) { running_keyboard_input.append(L'\''); }
+                if (input.down.comma     ) { running_keyboard_input.append(L','); }
+                if (input.down.period    ) { running_keyboard_input.append(L'.'); }
+                if (input.down.fslash    ) { running_keyboard_input.append(L'/'); }
+                if (input.down.space     ) { running_keyboard_input.append(L' '); }
+                if (input.down.tilde     ) { running_keyboard_input.append(L'`'); }
+                if (input.down.row[1] ) { running_keyboard_input.append(L'1'); }
+                if (input.down.row[2] ) { running_keyboard_input.append(L'2'); }
+                if (input.down.row[3] ) { running_keyboard_input.append(L'3'); }
+                if (input.down.row[4] ) { running_keyboard_input.append(L'4'); }
+                if (input.down.row[5] ) { running_keyboard_input.append(L'5'); }
+                if (input.down.row[6] ) { running_keyboard_input.append(L'6'); }
+                if (input.down.row[7] ) { running_keyboard_input.append(L'7'); }
+                if (input.down.row[8] ) { running_keyboard_input.append(L'8'); }
+                if (input.down.row[9] ) { running_keyboard_input.append(L'9'); }
+                if (input.down.row[10]) { running_keyboard_input.append(L'0'); }
+                if (input.down.row[11]) { running_keyboard_input.append(L'-'); }
+                if (input.down.row[12]) { running_keyboard_input.append(L'='); }
+            } else {
+                if (input.down.q) { running_keyboard_input.append(L'Q'); }
+                if (input.down.w) { running_keyboard_input.append(L'W'); }
+                if (input.down.e) { running_keyboard_input.append(L'E'); }
+                if (input.down.r) { running_keyboard_input.append(L'R'); }
+                if (input.down.t) { running_keyboard_input.append(L'T'); }
+                if (input.down.y) { running_keyboard_input.append(L'Y'); }
+                if (input.down.u) { running_keyboard_input.append(L'U'); }
+                if (input.down.i) { running_keyboard_input.append(L'I'); }
+                if (input.down.o) { running_keyboard_input.append(L'O'); }
+                if (input.down.p) { running_keyboard_input.append(L'P'); }
+                if (input.down.a) { running_keyboard_input.append(L'A'); }
+                if (input.down.s) { running_keyboard_input.append(L'S'); }
+                if (input.down.d) { running_keyboard_input.append(L'D'); }
+                if (input.down.f) { running_keyboard_input.append(L'F'); }
+                if (input.down.g) { running_keyboard_input.append(L'G'); }
+                if (input.down.h) { running_keyboard_input.append(L'H'); }
+                if (input.down.j) { running_keyboard_input.append(L'J'); }
+                if (input.down.k) { running_keyboard_input.append(L'K'); }
+                if (input.down.l) { running_keyboard_input.append(L'L'); }
+                if (input.down.z) { running_keyboard_input.append(L'Z'); }
+                if (input.down.x) { running_keyboard_input.append(L'X'); }
+                if (input.down.c) { running_keyboard_input.append(L'C'); }
+                if (input.down.v) { running_keyboard_input.append(L'V'); }
+                if (input.down.b) { running_keyboard_input.append(L'B'); }
+                if (input.down.n) { running_keyboard_input.append(L'N'); }
+                if (input.down.m) { running_keyboard_input.append(L'M'); }
+                if (input.down.squareL   ) { running_keyboard_input.append(L'{'); }
+                if (input.down.squareR   ) { running_keyboard_input.append(L'}'); }
+                if (input.down.bslash    ) { running_keyboard_input.append(L'|'); }
+                if (input.down.semicolon ) { running_keyboard_input.append(L':'); }
+                if (input.down.apostrophe) { running_keyboard_input.append(L'"'); }
+                if (input.down.comma     ) { running_keyboard_input.append(L'<'); }
+                if (input.down.period    ) { running_keyboard_input.append(L'>'); }
+                if (input.down.fslash    ) { running_keyboard_input.append(L'?'); }
+                if (input.down.space     ) { running_keyboard_input.append(L' '); }
+                if (input.down.tilde     ) { running_keyboard_input.append(L'~'); }
+                if (input.down.row[1] ) { running_keyboard_input.append(L'!'); }
+                if (input.down.row[2] ) { running_keyboard_input.append(L'@'); }
+                if (input.down.row[3] ) { running_keyboard_input.append(L'#'); }
+                if (input.down.row[4] ) { running_keyboard_input.append(L'$'); }
+                if (input.down.row[5] ) { running_keyboard_input.append(L'%'); }
+                if (input.down.row[6] ) { running_keyboard_input.append(L'^'); }
+                if (input.down.row[7] ) { running_keyboard_input.append(L'&'); }
+                if (input.down.row[8] ) { running_keyboard_input.append(L'*'); }
+                if (input.down.row[9] ) { running_keyboard_input.append(L'('); }
+                if (input.down.row[10]) { running_keyboard_input.append(L')'); }
+                if (input.down.row[11]) { running_keyboard_input.append(L'_'); }
+                if (input.down.row[12]) { running_keyboard_input.append(L'+'); }
+            }
+            // same regardless of shift key (thought could check for numlock state)
+            if (input.down.num0)       { running_keyboard_input.append(L'0'); }
+            if (input.down.num1)       { running_keyboard_input.append(L'1'); }
+            if (input.down.num2)       { running_keyboard_input.append(L'2'); }
+            if (input.down.num3)       { running_keyboard_input.append(L'3'); }
+            if (input.down.num4)       { running_keyboard_input.append(L'4'); }
+            if (input.down.num5)       { running_keyboard_input.append(L'5'); }
+            if (input.down.num6)       { running_keyboard_input.append(L'6'); }
+            if (input.down.num7)       { running_keyboard_input.append(L'7'); }
+            if (input.down.num8)       { running_keyboard_input.append(L'8'); }
+            if (input.down.num9)       { running_keyboard_input.append(L'9'); }
+            if (input.down.numDiv)     { running_keyboard_input.append(L'/'); }
+            if (input.down.numMul)     { running_keyboard_input.append(L'*'); }
+            if (input.down.numSub)     { running_keyboard_input.append(L'-'); }
+            if (input.down.numAdd)     { running_keyboard_input.append(L'+'); }
+            if (input.down.numDecimal) { running_keyboard_input.append(L'.'); }
+
+            // make sure .up or we could clear our ui focus with .down and then .up selection wont work
+            if (input.up.backspace) { running_keyboard_input.empty_out(); }
+            if (input.up.enter) { running_keyboard_input.empty_out(); }
+
+            if (precount < running_keyboard_input.count) {
+                ms_since_last_key = 0;
+            }
+        }
+
 
         if (app_mode == BROWSING_THUMBS) {
             browse_tick(actual_dt, cw,ch);

@@ -395,6 +395,20 @@ string strip_to_just_parent_directory(string *path) {
 
 
 
+int num_common_starting_chars(string s1, char *s2) {
+    if (s1.count==0 || !s2) return 0;
+    int s2count = strlen(s2);
+    int common_chars = 0;
+    for (int i = 0; i<s2count && i<s1.count; i++) {
+        wc widechar;
+        mbstowcs(&widechar, &(s2[i]), 1);
+        if (s1[common_chars] != widechar) break;
+        common_chars++;
+    }
+    return common_chars;
+}
+
+
 
 //
 // generic wc stuff

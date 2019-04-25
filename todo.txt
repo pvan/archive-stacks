@@ -11,6 +11,7 @@ x add/remove tags
 x display tags in alphabetical order
   items not in a subfolder
   make ~untagged an auto tag (add others like "many tagged"?)
+x typing letters jumps to tag (improve more?)
 
 
 --debt--
@@ -33,6 +34,7 @@ x video framerate when offscreen
 x untagged images still shown in browse until tag selection changes
   drag scrollbar position from where clicked (instead of always jumping below mouse pos)
   center-aligned text with changing width -- dancing kerning
+  crash sometimes when arrowing in VIEW and image hasn't loaded yet
 
 
 --polish--

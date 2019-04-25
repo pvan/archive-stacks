@@ -343,20 +343,26 @@ input_keystate input_keys_changed(input_keystate current, input_keystate last)
 
 struct Input {
     input_keystate current;
+    input_keystate last;
     input_keystate up;
     input_keystate down;
+
+    bool mouse_moved() {
+        return current.mouseX != last.mouseX || current.mouseY != last.mouseY;
+    }
+
 };
 
 Input input; // just keep in global scope for now
 
-input_keystate last_input = {0};
+// input_keystate last_input = {0};
 Input input_read(HWND window) {
     // static Input last_input = {0};
     // Input input = ReadInput(hwnd);
     Input result = {0};
     result.current = input_read_keystate(window);
-    result.down = input_keys_changed(result.current, last_input);
-    result.up = input_keys_changed(last_input, result.current);
-    last_input = result.current;
+    result.last = input.current;
+    result.down = input_keys_changed(result.current, result.last);
+    result.up = input_keys_changed(result.last, result.current);
     return result;
 }
