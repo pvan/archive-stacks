@@ -288,6 +288,32 @@ void DeselectAllBrowseTags() {
 }
 
 
+// sort tags for display
+void SortTagIndicesAlphabetical(int_pool indices_list) {
+
+    // int_pool result = int_pool::new_empty();
+
+    // // raw copy
+    // for (int i = 0; i < indices_list.count; i++) {
+    //     result.add(i); // raw copy
+    // }
+    // raw copy
+    for (int i = 0; i < tag_list.count; i++) {
+        tag_list[i].to_wc_final(); // solidify all tag strings for easier comparison (not changing them anywhere right? todo:verify)
+    }
+    for (int i = 0; i < indices_list.count-1; i++) {
+        int anyswap = false;
+        for (int j = 0; j < indices_list.count-1; j++) {
+            if (wcsicmp(tag_list[indices_list[j]].list, tag_list[indices_list[j+1]].list) > 0) { // not using .list here only works since we are converting to wc_final above
+                int temp = indices_list[j];
+                indices_list[j] = indices_list[j+1];
+                indices_list[j+1] = temp;
+                anyswap = true;
+            }
+        }
+        if (!anyswap) break;
+    }
+}
 
 
 //

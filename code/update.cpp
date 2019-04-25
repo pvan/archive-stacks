@@ -653,6 +653,7 @@ void browse_tick(float actual_dt, int cw, int ch) {
             }
             free(tag);
             free(filter);
+            SortTagIndicesAlphabetical(filtered_browse_tag_indices);
         }
         DrawTagMenu(cw, ch,
                     &SelectBrowseTagsNone,
@@ -876,6 +877,7 @@ void view_tick(float actual_dt, int cw, int ch) {
             }
             free(tag);
             free(filter);
+            SortTagIndicesAlphabetical(filtered_view_tag_indices);
         }
         DrawTagMenu(cw, ch,
                     &SelectItemTagsNone,

@@ -8,8 +8,9 @@ x select master folder
 x save master folder between runs
   higher res thumbnails
 x add/remove tags
-  display tags in alphabetical order?
+x display tags in alphabetical order
   items not in a subfolder
+  make ~untagged an auto tag (add others like "many tagged"?)
 
 
 --debt--
@@ -30,6 +31,8 @@ x tag button layout (stacks)
 --bugs--
 x video framerate when offscreen
 x untagged images still shown in browse until tag selection changes
+  drag scrollbar position from where clicked (instead of always jumping below mouse pos)
+  center-aligned text with changing width -- dancing kerning
 
 
 --polish--
@@ -38,8 +41,6 @@ x consistent name
   pretty buttons / ui
   controls displayed somewhere
   border around hot ui item?
-  drag scrollbar position from where clicked (instead of always jumping below mouse pos)
-  center-aligned text with changing width -- dancing kerning
   more textbox controls 
   -selecting text
   -highlight other buttons and allow clicks when editing text?

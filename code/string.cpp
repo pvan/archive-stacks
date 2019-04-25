@@ -164,6 +164,7 @@ struct string {
     // "final" meaning our internal structure is broken, no more changes should be made (todo: enforce this with a bool)
     // (consider: var to indicate if null terminated and remove/add as needed?)
     wc *to_wc_final() {
+        if (list && count>0) { if (list[count-1]==L'\0') return list; } // already has it
         append(L'\0');
         return list;
     }
