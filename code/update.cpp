@@ -554,6 +554,7 @@ void browse_tick(float actual_dt, int cw, int ch) {
         tiles_height = ArrangeTilesForDisplayList(display_list, &tiles, master_desired_tile_width, g_cw); // requires resolutions to be set
         // tiles_height = ArrangeTilesInOrder(&tiles, master_desired_tile_width, cw); // requires resolutions to be set
 
+        // todo: move this (keyboard / scrollwheel / limit) to ui_scrollbar() maybe?
         int scroll_pos = CalculateScrollPosition(last_scroll_pos, master_scroll_delta, input.down, ch, tiles_height);
         last_scroll_pos = (float)scroll_pos;
         master_scroll_delta = 0; // done using this in this frame
@@ -623,21 +624,12 @@ void browse_tick(float actual_dt, int cw, int ch) {
     // scroll bar
     float SCROLL_WIDTH = 25;
     {
-
-        // number of pixels down in big tile list
-        float amtDown = last_scroll_pos; // note this is set above
-
-        // proportion of the way down the tile list
-        float top_percent = amtDown / (float)tiles_height;
-        float bot_percent = (amtDown+ch) / (float)tiles_height;
-
         if (tiles_height > ch) { // don't draw scroll bar if we don't need it
-
-            ui_scrollbar(&last_scroll_pos,
-                         {cw-SCROLL_WIDTH, 0, SCROLL_WIDTH, (float)ch},
-                         top_percent, bot_percent,
-                         &last_scroll_pos,
-                         tiles_height);
+            ui_scrollbar(&last_scroll_pos, // ui_id
+                         {cw-SCROLL_WIDTH, 0, SCROLL_WIDTH, (float)ch}, // where to draw scroll bar area
+                         &last_scroll_pos,      // pixels scrolled down (in big tile list)
+                         (float)tiles_height,   // total pixels possible to scroll down
+                         ch);
         }
 
     }

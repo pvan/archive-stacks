@@ -245,24 +245,52 @@ bool ui_button_rect(ui_id id, rect r, u32 color, float alpha) {
 }
 
 
-// todo: i feel like the args/api here could be simplified (eg calc instead of pass percent and just pass pixels?)
-// note takes two values, for top/bottom of scroll bar indicator (for variable size)
 float ui_scroll_anchor_point = 0; // state of where we clicked on scrollbar knob -- add to ui_context?
 void ui_scrollbar(ui_id id,
-                  rect r, float top_percent, float bot_percent,
-                  float *callbackvalue, float callbackscale)
+                  rect draw_position,
+                  float *pixels_scrolled_down,  // in + out
+                  float pixel_height,
+                  float ch)  // different than draw_pos rect .h (though in initial case, the same)
 {
 
     float bgalpha = 0.4;
     u32 bgcolor = 0xffbbbbbb;
     u32 indicatorcolor = 0xffeeeeeeee;
 
-    if (ui_active(id)) {
-        float click_percent = (input.current.mouseY - r.y) / r.h;  // r.y=0 tho atm
 
-        // consider: pass function pointer instead of scale factor?
-        // or some other alternative?
-        if (callbackvalue) *callbackvalue = callbackscale * (click_percent - ui_scroll_anchor_point);
+    rect r = draw_position; //shorthand
+
+    // pixels in tiles area (area being scrolled through)
+    float top_pos = *pixels_scrolled_down;
+    float bot_pos = *pixels_scrolled_down+ch;
+
+    // proportion of the way down the tile list
+    float top_percent = top_pos / pixel_height;
+    float bot_percent = bot_pos / pixel_height;
+
+
+    // recalc bot_pixels with knob limit in mind
+    float size;
+    {
+        float top_pixels = top_percent * (float)r.h;
+        float bot_pixels = bot_percent * (float)r.h;
+
+        // minimum size of knob (set here so dragging knob anchor calculations below work)
+        size = roundf(bot_pixels-top_pixels);
+        if (size < 10) {
+            size = 10;
+            bot_pixels = top_pixels + 10;
+        }
+
+        bot_percent = bot_pixels / (float)r.h;
+    }
+
+
+    if (ui_active(id)) {
+        float mouse_percent = (input.current.mouseY - r.y) / (float)r.h; // not sure if works for all r
+
+        if (pixels_scrolled_down) *pixels_scrolled_down = pixel_height * (mouse_percent - ui_scroll_anchor_point);
+
         if (input.up.mouseL) {
             ui_set_active(0);
         } else {
@@ -274,7 +302,7 @@ void ui_scrollbar(ui_id id,
             bgalpha = 0.7;
             if (input.down.mouseL) {
 
-                float click_percent = (input.current.mouseY - r.y) / r.h;  // r.y=0 tho atm
+                float click_percent = (input.current.mouseY - r.y) / (float)r.h; // not sure if works for all r
 
                 // if click is inside "knob" then anchor to that spot
                 // otherwise, jump knob to click position
@@ -291,14 +319,12 @@ void ui_scrollbar(ui_id id,
         }
     }
 
-    // --bg--
-    ui_rect(r, bgcolor, bgalpha);
-
+    // pixels inside scrollbar area
     float top_pixels = top_percent * (float)r.h;
     float bot_pixels = bot_percent * (float)r.h;
 
-    float size = roundf(bot_pixels-top_pixels);
-    if (size < 10) size = 10;
+    // --bg--
+    ui_rect(r, bgcolor, bgalpha);
 
     // --indicator--
     ui_rect({r.x, top_pixels, r.w, size}, indicatorcolor, 0.9);
