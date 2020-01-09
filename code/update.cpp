@@ -624,8 +624,10 @@ void browse_tick(float actual_dt, int cw, int ch) {
     float SCROLL_WIDTH = 25;
     {
 
+        // number of pixels down in big tile list
         float amtDown = last_scroll_pos; // note this is set above
 
+        // proportion of the way down the tile list
         float top_percent = amtDown / (float)tiles_height;
         float bot_percent = (amtDown+ch) / (float)tiles_height;
 

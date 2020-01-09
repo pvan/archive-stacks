@@ -245,7 +245,9 @@ bool ui_button_rect(ui_id id, rect r, u32 color, float alpha) {
 }
 
 
+// todo: i feel like the args/api here could be simplified (eg calc instead of pass percent and just pass pixels?)
 // note takes two values, for top/bottom of scroll bar indicator (for variable size)
+float ui_scroll_anchor_point = 0; // state of where we clicked on scrollbar knob -- add to ui_context?
 void ui_scrollbar(ui_id id,
                   rect r, float top_percent, float bot_percent,
                   float *callbackvalue, float callbackscale)
@@ -256,10 +258,11 @@ void ui_scrollbar(ui_id id,
     u32 indicatorcolor = 0xffeeeeeeee;
 
     if (ui_active(id)) {
-        float click_percent = (input.current.mouseY - r.y) / r.h;
+        float click_percent = (input.current.mouseY - r.y) / r.h;  // r.y=0 tho atm
+
         // consider: pass function pointer instead of scale factor?
         // or some other alternative?
-        if (callbackvalue) *callbackvalue = callbackscale * click_percent;
+        if (callbackvalue) *callbackvalue = callbackscale * (click_percent - ui_scroll_anchor_point);
         if (input.up.mouseL) {
             ui_set_active(0);
         } else {
@@ -270,6 +273,19 @@ void ui_scrollbar(ui_id id,
             bgcolor = 0xff777777;
             bgalpha = 0.7;
             if (input.down.mouseL) {
+
+                float click_percent = (input.current.mouseY - r.y) / r.h;  // r.y=0 tho atm
+
+                // if click is inside "knob" then anchor to that spot
+                // otherwise, jump knob to click position
+                // (proportionally on knob = to how far down we are?)
+                if (click_percent > top_percent && click_percent < bot_percent) {
+                    ui_scroll_anchor_point = click_percent - top_percent;
+                } else {
+                    // snap middle of knob to click point if no clicking on knob
+                    ui_scroll_anchor_point = bot_percent - (top_percent+bot_percent)/2.0f;
+                }
+
                 ui_set_active(id);
             }
         }

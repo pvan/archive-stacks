@@ -34,7 +34,7 @@ x tag button layout (stacks)
 --bugs--
 x video framerate when offscreen
 x untagged images still shown in browse until tag selection changes
-  drag scrollbar position from where clicked (instead of always jumping below mouse pos)
+x drag scrollbar position from where clicked (instead of always jumping below mouse pos)
   center-aligned text with changing width -- dancing kerning
   crash sometimes when arrowing in VIEW and image hasn't loaded yet (confirmed)
   disable text selection when typing in text box
