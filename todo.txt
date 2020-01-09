@@ -12,6 +12,8 @@ x display tags in alphabetical order
   items not in a subfolder
   make ~untagged an auto tag (add others like "many tagged"?)
 x typing letters jumps to tag (improve more?)
+  undo
+  save last window size
 
 
 --debt--
@@ -34,7 +36,9 @@ x video framerate when offscreen
 x untagged images still shown in browse until tag selection changes
   drag scrollbar position from where clicked (instead of always jumping below mouse pos)
   center-aligned text with changing width -- dancing kerning
-  crash sometimes when arrowing in VIEW and image hasn't loaded yet
+  crash sometimes when arrowing in VIEW and image hasn't loaded yet (confirmed)
+  disable text selection when typing in text box
+  crash on shrink-all to desktop?
 
 
 --polish--
@@ -48,6 +52,10 @@ x consistent name
   -highlight other buttons and allow clicks when editing text?
   add feedback when input action fails (eg adding tag that already exists)
   editing last_filename.. read as text instead?
+  easy rename tags
+  navigate active tag with arrows? / better tag selection
+  list tags on open item (right now only in debug view)
+  fit tags on screen better? (alternate layouts?)
  
 
 --would be nice--
@@ -57,9 +65,12 @@ x consistent name
   text file support
   music file support
   subfolder-as-a-collection support?
-  undo support
   hierarchy/nested tags (ie sub tags, eg "author"->"person1","person2")
   move files and still keep tags (even auto-move based on first tag?)
+  delete items from in app (for easy remove duplicates)
+  alternate tag display options 
+  -eg not covering up item
+  -eg only display matching typed filter (which catches typing by default)
   
 
 
