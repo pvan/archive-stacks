@@ -683,6 +683,7 @@ void LoadMasterDataFileAndPopulateResolutionsAndTagsEtc(
             }
         }
         if (this_item_i == -1) {
+            // todo: this is probably bc user deleted or renamed a file, handle with grace
             DEBUGPRINT("ERROR: subpath in metadata list not found in item list: %ls\n", subpath);
             assert(false);
         }

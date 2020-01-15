@@ -622,24 +622,55 @@ void DownresFileAtPathToPath(string inpath, string outpath) {
 
     win32_create_all_directories_needed_for_path(outpath);
 
-    // we now just remove all non alphanumeric characters when creating thumbpath
-    // but we still nede to escape chars in the input path
-    // // ffmpeg output filenames need all % chars escaped with another % char. eg file%20exam%ple.jpg -> file%%20exam%%ple.jpg
-    wchar_t replacethisbuffer[1024]; //todo
+    // // we now just remove all non alphanumeric characters when creating thumbpath
+    // // but we still nede to escape chars in the input path
+    // // // ffmpeg output filenames need all % chars escaped with another % char. eg file%20exam%ple.jpg -> file%%20exam%%ple.jpg
+    // wchar_t replacethisbuffer[1024]; //todo
     wc *outpathtemp = outpath.to_wc_new_memory(__FILE__, __LINE__);
-    CopyStringWithCharsEscaped(replacethisbuffer, 1024, outpathtemp, L'%', L'%');
-    free(outpathtemp);
+    // CopyStringWithCharsEscaped(replacethisbuffer, 1024, outpathtemp, L'%', L'%');
+    // free(outpathtemp);
+
+
+    // now we create thumbnail using temp output name
+    // and rename to proper name using win api
+    // this is because ffmpeg doesn't seem to support output names longer than MAX_PATH
+
+    // note we need correct extension for ffmpeg to work, and correct drive (i think) for winapi rename
+
+    string out_dir = outpath.copy_into_new_memory(__FILE__, __LINE__);
+    trim_last_slash_and_everything_after(&out_dir);
+
+    string out_ext = outpath.copy_into_new_memory(__FILE__, __LINE__);
+    int last_dot_i = out_ext.find_last(L'.');
+    out_ext.ltrim(last_dot_i);
+
+    string temp_out = out_dir.copy_into_new_memory(__FILE__, __LINE__);
+    temp_out.append(L"\\stacks_temp_thumb");
+    temp_out.append(out_ext);
+
+    wc *temp_out_as_wc = temp_out.to_wc_new_memory(__FILE__, __LINE__);
+
+    temp_out.free_all();
+    out_dir.free_all();
+    out_ext.free_all();
+
 
     wchar_t buffer[1024*8]; // todo make sure enough for in and out paths
     // swprintf(buffer, L"ffmpeg -i \"%s\" -vf \"scale='min(200,iw)':-2\" \"%s\"", inpath.chars, outpath.chars);
     wc *inpathtemp = inpath.to_wc_new_memory(__FILE__, __LINE__);
-    swprintf(buffer, L"ffmpeg -i \"%s\" -vf \"scale='min(200,iw)':-2\" \"%s\"", inpathtemp, replacethisbuffer);
+    // swprintf(buffer, L"ffmpeg -i \"%s\" -vf \"scale='min(200,iw)':-2\" \"%s\"", inpathtemp, replacethisbuffer);
+    swprintf(buffer, L"ffmpeg -i \"%s\" -vf \"scale='min(200,iw)':-2\" \"%s\"", inpathtemp, temp_out_as_wc);
     free(inpathtemp);
 
     OutputDebugStringW(buffer);
     OutputDebugStringW(L"\n");
 
     win32_run_cmd_command(buffer);
+
+
+    win32_Rename(temp_out_as_wc, outpathtemp);
+    free(temp_out_as_wc);
+    free(outpathtemp);
 }
 
 

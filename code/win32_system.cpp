@@ -10,7 +10,7 @@ void win32_run_cmd_command(wchar_t *cmd) {
     ZeroMemory(&pi, sizeof(pi));
 
     if (CreateProcessW(0, cmd, NULL, NULL, FALSE, CREATE_NO_WINDOW, NULL, NULL, &si, &pi)) {
-        WaitForSingleObject(pi.hProcess, INFINITE);
+        WaitForSingleObject(pi.hProcess, INFINITE); // wait for process to end
         CloseHandle(pi.hProcess);
         CloseHandle(pi.hThread);
     } else {
@@ -32,6 +32,7 @@ void win32_run_cmd_command(wchar_t *cmd) {
             DEBUGPRINT(errtext);
         }
     }
+
     // check return value or anything from this?
     // bind it so any child processes are closes when this program ends?
     // see: https://stackoverflow.com/questions/3342941/kill-child-process-when-parent-process-is-killed

@@ -261,11 +261,11 @@ struct string {
 string CombinePathsIntoNewMemory(string masterdir, string subdir_name, string subpath) {
     string result = masterdir.copy_into_new_memory(__FILE__, __LINE__);
     if (!result.ends_with(L"\\") && !result.ends_with(L"/") && subdir_name[0] != L'\\' && subdir_name[0] != L'/') {
-        result.append(L'/');
+        result.append(L'\\');
     }
     result.append(subdir_name);
     if (!result.ends_with(L"\\") && !result.ends_with(L"/") && subpath[0] != L'\\' && subpath[0] != L'/') {
-        result.append(L'/');
+        result.append(L'\\');
     }
     result.append(subpath);
     return result;
@@ -275,7 +275,7 @@ string CombinePathsIntoNewMemory(string masterdir, string subdir_name, string su
 string CombinePathsIntoNewMemory(string base, string tail) {
     string result = base.copy_into_new_memory(__FILE__, __LINE__);
     if (!result.ends_with(L"\\") && !result.ends_with(L"/") && tail[0] != L'\\' && tail[0] != L'/') {
-        result.append(L'/');
+        result.append(L'\\');
     }
     result.append(tail);
     return result;
