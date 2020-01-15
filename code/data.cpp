@@ -406,14 +406,17 @@ item CreateItemFromPath(string fullpath, string masterdir) {
 
     string subpath_clean = newitem.subpath.copy_into_new_memory(__FILE__, __LINE__);
 
-    // just remove all non alphanumeric characters for now
-    // (kind of a simple hashing algo, maybe replace with proper one eventually?)
-    string ALLOW_CHARS = string::create_with_new_memory(".abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890");
-    string_remove_all_chars_except(subpath_clean, ALLOW_CHARS);
-    ALLOW_CHARS.free_all(); // todo: make static
+    // undo this test, didn't fix issue and should not be needed
+    // // just remove all non alphanumeric characters for now
+    // // (kind of a simple hashing algo, maybe replace with proper one eventually?)
+    // string ALLOW_CHARS = string::create_with_new_memory(".abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890");
+    // string_remove_all_chars_except(subpath_clean, ALLOW_CHARS);
+    // ALLOW_CHARS.free_all(); // todo: make static
 
+    // if we change thumbpath method, leave this the same and we can reused old thumbs
     string oldthumbpath = CombinePathsIntoNewMemory(masterdir, thumb_dir_name, newitem.subpath);
-    string thumbpath = CombinePathsIntoNewMemory(masterdir, thumb_dir_name, subpath_clean);
+
+    string thumbpath = CombinePathsIntoNewMemory(masterdir, thumb_dir_name, newitem.subpath);
     // for now, special case for txt...
     // we need txt thumbs to be something other than txt so we can open them
     // with our ffmpeg code that specifically "ignores all .txt files" atm

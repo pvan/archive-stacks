@@ -242,7 +242,9 @@ DWORD WINAPI RunBackgroundStartupThread( LPVOID lpParam ) {
             if (win32_PathExists(items[i].oldthumbpath)) {
                 wc *temp1 = items[i].oldthumbpath.to_wc_new_memory(__FILE__, __LINE__);
                 wc *temp2 = items[i].thumbpath.to_wc_new_memory(__FILE__, __LINE__);
-                DEBUGPRINT(L"renaming old thumbpath to new %s -> %s\n", temp1, temp2);
+                DEBUGPRINT(L"renaming old thumbpath to new");
+                DEBUGPRINT(temp1);
+                DEBUGPRINT(temp2);
                 win32_Rename(temp1, temp2);
                 free(temp1);
                 free(temp2);
