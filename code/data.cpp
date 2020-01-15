@@ -365,6 +365,7 @@ void RemoveTagAndSave(int tag_index) {
 struct item {
     string fullpath;
     string thumbpath;
+    string oldthumbpath;
     // string thumbpath128; // like this?
     // string thumbpath256;
     // string thumbpath512;
@@ -378,6 +379,7 @@ struct item {
     void free_all() {
         fullpath.free_all();
         thumbpath.free_all();
+        oldthumbpath.free_all();
         subpath.free_all();
         justname.free_all();
     }
@@ -386,6 +388,7 @@ struct item {
         item result = {0};
         result.fullpath = fullpath.copy_into_new_memory(__FILE__, __LINE__);
         result.thumbpath = thumbpath.copy_into_new_memory(__FILE__, __LINE__);
+        result.oldthumbpath = oldthumbpath.copy_into_new_memory(__FILE__, __LINE__);
         result.subpath = subpath.copy_into_new_memory(__FILE__, __LINE__);
         result.justname = justname.copy_into_new_memory(__FILE__, __LINE__);
         return result;
@@ -401,14 +404,25 @@ item CreateItemFromPath(string fullpath, string masterdir) {
     newitem.fullpath = fullpath.copy_into_new_memory(__FILE__, __LINE__);
     newitem.subpath = fullpath.copy_into_new_memory(__FILE__, __LINE__).trim_common_prefix(masterdir);
 
-    string thumbpath = CombinePathsIntoNewMemory(masterdir, thumb_dir_name, newitem.subpath);
+    string subpath_clean = newitem.subpath.copy_into_new_memory(__FILE__, __LINE__);
+
+    // just remove all non alphanumeric characters for now
+    // (kind of a simple hashing algo, maybe replace with proper one eventually?)
+    string ALLOW_CHARS = string::create_with_new_memory(".abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890");
+    string_remove_all_chars_except(subpath_clean, ALLOW_CHARS);
+    ALLOW_CHARS.free_all(); // todo: make static
+
+    string oldthumbpath = CombinePathsIntoNewMemory(masterdir, thumb_dir_name, newitem.subpath);
+    string thumbpath = CombinePathsIntoNewMemory(masterdir, thumb_dir_name, subpath_clean);
     // for now, special case for txt...
     // we need txt thumbs to be something other than txt so we can open them
     // with our ffmpeg code that specifically "ignores all .txt files" atm
     // but we need most thumbs to have original extensions to (for example) animate correctly
     if (fullpath.ends_with(L".txt")) {
+        oldthumbpath.append(L".bmp");
         thumbpath.append(L".bmp");
     }
+    newitem.oldthumbpath = oldthumbpath;
     newitem.thumbpath = thumbpath;
 
     newitem.justname = newitem.subpath.copy_into_new_memory(__FILE__, __LINE__);

@@ -85,6 +85,12 @@ bool win32_PathExists(string path) {
 }
 
 
+void win32_Rename(wchar_t *orig, wchar_t *dest) {
+    // todo: check for success, special handling for long paths? special handling for diff drive?
+    MoveFileW(orig, dest);
+}
+
+
 
 // for GetOpenFileNameW
 #pragma comment(lib, "Comdlg32.lib")

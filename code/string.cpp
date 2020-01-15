@@ -409,6 +409,40 @@ int num_common_starting_chars(string s1, char *s2) {
 }
 
 
+// todo: make this a class method?
+void string_remove_all_chars_except(string str, string ok_chars) {
+
+    for (int i = 0; i < str.count; i++) {
+        bool char_is_ok = false;
+        for (int j = 0; j < ok_chars.count; j++) {
+            if (str[i] == ok_chars[j]) {
+                char_is_ok = true;
+                break;
+            }
+        }
+        if (!char_is_ok) {
+            str[i] = L'_';
+        }
+    }
+
+    // //todo: operate without new allocation?
+    // string tempcopy = str.copy_into_new_memory(__FILE__, __LINE__);
+
+    // for (int i = 0; i < tempcopy.count; i++) {  // check copy...
+    //     bool char_is_ok = false;
+    //     for (int j = 0; j < ok_chars.count; j++) {
+    //         if (tempcopy[i] == ok_chars[j]) {  // check copy...
+    //             char_is_ok = true;
+    //             break;
+    //         }
+    //     }
+    //     if (!char_is_ok) {
+    //         str.del_at(i); // ...but delete from original (this precaution needed or not?)
+    //     }
+    // }
+    // tempcopy.free_all();
+}
+
 
 //
 // generic wc stuff

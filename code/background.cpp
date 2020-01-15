@@ -238,8 +238,20 @@ DWORD WINAPI RunBackgroundStartupThread( LPVOID lpParam ) {
         loading_reusable_max = items.count;
 
         if (!win32_PathExists(items[i].thumbpath)) {
-            item_indices_without_thumbs.add(i);
-            // DEBUGPRINT("this doesn't exist? %s\n", items[i].thumbpath.to_utf8_reusable());
+            // if thumbpath not found, also check old thumbpath and rename before creating new
+            if (win32_PathExists(items[i].oldthumbpath)) {
+                wc *temp1 = items[i].oldthumbpath.to_wc_new_memory(__FILE__, __LINE__);
+                wc *temp2 = items[i].thumbpath.to_wc_new_memory(__FILE__, __LINE__);
+                DEBUGPRINT(L"renaming old thumbpath to new %s -> %s\n", temp1, temp2);
+                win32_Rename(temp1, temp2);
+                free(temp1);
+                free(temp2);
+            } else {
+                item_indices_without_thumbs.add(i);
+                // char *temp = items[i].thumbpath.to_utf8_new_memory();
+                // DEBUGPRINT("this doesn't exist? %s\n", temp);
+                // free(temp);
+            }
         }
         // if (!win32_PathExists(items[i].metadatapath)) {
         //     item_indices_without_metadata.add(i);
@@ -256,10 +268,10 @@ DWORD WINAPI RunBackgroundStartupThread( LPVOID lpParam ) {
     // }
 
     // create cached thumbnail files
+    loading_reusable_max = item_indices_without_thumbs.count;
     for (int i = item_indices_without_thumbs.count-1; i >= 0; i--) {
         loading_status_msg = "Creating thumbnails...";
         loading_reusable_count = i;
-        loading_reusable_max = item_indices_without_thumbs.count;
 
         // item it = items[item_indices_without_thumbs[i]];
         string fullpath = items[item_indices_without_thumbs[i]].fullpath;
