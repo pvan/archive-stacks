@@ -399,16 +399,52 @@ struct item {
 // recommend create all items with this
 // should now set all paths stored in item (but not tags)
 item CreateItemFromPath(string fullpath, string masterdir) {
+
+    // limit path length
+    // can't seem to get ffmpeg to work on filenames longer than MAX_PATH
+    // instead just truncate here and everything should work
+    if (fullpath.count > 240) {
+        DEBUGPRINT("filename path is too long");
+        DEBUGPRINT(fullpath);
+
+        string ext = fullpath.copy_into_new_memory(__FILE__, __LINE__);
+        int doti = ext.find_last(L'.');
+        ext.ltrim(doti);
+
+        string oldpath = fullpath.copy_into_new_memory(__FILE__, __LINE__);
+
+        fullpath.count = 240-4;
+        fullpath.append(ext);
+
+        DEBUGPRINT("renaming file to this (warning: no checks on this process)");
+        DEBUGPRINT(fullpath);
+
+        // for win32_Rename
+        oldpath.find_replace(L'/', L'\\');
+        fullpath.find_replace(L'/', L'\\');
+
+        wc *oldpath_wc = oldpath.to_wc_new_memory(__FILE__, __LINE__);
+        wc *newpath_wc = fullpath.to_wc_new_memory(__FILE__, __LINE__);
+        win32_Rename(oldpath_wc, newpath_wc);
+        free(oldpath_wc);
+        free(newpath_wc);
+
+        ext.free_all();
+        oldpath.free_all();
+
+    }
+
+
     item newitem = {0};
 
     newitem.fullpath = fullpath.copy_into_new_memory(__FILE__, __LINE__);
     newitem.subpath = fullpath.copy_into_new_memory(__FILE__, __LINE__).trim_common_prefix(masterdir);
 
-    string subpath_clean = newitem.subpath.copy_into_new_memory(__FILE__, __LINE__);
 
     // undo this test, didn't fix issue and should not be needed
     // // just remove all non alphanumeric characters for now
     // // (kind of a simple hashing algo, maybe replace with proper one eventually?)
+    // string subpath_clean = newitem.subpath.copy_into_new_memory(__FILE__, __LINE__);
     // string ALLOW_CHARS = string::create_with_new_memory(".abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890");
     // string_remove_all_chars_except(subpath_clean, ALLOW_CHARS);
     // ALLOW_CHARS.free_all(); // todo: make static

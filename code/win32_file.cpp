@@ -86,71 +86,71 @@ bool win32_PathExists(string path) {
 
 
 void win32_Rename(wchar_t *orig, wchar_t *dest) {
-    // // todo: do we need special handling for diff drive?
+    // todo: do we need special handling for diff drive?
 
-    // // todo what an allocation mess lol
+    // todo what an allocation mess lol
 
-    // // todo: improve \\?\ prepend method? (needed for paths longer than MAX_PATH)
-    // string a = string::create_with_new_memory(orig, __FILE__, __LINE__);
-    // string b = string::create_with_new_memory(dest, __FILE__, __LINE__);
+    // todo: improve \\?\ prepend method? (needed for paths longer than MAX_PATH)
+    string a = string::create_with_new_memory(orig, __FILE__, __LINE__);
+    string b = string::create_with_new_memory(dest, __FILE__, __LINE__);
 
-    // string prefix = string::create_with_new_memory(L"\\\\?\\", __FILE__, __LINE__);
+    string prefix = string::create_with_new_memory(L"\\\\?\\", __FILE__, __LINE__);
 
-    // string aa = prefix.copy_and_append(a, __FILE__, __LINE__);
-    // string bb = prefix.copy_and_append(b, __FILE__, __LINE__);
+    string aa = prefix.copy_and_append(a, __FILE__, __LINE__);
+    string bb = prefix.copy_and_append(b, __FILE__, __LINE__);
 
-    // wc *a_wc = aa.to_wc_new_memory(__FILE__, __LINE__);
-    // wc *b_wc = bb.to_wc_new_memory(__FILE__, __LINE__);
+    wc *a_wc = aa.to_wc_new_memory(__FILE__, __LINE__);
+    wc *b_wc = bb.to_wc_new_memory(__FILE__, __LINE__);
 
-    // prefix.free_all();
-    // a.free_all();
-    // b.free_all();
-    // aa.free_all();
-    // bb.free_all();
+    prefix.free_all();
+    a.free_all();
+    b.free_all();
+    aa.free_all();
+    bb.free_all();
 
-    // if (win32_PathExists(b_wc)) {
-    //     DEBUGPRINT("Trying to rename file to file that already exists!\n");
-    //     // consider deleting old orig file in this case?
-    //     // or force overwrite old dest file?
-    //     assert(false);
-    // }
-
-    // if (!MoveFileW(a_wc, b_wc)) {
-
-    //     DEBUGPRINT("MoveFileW() error!\n");
-    //     DEBUGPRINT(a_wc);
-    //     DEBUGPRINT(b_wc);
-    //     { // print error msg (todo: make into function)
-    //         DWORD err = GetLastError();
-    //         char *errtext;
-    //         DWORD fm = FormatMessage(
-    //             FORMAT_MESSAGE_ALLOCATE_BUFFER |
-    //             FORMAT_MESSAGE_FROM_SYSTEM |
-    //             FORMAT_MESSAGE_IGNORE_INSERTS,
-    //             0,
-    //             err,
-    //             MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-    //             (LPTSTR)&errtext,
-    //             0,
-    //             0
-    //         );
-    //         DEBUGPRINT(errtext);
-    //     }
-
-    //     // // todo: improve error handling?
-    //     // DEBUGPRINT("failed renaming file");
-    //     // assert(false);
-    // }
-
-    // free(a_wc);
-    // free(b_wc);
-
-
-    if (!MoveFileW(orig, dest)) {
-        // todo: improve error handling?
-        DEBUGPRINT("failed renaming file");
+    if (win32_PathExists(b_wc)) {
+        DEBUGPRINT("Trying to rename file to file that already exists!\n");
+        // consider deleting old orig file in this case?
+        // or force overwrite old dest file?
         assert(false);
     }
+
+    if (!MoveFileW(a_wc, b_wc)) {
+
+        DEBUGPRINT("MoveFileW() error!\n");
+        DEBUGPRINT(a_wc);
+        DEBUGPRINT(b_wc);
+        { // print error msg (todo: make into function)
+            DWORD err = GetLastError();
+            char *errtext;
+            DWORD fm = FormatMessage(
+                FORMAT_MESSAGE_ALLOCATE_BUFFER |
+                FORMAT_MESSAGE_FROM_SYSTEM |
+                FORMAT_MESSAGE_IGNORE_INSERTS,
+                0,
+                err,
+                MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+                (LPTSTR)&errtext,
+                0,
+                0
+            );
+            DEBUGPRINT(errtext);
+        }
+
+        // // todo: improve error handling?
+        // DEBUGPRINT("failed renaming file");
+        // assert(false);
+    }
+
+    free(a_wc);
+    free(b_wc);
+
+
+    // if (!MoveFileW(orig, dest)) {
+    //     // todo: improve error handling?
+    //     DEBUGPRINT("failed renaming file");
+    //     assert(false);
+    // }
 }
 
 
