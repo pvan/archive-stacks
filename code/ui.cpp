@@ -536,7 +536,7 @@ void ui_textbox(ui_id id, string *text, rect r, float dt) {
 }
 
 
-char ui_log_reuseable_mem[256];
+char ui_log_reuseable_mem[256]; //todo: replace with better
 int ui_log_count;
 void UI_PRINT(char *s) {
     ui_text(s, {0, (float)ui_log_count*UI_TEXT_SIZE}, UI_LEFT,UI_TOP, true, 0.66);
