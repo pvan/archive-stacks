@@ -11,7 +11,7 @@
 #include "memdebug.h" // will slow down our free()s especially
 #endif
 
-char debugprintbuffer[256];
+char debugprintbuffer[1024];
 void DEBUGPRINT(int i) { sprintf(debugprintbuffer, "%i\n", i); OutputDebugString(debugprintbuffer); }
 void DEBUGPRINT(u64 ui) { sprintf(debugprintbuffer, "%lli\n", ui); OutputDebugString(debugprintbuffer); }
 void DEBUGPRINT(float f) { sprintf(debugprintbuffer, "%f\n", f); OutputDebugString(debugprintbuffer); }
