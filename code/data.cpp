@@ -416,6 +416,7 @@ item CreateItemFromPath(string fullpath, string masterdir) {
         fullpath.count = 240-4;
         fullpath.append(ext);
 
+        // TODO: keep collection of these and message user about them?
         DEBUGPRINT("renaming file to this (warning: no checks on this process)");
         DEBUGPRINT(fullpath);
 
@@ -721,37 +722,33 @@ void LoadMasterDataFileAndPopulateResolutionsAndTagsEtc(
                 break;
             }
         }
-        if (this_item_i == -1) {
-            // todo: this is probably bc user deleted or renamed a file, handle with grace
-            DEBUGPRINT("ERROR: subpath in metadata list not found in item list: %ls\n", subpath);
-            assert(false);
-        }
+
         subpath.free_all();
         (*progress)++;
 
-        // todo: could put this with its parsing code if we put subpath first in the file
-        item_resolutions[this_item_i] = {(float)x, (float)y};
-        item_resolutions_valid[this_item_i] = true;
+        if (this_item_i == -1) {
+            // TODO: warn user about this case
+            // right now, this just silently ignores metadata that is missing a corresponding file
+            // that metadata will just be lost when we re-output/save the metadata file
+            //
+            // // todo: this is probably bc user deleted or renamed a file, handle with grace
+            // DEBUGPRINT("ERROR: subpath in metadata list not found in item list: %ls\n", subpath);
+            // assert(false);
+        } else {
 
-        modifiedTimes[this_item_i] = time;
+            // todo: could put this with its parsing code if we put subpath first in the file
+            item_resolutions[this_item_i] = {(float)x, (float)y};
+            item_resolutions_valid[this_item_i] = true;
 
-        items[this_item_i].found_in_cache = true;
+            modifiedTimes[this_item_i] = time;
 
-        // int nextint;
-        // numread = fwscanf(file, L"%i \n", &nextint);
-        // if (numread < 0) {DEBUGPRINT("33");goto fileclose;} // eof (or maybe badly formed file?)
+            items[this_item_i].found_in_cache = true;
 
-        // numread = fwscanf(file, L"%c", &nextchar);
-        // if (numread < 0) {DEBUGPRINT("3");goto fileclose;} // eof (or maybe badly formed file?)
+        }
 
-        // if (numread != L'\n') {
-        //     int nextint;
-        //     numread = fwscanf(file, L"%i ", &nextint);
-        //     items[this_item_i].tags.add(nextint);
-        // }
-        // numread = fwscanf(file, L"\n");
-        // if (numread < 0) {DEBUGPRINT("4");goto fileclose;} // eof (or maybe badly formed file?)
 
+        // read tags
+        // (note we still need to do this even if this_item_i==-1, just to parse to the next item)
         while (true) {
             numread = fwscanf(file, L"%c", &nextchar);
             if (numread < 0) {DEBUGPRINT("e4 %i\n",linesread);goto fileclose;} // eof (or maybe badly formed file?)
@@ -761,9 +758,14 @@ void LoadMasterDataFileAndPopulateResolutionsAndTagsEtc(
             int nextint;
             numread = fwscanf(file, L"%i", &nextint);
             if (numread < 0) {DEBUGPRINT("e5 %i\n",linesread);goto fileclose;} // eof (or maybe badly formed file?)
-            item_tags[this_item_i].add(nextint);
+
+            if (this_item_i != -1) {
+                // don't remember the tags if no file matching the subpath
+                item_tags[this_item_i].add(nextint);
+            }
 
         }
+
         linesread++;
 
     }
