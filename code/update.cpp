@@ -837,8 +837,10 @@ void view_tick(float actual_dt, int cw, int ch) {
             t->display_quad_created = true;
         }
 
+        bitmap img; // needs to exist until we render t->display_quad
+
         if (!t->display_quad_texture_sent_to_gpu || t->texture_updated_since_last_read) {
-            bitmap img = t->GetImage(actual_dt); // the bitmap memory should be freed when getimage is called again
+            img = t->GetImage(actual_dt); // the bitmap memory should be freed when getimage is called again
             t->display_quad.set_texture(img.data, img.w, img.h);
             t->display_quad_texture_sent_to_gpu = true;
         }
@@ -847,7 +849,7 @@ void view_tick(float actual_dt, int cw, int ch) {
                 // if video, just force send new texture every frame
                 // todo: i think a bug in playback speed here
                 //       maybe b/c if video is offscreen, dt will get messed up?
-                bitmap img = t->GetImage(actual_dt); // the bitmap memory should be freed when getimage is called again
+                img = t->GetImage(actual_dt); // the bitmap memory should be freed when getimage is called again
                 t->display_quad.set_texture(img.data, img.w, img.h);
                 t->display_quad_texture_sent_to_gpu = true;
             }
@@ -912,6 +914,10 @@ void view_tick(float actual_dt, int cw, int ch) {
         UI_PRINT("dt: %f", actual_dt);
         UI_PRINT("max dt: %f", metric_max_dt);
 
+        // if (t->media.vfc && t->media.vfc->iformat) {
+        //     UI_PRINT(t->media.IsStaticImageBestGuess() ? "image" : "video");
+        //     // UI_PRINT("size: %i, %i", img.w, img.h); // move img into this scope scope to work
+        // }
 
 
 
