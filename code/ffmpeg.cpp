@@ -625,9 +625,9 @@ void DownresFileAtPathToPath(string inpath, string outpath) {
     // // we now just remove all non alphanumeric characters when creating thumbpath
     // // but we still nede to escape chars in the input path
     // // // ffmpeg output filenames need all % chars escaped with another % char. eg file%20exam%ple.jpg -> file%%20exam%%ple.jpg
-    wchar_t replacethisbuffer[1024]; //todo
+    wchar_t *outpath_escaped = (wchar_t*)malloc(1024); // todo: make sure buffer is big enough
     wc *outpathtemp = outpath.to_wc_new_memory(__FILE__, __LINE__);
-    CopyStringWithCharsEscaped(replacethisbuffer, 1024, outpathtemp, L'%', L'%');
+    CopyStringWithCharsEscaped(outpath_escaped, 1024, outpathtemp, L'%', L'%');
     free(outpathtemp);
 
 
@@ -657,10 +657,10 @@ void DownresFileAtPathToPath(string inpath, string outpath) {
     // out_ext.free_all();
 
 
-    wchar_t buffer[1024*8]; // todo make sure enough for in and out paths
+    wchar_t *buffer = (wchar_t*)malloc(1024*8); // todo make sure enough for in and out paths
     // swprintf(buffer, L"ffmpeg -i \"%s\" -vf \"scale='min(200,iw)':-2\" \"%s\"", inpath.chars, outpath.chars);
     wc *inpathtemp = inpath.to_wc_new_memory(__FILE__, __LINE__);
-    swprintf(buffer, L"ffmpeg -i \"%s\" -vf \"scale='min(200,iw)':-2\" \"%s\"", inpathtemp, replacethisbuffer);
+    swprintf(buffer, L"ffmpeg -i \"%s\" -vf \"scale='min(200,iw)':-2\" \"%s\"", inpathtemp, outpath_escaped);
     // swprintf(buffer, L"ffmpeg -i \"%s\" -vf \"scale='min(200,iw)':-2\" \"%s\"", inpathtemp, temp_out_as_wc);
     free(inpathtemp);
 
@@ -668,6 +668,9 @@ void DownresFileAtPathToPath(string inpath, string outpath) {
     OutputDebugStringW(L"\n");
 
     win32_run_cmd_command(buffer);
+
+    free(buffer);
+    free(outpath_escaped);
 
 
     // win32_Rename(temp_out_as_wc, outpathtemp);

@@ -260,7 +260,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         g_dt = actual_dt;
         last_time = time_now();
 
-        // DEBUGPRINT(actual_dt);
+        DEBUGPRINT(actual_dt);
 
         // if (measured_first_frame_time) { // don't count first frame
             metric_dt_history[metric_dt_history_index++] = actual_dt;

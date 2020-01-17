@@ -400,6 +400,7 @@ struct item {
 // should now set all paths stored in item (but not tags)
 item CreateItemFromPath(string fullpath, string masterdir) {
 
+#if 0
     // limit path length
     // can't seem to get ffmpeg to work on filenames longer than MAX_PATH
     // instead just truncate here and everything should work
@@ -434,6 +435,7 @@ item CreateItemFromPath(string fullpath, string masterdir) {
         oldpath.free_all();
 
     }
+#endif
 
 
     item newitem = {0};
