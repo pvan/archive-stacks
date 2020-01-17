@@ -464,6 +464,13 @@ struct ffmpeg_media {
             avcodec_flush_buffers(vcc); // i think?
             av_seek_frame(vfc, -1, 0, AVSEEK_FLAG_BACKWARD); // seek to first frame
             msRuntimeSoFar = 0;
+        } else if (ret == AVERROR(EAGAIN)) {
+            // todo: infinte loop or just a slow hang possible here
+            // if we keep getting AVERROR(EAGAIN)
+            // ...put in a timeout or something else to check?
+
+            // haven't sent enough data to decode frame, send another
+            goto send_another_packet;
         } else if (ret < 0 && ret != AVERROR(EAGAIN)) {
             char buf[256];
             av_strerror(ret, buf, 256);
