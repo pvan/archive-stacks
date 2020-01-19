@@ -149,7 +149,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
-    RECT win_rect = {0,0,800,600};
+    RECT win_rect = {0,0,1200,800};
     int cw = win_rect.right;
     int ch = win_rect.bottom;
 
